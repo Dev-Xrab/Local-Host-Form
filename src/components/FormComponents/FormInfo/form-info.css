@@ -1,0 +1,63 @@
+
+.form-info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  padding: 24px 16px;
+}
+
+.form-title,
+.form-description {
+  width: 100%;
+
+  border: 0;
+  outline: 0;
+
+  box-sizing: border-box;
+
+  font-family: Inter, sans-serif;
+  color: #37352f;
+
+  resize: none;
+}
+
+.form-title {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.form-description {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #787774;
+
+  overflow: hidden;
+}
+
+.form-title::placeholder,
+.form-description::placeholder {
+  color: #9b9a97;
+}
+
+.form-title:focus,
+.form-description:focus {
+  border-bottom: 1px solid #9b9a97;
+}
+
+.form-title:disabled,
+.form-description:disabled {
+  opacity: 1;
+  -webkit-text-fill-color: currentColor;
+  background: transparent;
+  cursor: default;
+}
+
+.form-title:disabled {
+  color: #37352f;
+}
+
+.form-description:disabled {
+  color: #787774;
+}
+
