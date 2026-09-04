@@ -1,38 +1,29 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import useAuthStore, { useAuthActions } from "../../../../store/useAuthStore";
 import "./host-login.css";
 
 export default function HostLogin() {
   const navigate = useNavigate();
+  const { login } = useAuthActions();
+  const isSubmitting = useAuthStore((s) => s.isSubmitting);
+  const serverError = useAuthStore((s) => s.error);
 
-  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState({});
+  const [fieldError, setFieldError] = useState(null);
 
-  function validate() {
-    const nextErrors = {};
-
-    if (!identifier.trim()) {
-      nextErrors.identifier = "Email or username is required";
-    }
-
-    if (!password) {
-      nextErrors.password = "Password is required";
-    }
-
-    return nextErrors;
-  }
-
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
 
-    const nextErrors = validate();
-    setErrors(nextErrors);
-
-    if (Object.keys(nextErrors).length === 0) {
-      navigate("/dashboard");
+    if (!password) {
+      setFieldError("Password is required");
+      return;
     }
+    setFieldError(null);
+
+    const ok = await login(password);
+    if (ok) navigate("/dashboard");
   }
 
   return (
@@ -44,24 +35,7 @@ export default function HostLogin() {
 
       <form className="host-login-form" onSubmit={handleSubmit} noValidate>
         <div className="host-login-field">
-          <label htmlFor="host-identifier">Email or username</label>
-          <input
-            id="host-identifier"
-            type="text"
-            autoComplete="username"
-            placeholder="you@example.com"
-            value={identifier}
-            onChange={(e) => setIdentifier(e.target.value)}
-            aria-invalid={!!errors.identifier}
-            className={errors.identifier ? "input-error" : ""}
-          />
-          {errors.identifier && (
-            <span className="host-login-error">{errors.identifier}</span>
-          )}
-        </div>
-
-        <div className="host-login-field">
-          <label htmlFor="host-password">Password</label>
+          <label htmlFor="host-password">Server password</label>
           <div className="host-login-password-wrap">
             <input
               id="host-password"
@@ -70,8 +44,9 @@ export default function HostLogin() {
               placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              aria-invalid={!!errors.password}
-              className={errors.password ? "input-error" : ""}
+              aria-invalid={!!fieldError}
+              className={fieldError ? "input-error" : ""}
+              autoFocus
             />
             <button
               type="button"
@@ -81,19 +56,18 @@ export default function HostLogin() {
               {showPassword ? "Hide" : "Show"}
             </button>
           </div>
-          {errors.password && (
-            <span className="host-login-error">{errors.password}</span>
-          )}
+          {fieldError && <span className="host-login-error">{fieldError}</span>}
+          {!fieldError && serverError && <span className="host-login-error">{serverError}</span>}
         </div>
 
         <div className="host-login-row">
-          <Link to="/host/forgot-password" className="host-login-link">
+          <Link to="/host/recover" className="host-login-link">
             Forgot password?
           </Link>
         </div>
 
-        <button type="submit" className="host-login-submit">
-          Log in
+        <button type="submit" className="host-login-submit" disabled={isSubmitting}>
+          {isSubmitting ? "Logging in…" : "Log in"}
         </button>
       </form>
 

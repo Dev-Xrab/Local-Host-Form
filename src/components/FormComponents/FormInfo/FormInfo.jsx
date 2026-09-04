@@ -10,12 +10,29 @@ export default function FormInfo() {
   const isView = mode === "view";
   const descriptionRef = useRef(null);
 
-  useEffect(() => {
+  const resizeToContent = () => {
     const el = descriptionRef.current;
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${el.scrollHeight}px`;
+  };
+
+  useEffect(() => {
+    resizeToContent();
   }, [formDescription]);
+
+  // A value-only effect can measure scrollHeight while this textarea is still narrower than
+  // its final width — e.g. before the sidebar (loaded async, alongside this) settles into its
+  // own width — and freeze at a wrongly-inflated height forever, since typing is the only
+  // other thing that re-triggers it. Re-measure whenever the container's actual width changes.
+  useEffect(() => {
+    const container = descriptionRef.current?.parentElement;
+    if (!container || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(resizeToContent);
+    observer.observe(container);
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="form-info-content">

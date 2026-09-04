@@ -114,6 +114,12 @@
   .role-choices-container {
     flex-direction: column;
   }
+  .role-page-choice {
+    /* flex-basis 220px meant a ~220px width in the desktop row layout — in this column
+       layout the same basis reads as height, stretching each card with dead space. */
+    flex: none;
+    min-width: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

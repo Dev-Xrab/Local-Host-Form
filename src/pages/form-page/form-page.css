@@ -40,6 +40,20 @@
   border-radius: 8px;
 }
 
+.form-page-message {
+  width: 100%;
+  padding: 64px 32px;
+  text-align: center;
+
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  color: #9b9a97;
+}
+
+.form-page-message-error {
+  color: #c0392b;
+}
+
 .role-page-window {
   width: 100%;
   max-width: 900px;
@@ -54,6 +68,14 @@
 }
 
 @media (max-width: 900px) {
+  /* Sidebar.jsx switches .form-sidebar to width:100% (a stacked top bar) at this same
+     breakpoint, but .form-page was still a row — the full-width sidebar and the content
+     pane were fighting for space in that row instead of stacking, blowing out the layout
+     width far past the viewport. */
+  .form-page {
+    flex-direction: column;
+  }
+
   .page-form-content {
     padding: 24px;
   }

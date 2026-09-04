@@ -225,6 +225,35 @@
 }
 
 /* Required toggle */
+.points-input-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  margin-left: 4px;
+
+  font-family: Inter, sans-serif;
+  font-size: 12.5px;
+  color: #787774;
+}
+
+.points-input {
+  width: 44px;
+  padding: 3px 6px;
+  border: 1px solid #e9e9e7;
+  border-radius: 5px;
+
+  font-family: Inter, sans-serif;
+  font-size: 12.5px;
+  color: #37352f;
+  text-align: center;
+}
+
+.points-input:focus {
+  outline: none;
+  border-color: #9b9a97;
+}
+
 .required-toggle {
   display: flex;
   align-items: center;
@@ -350,4 +379,19 @@
 
 .answer-tag-input:focus {
   outline: none;
+}
+
+/* The footer packs move/image/duplicate/delete/points/required controls into one row —
+   plenty of room on desktop, but they don't shrink and blow out narrow viewports. Let both
+   rows wrap instead of forcing a single unbreakable line. */
+@media (max-width: 640px) {
+  .question-footer {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .question-actions {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
 }

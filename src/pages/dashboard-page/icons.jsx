@@ -166,4 +166,19 @@ export const Icons = {
       <path d="M5 16v2.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V16" />
     </>
   ),
+
+  upload: makeIcon(
+    <>
+      <path d="M12 15V4" />
+      <path d="M8 8l4-4 4 4" />
+      <path d="M5 16v2.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V16" />
+    </>
+  ),
+
+  pencil: makeIcon(
+    <>
+      <path d="M15 4.5l4.5 4.5L8 20.5H3.5V16Z" />
+      <path d="M13 6.5l4.5 4.5" />
+    </>
+  ),
 };

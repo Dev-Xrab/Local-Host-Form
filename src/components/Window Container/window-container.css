@@ -19,6 +19,13 @@
   justify-content: center;
 }
 
+.role-page-wrapper-centered {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 40px 16px;
+  align-items: center;
+}
+
 .role-page-topbar {
   height: 42px;
 

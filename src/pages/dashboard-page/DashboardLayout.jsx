@@ -1,10 +1,11 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import useAuthStore, { useAuthActions } from "../../../store/useAuthStore";
 import { Icons } from "./icons";
 import "./dashboard-page.css";
 
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard", icon: "grid", end: true },
-  { to: "/dashboard/quizzes", label: "Quizzes", icon: "clipboard" },
+  { to: "/dashboard/sessions", label: "Sessions", icon: "clipboard" },
   { to: "/dashboard/subjects", label: "Subjects", icon: "book" },
   { to: "/dashboard/forms", label: "Forms", icon: "fileText" },
   { to: "/dashboard/export", label: "Bulk Export", icon: "download" },
@@ -13,6 +14,17 @@ const NAV_ITEMS = [
 ];
 
 export default function DashboardLayout() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { logout } = useAuthActions();
+  const hasRecoveryQuestion = useAuthStore((s) => s.hasRecoveryQuestion);
+  const onSettingsPage = location.pathname === "/dashboard/settings";
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/host/login");
+  };
+
   return (
     <div className="dash">
       <aside className="dash-nav">
@@ -38,13 +50,22 @@ export default function DashboardLayout() {
           })}
         </nav>
 
-        <button type="button" className="dash-nav-logout">
+        <button type="button" className="dash-nav-logout" onClick={handleLogout}>
           <Icons.logout className="dash-nav-item-icon" />
           Logout
         </button>
       </aside>
 
       <main className="dash-main">
+        {!hasRecoveryQuestion && !onSettingsPage && (
+          <div className="dash-recovery-banner">
+            <span>
+              You haven't set a recovery question yet — without one, a forgotten password can't
+              be reset.
+            </span>
+            <NavLink to="/dashboard/settings">Set it up</NavLink>
+          </div>
+        )}
         <Outlet />
       </main>
     </div>

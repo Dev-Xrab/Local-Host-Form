@@ -29,6 +29,7 @@ const FIELD_COMPONENTS = {
 
 const TYPE_ICON = Object.fromEntries(QUESTION_TYPES.map((t) => [t.id, t.icon]));
 const TYPE_LABEL = Object.fromEntries(QUESTION_TYPES.map((t) => [t.id, t.label]));
+const GRADABLE_TYPES = new Set(["short_answer", "paragraph", "multiple_choice", "checkboxes", "dropdown"]);
 
 export default function Question({ question, index, isFirst, isLast }) {
   const mode = useFormStore((s) => s.mode);
@@ -212,6 +213,25 @@ export default function Question({ question, index, isFirst, isLast }) {
           >
             <Icons.trash />
           </button>
+
+          {GRADABLE_TYPES.has(question.type) && (
+            <>
+              <span className="question-divider" />
+              <label className="points-input-label">
+                Points
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  className="points-input"
+                  value={question.points ?? 1}
+                  onChange={(e) =>
+                    updateQuestion(question.id, { points: Math.max(0, Number(e.target.value) || 0) })
+                  }
+                />
+              </label>
+            </>
+          )}
 
           <span className="question-divider" />
 

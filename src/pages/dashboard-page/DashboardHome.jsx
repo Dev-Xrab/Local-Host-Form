@@ -1,17 +1,28 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import useDashboardStore from "../../../store/useDashboardStore";
+import { useForms } from "../../features/forms/hooks/useForms";
+import { useSubjects } from "../../features/subjects/hooks/useSubjects";
+import { useSessions } from "../../features/sessions/hooks/useSessions";
 import { Icons } from "./icons";
 import { Monogram, initial } from "./Monogram";
+import "../../features/sessions/components/session.css";
 
 export default function DashboardHome() {
-  const quizzes = useDashboardStore((s) => s.quizzes);
-  const subjects = useDashboardStore((s) => s.subjects);
-  const forms = useDashboardStore((s) => s.forms);
-  const stats = useDashboardStore((s) => s.stats);
+  const { forms } = useForms();
+  const { subjects } = useSubjects();
+  const { sessions, refresh } = useSessions();
 
-  const [serverAddress] = useState("http://localhost:5174");
+  // The app is served by the same Express process students hit, so the page's own origin
+  // *is* the address to share — this stays correct however the host reaches it (a LAN IP,
+  // a custom PORT, etc.), unlike a hardcoded "localhost:5174" which only ever describes
+  // one specific dev setup and is unreachable from another device on the network.
+  const [serverAddress] = useState(window.location.origin);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(refresh, 5000);
+    return () => clearInterval(interval);
+  }, [refresh]);
 
   const handleCopy = () => {
     navigator.clipboard?.writeText(serverAddress).catch(() => {});
@@ -19,10 +30,14 @@ export default function DashboardHome() {
     setTimeout(() => setCopied(false), 1500);
   };
 
+  const activeSessions = sessions.filter((s) => s.status === "active");
+  const endedSessions = sessions.filter((s) => s.status === "ended");
+  const studentsInProgress = activeSessions.reduce((sum, s) => sum + s.inProgressCount, 0);
+
   const STATS = [
-    { label: "Draft Quizzes", value: stats.draftQuizzes, icon: "fileText" },
-    { label: "Recorded Quizzes", value: stats.recordedQuizzes, icon: "clipboard" },
-    { label: "Subjects Handled", value: stats.subjectsHandled, icon: "book" },
+    { label: "Forms", value: forms.length, icon: "fileText" },
+    { label: "Ended Sessions", value: endedSessions.length, icon: "clipboard" },
+    { label: "Subjects", value: subjects.length, icon: "book" },
   ];
 
   return (
@@ -30,7 +45,7 @@ export default function DashboardHome() {
       <header className="dash-header">
         <span className="dash-eyebrow">Admin</span>
         <h1 className="dash-title">Dashboard</h1>
-        <p className="dash-subtitle">Manage quizzes, subjects, and forms from one place.</p>
+        <p className="dash-subtitle">Manage sessions, subjects, and forms from one place.</p>
       </header>
 
       <div className="dash-content">
@@ -57,11 +72,11 @@ export default function DashboardHome() {
 
             <div className="server-stats">
               <div className="server-stat">
-                <span className="server-stat-value">1</span>
-                <span className="server-stat-label">Quizzes Running</span>
+                <span className="server-stat-value">{activeSessions.length}</span>
+                <span className="server-stat-label">Sessions Running</span>
               </div>
               <div className="server-stat">
-                <span className="server-stat-value">0</span>
+                <span className="server-stat-value">{studentsInProgress}</span>
                 <span className="server-stat-label">Students Connected</span>
               </div>
             </div>
@@ -70,48 +85,43 @@ export default function DashboardHome() {
           <div className="dash-card quiz-table-card">
             <div className="quiz-table-top">
               <div>
-                <span className="quiz-table-title">Live Quizzes</span>
-                <span className="quiz-table-subtitle">{quizzes.length} quizzes currently running</span>
+                <span className="quiz-table-title">Live Sessions</span>
+                <span className="quiz-table-subtitle">{activeSessions.length} sessions currently running</span>
               </div>
-              <Link to="/dashboard/quizzes" className="dash-view-all">
+              <Link to="/dashboard/sessions" className="dash-view-all">
                 View all
                 <Icons.arrowRight className="quiz-open-icon" />
               </Link>
             </div>
 
-            <div className="quiz-table-header">
-              <span>Quiz</span>
-              <span>Students</span>
-              <span className="quiz-col-allotted">Time Allotted</span>
-              <span>Time Remaining</span>
+            <div className="quiz-table-header dash-live-session-row">
+              <span>Session</span>
+              <span>Respondents</span>
+              <span className="quiz-col-allotted">Time Limit</span>
               <span />
             </div>
 
             <div className="quiz-table-body">
-              {quizzes.map((quiz) => (
-                <div className="quiz-row" key={quiz.id}>
+              {activeSessions.length === 0 && <p className="dash-empty">No sessions running.</p>}
+              {activeSessions.map((session) => (
+                <div className="quiz-row dash-live-session-row" key={session.id}>
                   <div className="quiz-name-cell">
-                    <Monogram label={initial(quiz.name)} size={32} />
+                    <Monogram label={initial(session.name || session.formTitle)} size={32} />
                     <div className="quiz-name-text">
-                      <span className="quiz-name">{quiz.name}</span>
-                      <span className="quiz-code">{quiz.code}</span>
+                      <span className="quiz-name">{session.name || "Untitled session"}</span>
+                      <span className="quiz-code">{session.code}</span>
                     </div>
                   </div>
 
                   <span className="quiz-students">
-                    {quiz.students} / {quiz.capacity}
+                    {session.submittedCount + session.inProgressCount} joined
                   </span>
 
-                  <span className="quiz-time-allotted">{quiz.timeAllotted} min</span>
+                  <span className="quiz-time-allotted">
+                    {session.durationMinutes ? `${session.durationMinutes} min` : "No limit"}
+                  </span>
 
-                  <div className="quiz-time-remaining">
-                    <span className="quiz-time-pill">{quiz.timeRemaining}</span>
-                    <div className="quiz-progress-track">
-                      <div className="quiz-progress-fill" style={{ width: `${quiz.progress}%` }} />
-                    </div>
-                  </div>
-
-                  <Link to={`/dashboard/quizzes/${quiz.id}`} className="quiz-open-btn">
+                  <Link to={`/dashboard/sessions/${session.id}`} className="quiz-open-btn">
                     Open
                     <Icons.arrowRight className="quiz-open-icon" />
                   </Link>
@@ -148,14 +158,15 @@ export default function DashboardHome() {
           </div>
 
           <div className="dash-card-grid">
+            {subjects.length === 0 && <p className="dash-empty">No subjects yet.</p>}
             {subjects.slice(0, 3).map((subject) => (
-              <div className="dash-item-card" key={subject.id}>
+              <Link className="dash-item-card dash-item-card-link" key={subject.id} to={`/dashboard/subjects/${subject.id}`}>
                 <Monogram label={initial(subject.name)} />
                 <span className="dash-item-title">{subject.name}</span>
                 {subject.code && <span className="dash-item-subtitle">{subject.code}</span>}
                 <span className="dash-item-divider" />
                 <span className="dash-item-meta">Form Count: {subject.formCount}</span>
-              </div>
+              </Link>
             ))}
           </div>
         </section>
@@ -170,13 +181,16 @@ export default function DashboardHome() {
           </div>
 
           <div className="dash-card-grid">
+            {forms.length === 0 && <p className="dash-empty">No forms yet.</p>}
             {forms.slice(0, 4).map((form) => (
-              <div className="dash-item-card" key={form.id}>
+              <Link className="dash-item-card dash-item-card-link" key={form.id} to={`/forms/${form.id}`}>
                 <Monogram label={<Icons.fileText />} />
-                <span className="dash-item-title">{form.name}</span>
+                <span className="dash-item-title">{form.title || "Untitled form"}</span>
                 <span className="dash-item-divider" />
-                <span className="dash-item-meta">{form.description}</span>
-              </div>
+                <span className="dash-item-meta">
+                  {form.questionCount} question{form.questionCount === 1 ? "" : "s"}
+                </span>
+              </Link>
             ))}
           </div>
         </section>

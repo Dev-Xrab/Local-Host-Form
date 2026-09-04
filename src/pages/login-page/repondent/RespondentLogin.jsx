@@ -1,40 +1,56 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { responsesApi } from "../../../features/responses/services/responsesApi";
+import { getDeviceId } from "../../../features/responses/utils/deviceId";
 import "./respondent-login.css";
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const NAME_STORAGE_KEY = "stonearch_respondent_name";
 
 export default function RespondentLogin() {
   const navigate = useNavigate();
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState(() => {
+    try {
+      return localStorage.getItem(NAME_STORAGE_KEY) || "";
+    } catch {
+      return "";
+    }
+  });
+  const [sessionCode, setSessionCode] = useState("");
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
 
   function validate() {
     const nextErrors = {};
-
-    if (!name.trim()) {
-      nextErrors.name = "Name is required";
-    }
-
-    if (!email.trim()) {
-      nextErrors.email = "Email is required";
-    } else if (!EMAIL_PATTERN.test(email.trim())) {
-      nextErrors.email = "Enter a valid email address";
-    }
-
+    if (!identifier.trim()) nextErrors.identifier = "Identifier is required";
+    if (!sessionCode.trim()) nextErrors.sessionCode = "Session code is required";
     return nextErrors;
   }
 
-  function handleSubmit(e) {
+  // This one page does what used to take three: enter an identifier, enter the
+  // session code, and join — instead of a separate code-entry page followed by
+  // RespondForm asking for a name again, we join directly here and land on the
+  // form already answering (RespondForm resolves the rest via this same device id).
+  async function handleSubmit(e) {
     e.preventDefault();
-
     const nextErrors = validate();
     setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
 
-    if (Object.keys(nextErrors).length === 0) {
-      navigate("/form");
+    const code = sessionCode.trim().toUpperCase();
+    setSubmitting(true);
+    try {
+      await responsesApi.join(code, { name: identifier.trim(), deviceId: getDeviceId() });
+      try {
+        localStorage.setItem(NAME_STORAGE_KEY, identifier.trim());
+      } catch {
+        // best-effort convenience only
+      }
+      navigate(`/s/${code}`);
+    } catch (err) {
+      setErrors({ sessionCode: err.message });
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -47,47 +63,48 @@ export default function RespondentLogin() {
 
       <form className="respondent-login-form" onSubmit={handleSubmit} noValidate>
         <div className="respondent-login-field">
-          <label htmlFor="respondent-name">
-            Name <span className="required-mark">*</span>
+          <label htmlFor="respondent-identifier">
+            Identifier <span className="required-mark">*</span>
           </label>
           <input
-            id="respondent-name"
+            id="respondent-identifier"
             type="text"
             autoComplete="name"
-            placeholder="Jane Doe"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            aria-invalid={!!errors.name}
+            placeholder="Name, Email, or N/A"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            aria-invalid={!!errors.identifier}
             aria-required="true"
-            className={errors.name ? "input-error" : ""}
+            className={errors.identifier ? "input-error" : ""}
           />
-          {errors.name && (
-            <span className="respondent-login-error">{errors.name}</span>
+          {errors.identifier && (
+            <span className="respondent-login-error">{errors.identifier}</span>
           )}
         </div>
 
         <div className="respondent-login-field">
-          <label htmlFor="respondent-email">
-            Email <span className="required-mark">*</span>
+          <label htmlFor="respondent-session-code">
+            Session Code <span className="required-mark">*</span>
           </label>
           <input
-            id="respondent-email"
-            type="email"
-            autoComplete="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            aria-invalid={!!errors.email}
+            id="respondent-session-code"
+            type="text"
+            autoComplete="off"
+            placeholder="e.g. AB12CD"
+            value={sessionCode}
+            onChange={(e) => setSessionCode(e.target.value.toUpperCase())}
+            aria-invalid={!!errors.sessionCode}
             aria-required="true"
-            className={errors.email ? "input-error" : ""}
+            className={errors.sessionCode ? "input-error" : ""}
+            maxLength={8}
           />
-          {errors.email && (
-            <span className="respondent-login-error">{errors.email}</span>
+          {errors.sessionCode && (
+            <span className="respondent-login-error">{errors.sessionCode}</span>
           )}
         </div>
 
-        <button type="submit" className="respondent-login-submit">
-          Continue
+        <button type="submit" className="respondent-login-submit" disabled={submitting}>
+          {submitting ? "Joining…" : "Continue"}
         </button>
       </form>
 

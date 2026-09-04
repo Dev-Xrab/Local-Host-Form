@@ -1,77 +1,61 @@
-import { useLocation } from "react-router-dom"
-import FormInfo from "../../components/FormComponents/FormInfo/FormInfo"
-import Sidebar from "../../components/FormComponents/Sidebar/Sidebar"
-import Question from "../../components/FormComponents/Question/Question"
-import Section from "../../components/FormComponents/Section/Section"
-import WindowContainer from "../../components/Window Container/WindowContainer"
-import SessionsPage from "./SessionsPage"
-import SettingsPage from "./SettingsPage"
-import useFormStore from "../../../store/useFormStore"
-import "./form-page.css"
+import { useEffect, useState } from "react";
+import { useParams, Outlet } from "react-router-dom";
+import Sidebar from "../../components/FormComponents/Sidebar/Sidebar";
+import useFormStore, { useFormActions } from "../../../store/useFormStore";
+import { formsApi } from "../../features/forms/services/formsApi";
+import "./form-page.css";
 
-export default function FormPage(){
-    const questions = useFormStore((s) => s.questions);
-    const location = useLocation();
+export default function FormPage() {
+  const { formId } = useParams();
+  const loadedFormId = useFormStore((s) => s.formId);
+  const { loadForm } = useFormActions();
 
-    const getPageContent = () => {
-        const pathname = location.pathname;
+  const [status, setStatus] = useState("loading"); // loading | ready | error
+  const [error, setError] = useState(null);
 
-        if (pathname === "/sessions") {
-            return <SessionsPage />;
-        } else if (pathname === "/settings") {
-            return <SettingsPage />;
-        } else {
-            return (
-                <div className="page-form-column">
-                    <WindowContainer component={<FormInfo/>} navigationpath="Form Info"/>
+  useEffect(() => {
+    let cancelled = false;
+    setStatus("loading");
+    setError(null);
 
-                    {(() => {
-                        let questionNumber = 0;
-                        return questions.map((question, index) => {
-                            const isFirst = index === 0;
-                            const isLast = index === questions.length - 1;
+    formsApi
+      .get(formId)
+      .then((form) => {
+        if (cancelled) return;
+        loadForm(form);
+        setStatus("ready");
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err.status === 404 ? "This form doesn't exist." : err.message);
+        setStatus("error");
+      });
 
-                            if (question.type === "section") {
-                                return (
-                                    <Section
-                                        key={question.id}
-                                        section={question}
-                                        isFirst={isFirst}
-                                        isLast={isLast}
-                                    />
-                                );
-                            }
-
-                            questionNumber += 1;
-                            return (
-                                <Question
-                                    key={question.id}
-                                    question={question}
-                                    index={questionNumber - 1}
-                                    isFirst={isFirst}
-                                    isLast={isLast}
-                                />
-                            );
-                        });
-                    })()}
-
-                    {questions.length === 0 && (
-                        <p className="page-form-empty-hint">
-                            Use the sidebar to add your first question.
-                        </p>
-                    )}
-                </div>
-            );
-        }
+    return () => {
+      cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formId]);
 
-    return(
-        <div className="form-page">
-            <Sidebar/>
+  if (status === "loading") {
+    return <div className="form-page-message">Loading form…</div>;
+  }
 
-            <div className="page-form-content">
-                {getPageContent()}
-            </div>
-        </div>
-    )
+  if (status === "error") {
+    return <div className="form-page-message form-page-message-error">{error}</div>;
+  }
+
+  if (loadedFormId !== formId) {
+    // Guards a render between the fetch resolving and the store finishing its update.
+    return <div className="form-page-message">Loading form…</div>;
+  }
+
+  return (
+    <div className="form-page">
+      <Sidebar />
+      <div className="page-form-content">
+        <Outlet />
+      </div>
+    </div>
+  );
 }

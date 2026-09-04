@@ -1,38 +1,45 @@
-import { NavLink } from "react-router-dom";
+import { Link, NavLink, useParams } from "react-router-dom";
 import useFormStore, { useFormActions } from "../../../../store/useFormStore";
 import { QUESTION_TYPES } from "../questionTypes";
 import { Icons } from "../icons";
 import "./sidebar.css";
 
-const NAV_ITEMS = [
-  { to: "/form", label: "Questions" },
-  { to: "/sessions", label: "Sessions" },
-  { to: "/settings", label: "Settings" },
-];
-
 const scrollToQuestion = (id) => {
   document.getElementById(`question-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
 };
 
+const SAVE_LABEL = {
+  idle: "Save",
+  saving: "Saving…",
+  saved: "Saved",
+  error: "Retry save",
+};
+
 export default function Sidebar() {
+  const { formId } = useParams();
   const questions = useFormStore((s) => s.questions);
   const mode = useFormStore((s) => s.mode);
-  const { addQuestion, addSection, setMode } = useFormActions();
+  const saveStatus = useFormStore((s) => s.saveStatus);
+  const saveError = useFormStore((s) => s.saveError);
+  const recalculatedResponses = useFormStore((s) => s.recalculatedResponses);
+  const { addQuestion, addSection, setMode, saveForm } = useFormActions();
+
+  const NAV_ITEMS = [
+    { to: `/forms/${formId}`, label: "Questions", end: true },
+    { to: `/forms/${formId}/settings`, label: "Settings" },
+  ];
 
   const handleAdd = (type) => {
     addQuestion(type);
   };
 
-  const handleSave = () => {
-    console.log("Saved");
-  };
-
   return (
     <aside className="form-sidebar">
       <div className="form-sidebar-scroll">
-        <div className="form-sidebar-brand">
+        <Link to="/dashboard/forms" className="form-sidebar-brand form-sidebar-brand-link" title="Back to Forms">
+          <Icons.arrowLeft className="form-sidebar-back-icon" />
           StoneArch
-        </div>
+        </Link>
 
         <div className="form-sidebar-mode-toggle">
           <button
@@ -52,10 +59,11 @@ export default function Sidebar() {
         </div>
 
         <nav className="form-sidebar-nav">
-          {NAV_ITEMS.map(({ to, label }) => (
+          {NAV_ITEMS.map(({ to, label, end }) => (
             <NavLink
               key={to}
               to={to}
+              end={end}
               className={({ isActive }) =>
                 `form-sidebar-nav-item ${isActive ? "form-sidebar-nav-item-active" : ""}`
               }
@@ -139,8 +147,23 @@ export default function Sidebar() {
       </div>
 
       <div className="form-sidebar-footer">
-        <button type="button" className="form-sidebar-save" onClick={handleSave}>
-          Save
+        {saveStatus === "error" && (
+          <span className="form-sidebar-save-error" title={saveError}>
+            Couldn't save — check the server.
+          </span>
+        )}
+        {saveStatus === "saved" && recalculatedResponses > 0 && (
+          <span className="form-sidebar-save-note">
+            Rescored {recalculatedResponses} existing response{recalculatedResponses === 1 ? "" : "s"}.
+          </span>
+        )}
+        <button
+          type="button"
+          className="form-sidebar-save"
+          onClick={saveForm}
+          disabled={saveStatus === "saving" || mode === "view"}
+        >
+          {SAVE_LABEL[saveStatus]}
         </button>
       </div>
     </aside>

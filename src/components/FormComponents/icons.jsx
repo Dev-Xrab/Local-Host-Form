@@ -129,6 +129,12 @@ export const Icons = {
   ),
 
   chevronUp: makeIcon(<path d="M6 15l6-6 6 6" />),
+  arrowLeft: makeIcon(
+    <>
+      <line x1="19" y1="12" x2="5" y2="12" />
+      <path d="M11 6l-6 6 6 6" />
+    </>
+  ),
   chevronDown: makeIcon(<path d="M6 9l6 6 6-6" />),
 
   check: makeIcon(<path d="M5 13l4 4L19 7" />),

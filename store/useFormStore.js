@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { formsApi } from '../src/features/forms/services/formsApi';
 
 const OPTION_TYPES = new Set(["multiple_choice", "checkboxes", "dropdown"]);
 
@@ -7,10 +8,6 @@ const nextId = () =>
   typeof crypto !== "undefined" && crypto.randomUUID
     ? crypto.randomUUID()
     : `question-${Date.now()}-${fallbackId++}`;
-
-const SESSION_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-const nextSessionCode = () =>
-  Array.from({ length: 6 }, () => SESSION_CODE_CHARS[Math.floor(Math.random() * SESSION_CODE_CHARS.length)]).join("");
 
 const createQuestion = (type) => ({
   id: nextId(),
@@ -25,6 +22,7 @@ const createQuestion = (type) => ({
   imageUrl: null,
   correctAnswerIndex: [],
   correctAnswers: [],
+  points: 1,
 });
 
 const createSection = () => ({
@@ -34,36 +32,85 @@ const createSection = () => ({
   description: "",
 });
 
-const useFormStore = create((set) => ({
+// Timer/session-code policy now lives on the session itself, not the form — a form only
+// carries grading-disclosure and retake policy.
+const DEFAULT_FORM_SETTINGS = {
+  allowMultipleResponses: false,
+  showScoreImmediately: true,
+  revealCorrectAnswers: false,
+};
+
+const useFormStore = create((set, get) => ({
   // 1. Raw State
+  formId: null,
   questions: [],
   mode: "edit",
-  sessions: [],
   formTitle: "",
   formDescription: "",
-  formSettings: {
-    requireSessionCode: true,
-    allowMultipleResponses: false,
-    timerEnabled: false,
-    timerMinutes: 30,
-    showScoreImmediately: true,
-    revealCorrectAnswers: false,
-  },
+  subjectId: null,
+  formSettings: DEFAULT_FORM_SETTINGS,
+  saveStatus: "idle", // idle | saving | saved | error
+  saveError: null,
+  recalculatedResponses: 0,
 
   // 2. Grouped Actions (Cleaner to import and call in components)
   actions: {
-    addQuestion: (type) =>
-      set((state) => ({ questions: [...state.questions, createQuestion(type)] })),
+    loadForm: (form) =>
+      set({
+        formId: form.id,
+        formTitle: form.title,
+        formDescription: form.description,
+        subjectId: form.subjectId ?? null,
+        formSettings: { ...DEFAULT_FORM_SETTINGS, ...form.settings },
+        questions: form.questions,
+        mode: "edit",
+        saveStatus: "idle",
+        saveError: null,
+        recalculatedResponses: 0,
+      }),
 
-    addSection: () =>
-      set((state) => ({ questions: [...state.questions, createSection()] })),
+    setSubjectId: (subjectId) => {
+      if (get().mode === "view") return;
+      set({ subjectId });
+    },
 
-    updateQuestion: (id, patch) =>
+    saveForm: async () => {
+      const { formId, formTitle, formDescription, formSettings, questions, subjectId, mode } = get();
+      if (!formId || mode === "view") return;
+      set({ saveStatus: "saving", saveError: null });
+      try {
+        const saved = await formsApi.update(formId, {
+          title: formTitle,
+          description: formDescription,
+          settings: formSettings,
+          questions,
+          subjectId,
+        });
+        set({ saveStatus: "saved", recalculatedResponses: saved.recalculatedResponses || 0 });
+      } catch (err) {
+        set({ saveStatus: "error", saveError: err.message });
+      }
+    },
+
+    addQuestion: (type) => {
+      if (get().mode === "view") return;
+      set((state) => ({ questions: [...state.questions, createQuestion(type)] }));
+    },
+
+    addSection: () => {
+      if (get().mode === "view") return;
+      set((state) => ({ questions: [...state.questions, createSection()] }));
+    },
+
+    updateQuestion: (id, patch) => {
+      if (get().mode === "view") return;
       set((state) => ({
         questions: state.questions.map((q) => (q.id === id ? { ...q, ...patch } : q)),
-      })),
+      }));
+    },
 
-    changeQuestionType: (id, type) =>
+    changeQuestionType: (id, type) => {
+      if (get().mode === "view") return;
       set((state) => ({
         questions: state.questions.map((q) => {
           if (q.id !== id) return q;
@@ -80,12 +127,16 @@ const useFormStore = create((set) => ({
             correctAnswers: ["short_answer", "paragraph"].includes(type) ? q.correctAnswers : [],
           };
         }),
-      })),
+      }));
+    },
 
-    deleteQuestion: (id) =>
-      set((state) => ({ questions: state.questions.filter((q) => q.id !== id) })),
+    deleteQuestion: (id) => {
+      if (get().mode === "view") return;
+      set((state) => ({ questions: state.questions.filter((q) => q.id !== id) }));
+    },
 
-    duplicateQuestion: (id) =>
+    duplicateQuestion: (id) => {
+      if (get().mode === "view") return;
       set((state) => {
         const index = state.questions.findIndex((q) => q.id === id);
         if (index === -1) return state;
@@ -93,9 +144,11 @@ const useFormStore = create((set) => ({
         const questions = [...state.questions];
         questions.splice(index + 1, 0, copy);
         return { questions };
-      }),
+      });
+    },
 
-    moveQuestion: (id, direction) =>
+    moveQuestion: (id, direction) => {
+      if (get().mode === "view") return;
       set((state) => {
         const index = state.questions.findIndex((q) => q.id === id);
         const target = index + direction;
@@ -103,25 +156,31 @@ const useFormStore = create((set) => ({
         const questions = [...state.questions];
         [questions[index], questions[target]] = [questions[target], questions[index]];
         return { questions };
-      }),
+      });
+    },
 
-    addOption: (id) =>
+    addOption: (id) => {
+      if (get().mode === "view") return;
       set((state) => ({
         questions: state.questions.map((q) =>
           q.id === id ? { ...q, options: [...q.options, `Option ${q.options.length + 1}`] } : q
         ),
-      })),
+      }));
+    },
 
-    updateOption: (id, index, value) =>
+    updateOption: (id, index, value) => {
+      if (get().mode === "view") return;
       set((state) => ({
         questions: state.questions.map((q) =>
           q.id === id
             ? { ...q, options: q.options.map((opt, i) => (i === index ? value : opt)) }
             : q
         ),
-      })),
+      }));
+    },
 
-    removeOption: (id, index) =>
+    removeOption: (id, index) => {
+      if (get().mode === "view") return;
       set((state) => ({
         questions: state.questions.map((q) => {
           if (q.id !== id) return q;
@@ -134,16 +193,20 @@ const useFormStore = create((set) => ({
             correctAnswerIndex,
           };
         }),
-      })),
+      }));
+    },
 
-    updateScale: (id, patch) =>
+    updateScale: (id, patch) => {
+      if (get().mode === "view") return;
       set((state) => ({
         questions: state.questions.map((q) =>
           q.id === id ? { ...q, scale: { ...q.scale, ...patch } } : q
         ),
-      })),
+      }));
+    },
 
-    toggleCorrectAnswer: (id, optionIndex) =>
+    toggleCorrectAnswer: (id, optionIndex) => {
+      if (get().mode === "view") return;
       set((state) => ({
         questions: state.questions.map((q) => {
           if (q.id !== id) return q;
@@ -160,9 +223,11 @@ const useFormStore = create((set) => ({
             : [...correctIndices, optionIndex];
           return { ...q, correctAnswerIndex: nextIndices };
         }),
-      })),
+      }));
+    },
 
-    addCorrectAnswerVariation: (id, variation) =>
+    addCorrectAnswerVariation: (id, variation) => {
+      if (get().mode === "view") return;
       set((state) => ({
         questions: state.questions.map((q) => {
           if (q.id !== id) return q;
@@ -172,9 +237,11 @@ const useFormStore = create((set) => ({
           }
           return { ...q, correctAnswers: variations };
         }),
-      })),
+      }));
+    },
 
-    removeCorrectAnswerVariation: (id, index) =>
+    removeCorrectAnswerVariation: (id, index) => {
+      if (get().mode === "view") return;
       set((state) => ({
         questions: state.questions.map((q) => {
           if (q.id !== id) return q;
@@ -182,47 +249,25 @@ const useFormStore = create((set) => ({
           variations.splice(index, 1);
           return { ...q, correctAnswers: variations };
         }),
-      })),
+      }));
+    },
 
     setMode: (mode) => set({ mode }),
 
-    setFormTitle: (formTitle) => set({ formTitle }),
+    setFormTitle: (formTitle) => {
+      if (get().mode === "view") return;
+      set({ formTitle });
+    },
 
-    setFormDescription: (formDescription) => set({ formDescription }),
+    setFormDescription: (formDescription) => {
+      if (get().mode === "view") return;
+      set({ formDescription });
+    },
 
-    updateFormSettings: (patch) =>
-      set((state) => ({ formSettings: { ...state.formSettings, ...patch } })),
-
-    startSession: () =>
-      set((state) => {
-        const existingCodes = new Set(state.sessions.map((s) => s.code));
-        let code = nextSessionCode();
-        while (existingCodes.has(code)) code = nextSessionCode();
-
-        const session = {
-          id: nextId(),
-          code,
-          status: "active",
-          startedAt: new Date().toISOString(),
-          endedAt: null,
-          responses: [],
-        };
-        return { sessions: [...state.sessions, session] };
-      }),
-
-    endSession: (id) =>
-      set((state) => ({
-        sessions: state.sessions.map((s) =>
-          s.id === id && s.status === "active"
-            ? { ...s, status: "ended", endedAt: new Date().toISOString() }
-            : s
-        ),
-      })),
-
-    deleteSession: (id) =>
-      set((state) => ({
-        sessions: state.sessions.filter((s) => s.id !== id),
-      })),
+    updateFormSettings: (patch) => {
+      if (get().mode === "view") return;
+      set((state) => ({ formSettings: { ...state.formSettings, ...patch } }));
+    },
   },
 }));
 

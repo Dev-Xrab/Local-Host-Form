@@ -1,153 +1,200 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
-import useDashboardStore, { useDashboardActions } from "../../../store/useDashboardStore";
+import { useSessions } from "../../features/sessions/hooks/useSessions";
+import { sessionsApi } from "../../features/sessions/services/sessionsApi";
+import { useRoster, matchStudentByName } from "../../features/roster/hooks/useRoster";
+import RosterManager from "../../features/roster/components/RosterManager";
 import { Icons } from "./icons";
 import PageHeader from "./PageHeader";
-
-let fallbackId = 0;
-const nextId = () =>
-  typeof crypto !== "undefined" && crypto.randomUUID
-    ? crypto.randomUUID()
-    : `col-${Date.now()}-${fallbackId++}`;
-
-const parseRoster = (text) =>
-  text
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [name = "", email = "", studentId = ""] = line.split(",").map((s) => s.trim());
-      return { id: nextId(), name, email, studentId };
-    });
-
-const rosterToText = (students) =>
-  students.map((s) => [s.name, s.email, s.studentId].join(", ")).join("\n");
-
-const scoreFor = (student, quiz) => {
-  if (!quiz) return null;
-  const match = (quiz.participants || []).find(
-    (p) =>
-      (student.studentId && p.studentId && student.studentId === p.studentId) ||
-      (student.email && p.email && student.email.toLowerCase() === p.email.toLowerCase())
-  );
-  return match?.score ?? 0;
-};
 
 const average = (values) => {
   if (values.length === 0) return null;
   return Math.round((values.reduce((sum, v) => sum + v, 0) / values.length) * 10) / 10;
 };
 
-const quizLabel = (quiz) => (quiz ? `${quiz.code} — ${quiz.name}` : "");
+const percentage = (score, max) => (max ? Math.round((score / max) * 1000) / 10 : null);
 
-const exportGradebook = (students, columns, quizzes) => {
-  const rows = students.map((student) => {
-    const row = {
-      Name: student.name,
-      Email: student.email,
-      "Student ID": student.studentId,
-    };
-
-    const columnScores = [];
-    columns.forEach((col) => {
-      const quiz = quizzes.find((q) => String(q.id) === String(col.quizId));
-      const score = scoreFor(student, quiz);
-      row[quiz ? quizLabel(quiz) : "Unassigned column"] = score ?? "";
-      if (score != null) columnScores.push(score);
+function exportGradebook(sessions, rows) {
+  const data = rows.map((row) => {
+    const out = { Respondent: row.name };
+    if (row.studentId) out["Student ID"] = row.studentId;
+    sessions.forEach((s) => {
+      const cell = row.scores[s.id];
+      out[s.name || s.formTitle] = cell ? `${cell.score}/${cell.maxScore}` : "";
     });
-
-    row.Average = average(columnScores) ?? "";
-    return row;
+    out.Average = row.averagePct != null ? `${row.averagePct}%` : "";
+    return out;
   });
-
-  const sheet = XLSX.utils.json_to_sheet(rows);
+  const sheet = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, sheet, "Gradebook");
   XLSX.writeFile(wb, `gradebook-${new Date().toISOString().slice(0, 10)}.xlsx`);
-};
+}
 
 export default function GradebookPage() {
-  const students = useDashboardStore((s) => s.students);
-  const quizzes = useDashboardStore((s) => s.quizzes);
-  const { setStudents, removeStudent } = useDashboardActions();
+  const { sessions: allSessions, loading } = useSessions();
+  const endedSessions = allSessions.filter((s) => s.status === "ended");
+  const { students, refresh: refreshRoster } = useRoster();
 
-  const [columns, setColumns] = useState([{ id: nextId(), quizId: "" }]);
-  const [editingRoster, setEditingRoster] = useState(students.length === 0);
-  const [rosterText, setRosterText] = useState("");
+  const [query, setQuery] = useState("");
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [respondentsBySession, setRespondentsBySession] = useState({});
+  const [fetching, setFetching] = useState(false);
+  const [includeNonRoster, setIncludeNonRoster] = useState(false);
 
-  const handleImport = () => {
-    setStudents(parseRoster(rosterText));
-    setRosterText("");
-    setEditingRoster(false);
+  const filteredSessions = endedSessions.filter((s) =>
+    `${s.name || ""} ${s.formTitle || ""}`.toLowerCase().includes(query.toLowerCase())
+  );
+  const selectedSessions = endedSessions.filter((s) => selectedIds.includes(s.id));
+
+  useEffect(() => {
+    if (selectedIds.length === 0) return;
+    setFetching(true);
+    Promise.all(selectedIds.map((id) => sessionsApi.respondents(id).then((r) => [id, r])))
+      .then((pairs) => setRespondentsBySession(Object.fromEntries(pairs)))
+      .finally(() => setFetching(false));
+  }, [selectedIds]);
+
+  const toggleSession = (id) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
-  const handleEditRoster = () => {
-    setRosterText(rosterToText(students));
-    setEditingRoster(true);
-  };
+  // One row per distinct student across the selected sessions. A respondent's typed
+  // name is first resolved against the roster (by exact name or alias) so that e.g.
+  // "Jon" and "Jonathan D." from different sessions land in the same row; anyone not
+  // on the roster still gets their own row, keyed by whatever name they typed.
+  //
+  // Every roster student gets a row even if they never submitted anything — a roster
+  // student is a known, expected participant, so a session they skipped counts as a
+  // 0 (out of that session's max), not a blank. Non-roster respondents don't get that
+  // treatment since they're not a known/expected list, just whoever happened to join.
+  const rows = (() => {
+    const byKey = new Map();
+    students.forEach((s) => {
+      byKey.set(`student:${s.id}`, { name: s.name, studentId: s.studentId || "", matched: true, scores: {} });
+    });
 
-  const addColumn = () => setColumns((cols) => [...cols, { id: nextId(), quizId: "" }]);
-  const removeColumn = (id) => setColumns((cols) => cols.filter((c) => c.id !== id));
-  const setColumnQuiz = (id, quizId) =>
-    setColumns((cols) => cols.map((c) => (c.id === id ? { ...c, quizId } : c)));
+    const maxScoreBySession = {};
+    selectedSessions.forEach((session) => {
+      (respondentsBySession[session.id] || [])
+        .filter((r) => r.status === "submitted")
+        .forEach((r) => {
+          const match = matchStudentByName(students, r.respondentName);
+          const key = match ? `student:${match.id}` : `name:${(r.respondentName || "").trim().toLowerCase()}`;
+          if (!key || key === "name:") return;
+          if (!byKey.has(key)) {
+            byKey.set(key, {
+              name: match ? match.name : r.respondentName,
+              studentId: match?.studentId || "",
+              matched: !!match,
+              scores: {},
+            });
+          }
+          byKey.get(key).scores[session.id] = { score: r.score, maxScore: r.maxScore };
+          if (r.maxScore != null) maxScoreBySession[session.id] = r.maxScore;
+        });
+    });
 
-  const hasAssignedColumn = columns.some((c) => c.quizId);
+    byKey.forEach((row) => {
+      if (!row.matched) return;
+      selectedSessions.forEach((session) => {
+        if (row.scores[session.id] || maxScoreBySession[session.id] == null) return;
+        row.scores[session.id] = { score: 0, maxScore: maxScoreBySession[session.id] };
+      });
+    });
+
+    return Array.from(byKey.values())
+      .map((row) => {
+        const pcts = Object.values(row.scores)
+          .map((s) => percentage(s.score, s.maxScore))
+          .filter((p) => p != null);
+        return { ...row, averagePct: average(pcts) };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+  })();
+
+  // With no roster entered, there's nothing to scope to — show/export everyone. Once
+  // students are on the roster, only they appear (both on screen and in the export)
+  // unless the host explicitly opts back in via the toggle.
+  const hasRoster = students.length > 0;
+  const displayRows = hasRoster && !includeNonRoster ? rows.filter((r) => r.matched) : rows;
 
   return (
     <>
       <PageHeader
         eyebrow="Admin"
         title="Gradebook"
-        subtitle="Build a custom score table by matching a student roster against any quizzes."
+        subtitle="Pick ended sessions to see and export respondent scores across them."
       />
 
       <div className="dash-content">
-        {editingRoster ? (
-          <div className="dash-card gradebook-roster-card">
-            <span className="dashboard-card-label">Paste roster</span>
-            <p className="dash-item-meta">One student per line: Name, Email, Student ID</p>
-
-            <textarea
-              className="dash-form-input dash-form-textarea gradebook-roster-input"
-              rows={8}
-              placeholder={"Maria Santos, maria.santos@school.edu, S-1006\nJuan Dela Cruz, juan.delacruz@school.edu, S-2001"}
-              value={rosterText}
-              onChange={(e) => setRosterText(e.target.value)}
-              autoFocus
-            />
-
-            <div className="dash-modal-footer">
-              {students.length > 0 && (
-                <button type="button" className="dash-ghost-btn" onClick={() => setEditingRoster(false)}>
-                  Cancel
-                </button>
-              )}
-              <button type="button" className="dash-primary-btn" onClick={handleImport} disabled={!rosterText.trim()}>
-                Import Roster
-              </button>
-            </div>
+        <div className="dash-card gradebook-roster-card">
+          <span className="dashboard-card-label">Roster</span>
+          <div className="gradebook-roster-panel">
+            <RosterManager students={students} onChanged={refreshRoster} />
           </div>
-        ) : (
+
+          <span className="dashboard-card-label">Sessions</span>
+          <div className="dash-search dash-page-search gradebook-search">
+            <Icons.search className="dash-search-icon" />
+            <input
+              type="text"
+              placeholder="Search sessions..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+
+          {loading ? (
+            <p className="dash-item-meta">Loading sessions…</p>
+          ) : endedSessions.length === 0 ? (
+            <p className="dash-empty">No ended sessions yet — scores appear here once a session ends.</p>
+          ) : filteredSessions.length === 0 ? (
+            <p className="dash-empty">No sessions match "{query}".</p>
+          ) : (
+            <div className="gradebook-session-picker">
+              {filteredSessions.map((s) => (
+                <label className="bulk-checkbox-row" key={s.id}>
+                  <input
+                    type="checkbox"
+                    className="dash-checkbox"
+                    checked={selectedIds.includes(s.id)}
+                    onChange={() => toggleSession(s.id)}
+                  />
+                  <span className="quiz-name">{s.name || "Untitled session"}</span>
+                  <span className="dash-item-meta">{s.formTitle} · {s.submittedCount} submitted</span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {selectedSessions.length > 0 && (
           <>
             <div className="dash-card bulk-export-bar">
               <span className="dash-item-meta">
-                {students.length} student{students.length === 1 ? "" : "s"} · {columns.length} column
-                {columns.length === 1 ? "" : "s"}
+                {displayRows.length} respondent{displayRows.length === 1 ? "" : "s"} across {selectedSessions.length}{" "}
+                session{selectedSessions.length === 1 ? "" : "s"}
               </span>
 
               <div className="bulk-export-bar-actions">
-                <button type="button" className="dash-ghost-btn" onClick={addColumn}>
-                  <Icons.plus />
-                  Add Column
-                </button>
-                <button type="button" className="dash-ghost-btn" onClick={handleEditRoster}>
-                  Edit Roster
-                </button>
+                {hasRoster && (
+                  <label className="gradebook-roster-toggle">
+                    <input
+                      type="checkbox"
+                      className="dash-checkbox"
+                      checked={includeNonRoster}
+                      onChange={(e) => setIncludeNonRoster(e.target.checked)}
+                    />
+                    Include non-roster respondents
+                  </label>
+                )}
+
                 <button
                   type="button"
                   className="dash-primary-btn"
-                  disabled={!hasAssignedColumn}
-                  onClick={() => exportGradebook(students, columns, quizzes)}
+                  disabled={displayRows.length === 0}
+                  onClick={() => exportGradebook(selectedSessions, displayRows)}
                 >
                   <Icons.download />
                   Export
@@ -156,89 +203,49 @@ export default function GradebookPage() {
             </div>
 
             <div className="dash-card gradebook-table-wrap">
-              <table className="gradebook-table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Student ID</th>
-                    {columns.map((col) => (
-                      <th key={col.id} className="gradebook-col-header">
-                        <div className="gradebook-col-header-row">
-                          <select
-                            className="dash-form-input gradebook-col-select"
-                            value={col.quizId}
-                            onChange={(e) => setColumnQuiz(col.id, e.target.value)}
-                          >
-                            <option value="">Select a quiz…</option>
-                            {quizzes.map((q) => (
-                              <option key={q.id} value={q.id}>
-                                {quizLabel(q)}
-                              </option>
-                            ))}
-                          </select>
-                          <button
-                            type="button"
-                            className="icon-btn"
-                            title="Remove column"
-                            onClick={() => removeColumn(col.id)}
-                          >
-                            <Icons.close />
-                          </button>
-                        </div>
-                      </th>
-                    ))}
-                    <th>Average</th>
-                    <th />
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {students.length === 0 ? (
+              {fetching ? (
+                <p className="dash-empty">Loading scores…</p>
+              ) : (
+                <table className="gradebook-table">
+                  <thead>
                     <tr>
-                      <td colSpan={columns.length + 5} className="dash-empty">
-                        No students in the roster.
-                      </td>
+                      <th>Respondent</th>
+                      {selectedSessions.map((s) => (
+                        <th key={s.id}>{s.name || s.formTitle}</th>
+                      ))}
+                      <th>Average</th>
                     </tr>
-                  ) : (
-                    students.map((student) => {
-                      const rowScores = columns
-                        .map((col) => scoreFor(student, quizzes.find((q) => String(q.id) === String(col.quizId))))
-                        .filter((v) => v != null);
-
-                      return (
-                        <tr key={student.id}>
-                          <td>{student.name}</td>
-                          <td className="dash-item-meta">{student.email}</td>
-                          <td className="dash-item-meta">{student.studentId}</td>
-                          {columns.map((col) => {
-                            const quiz = quizzes.find((q) => String(q.id) === String(col.quizId));
-                            const score = scoreFor(student, quiz);
-                            return (
-                              <td key={col.id} className="gradebook-score-cell">
-                                {score ?? "—"}
-                              </td>
-                            );
-                          })}
-                          <td className="gradebook-score-cell gradebook-average-cell">
-                            {average(rowScores) ?? "—"}
-                          </td>
+                  </thead>
+                  <tbody>
+                    {displayRows.length === 0 ? (
+                      <tr>
+                        <td colSpan={selectedSessions.length + 2} className="dash-empty">
+                          {hasRoster && !includeNonRoster
+                            ? "None of the submitted respondents match a student on the roster."
+                            : "No submitted responses in the selected sessions yet."}
+                        </td>
+                      </tr>
+                    ) : (
+                      displayRows.map((row) => (
+                        <tr key={row.matched ? `s-${row.studentId || row.name}` : row.name}>
                           <td>
-                            <button
-                              type="button"
-                              className="icon-btn"
-                              title="Remove student"
-                              onClick={() => removeStudent(student.id)}
-                            >
-                              <Icons.trash />
-                            </button>
+                            {row.name}
+                            {row.matched && <span className="gradebook-roster-badge">Roster</span>}
+                          </td>
+                          {selectedSessions.map((s) => (
+                            <td key={s.id} className="gradebook-score-cell">
+                              {row.scores[s.id] ? `${row.scores[s.id].score}/${row.scores[s.id].maxScore}` : "—"}
+                            </td>
+                          ))}
+                          <td className="gradebook-score-cell gradebook-average-cell">
+                            {row.averagePct != null ? `${row.averagePct}%` : "—"}
                           </td>
                         </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              )}
             </div>
           </>
         )}
