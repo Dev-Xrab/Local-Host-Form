@@ -10,6 +10,8 @@ import "./respond-form.css";
 const NAME_STORAGE_KEY = "stonearch_respondent_name";
 const ANSWERS_STORAGE_PREFIX = "stonearch_respondent_answers_";
 
+const isImageDataUri = (dataUri) => /^data:image\//.test(dataUri || "");
+
 const isEmpty = (question, value) => {
   if (value === undefined || value === null) return true;
   if (question.type === "checkboxes") return !Array.isArray(value) || value.length === 0;
@@ -60,6 +62,12 @@ export default function RespondForm() {
   });
   const [joinError, setJoinError] = useState(null);
   const [joining, setJoining] = useState(false);
+  const [showEditCodeForm, setShowEditCodeForm] = useState(false);
+  const [editCode, setEditCode] = useState("");
+  const [editCodeError, setEditCodeError] = useState(null);
+  const [submittingEditCode, setSubmittingEditCode] = useState(false);
+  const [reopening, setReopening] = useState(false);
+  const [reopenError, setReopenError] = useState(null);
 
   const [responseId, setResponseId] = useState(null);
   const [form, setForm] = useState(null);
@@ -134,7 +142,12 @@ export default function RespondForm() {
     } else {
       setForm(payload.form);
       setDeadlineAt(payload.deadlineAt);
-      setAnswers(loadStoredAnswers(payload.responseId));
+      // A local draft (this device, still mid-attempt) wins if there is one; otherwise fall
+      // back to whatever the server has for this response — the case when editing a
+      // previously-submitted answer, possibly from a different device than the one that
+      // originally submitted it.
+      const stored = loadStoredAnswers(payload.responseId);
+      setAnswers(Object.keys(stored).length > 0 ? stored : payload.answers || {});
       setPageStatus("answering");
     }
   };
@@ -155,6 +168,33 @@ export default function RespondForm() {
       setJoinError(err.message);
     } finally {
       setJoining(false);
+    }
+  };
+
+  const handleEditCodeSubmit = async (e) => {
+    e.preventDefault();
+    setSubmittingEditCode(true);
+    setEditCodeError(null);
+    try {
+      const payload = await responsesApi.join(code, { editCode: editCode.trim(), deviceId: getDeviceId() });
+      applyJoinPayload(payload);
+    } catch (err) {
+      setEditCodeError(err.message);
+    } finally {
+      setSubmittingEditCode(false);
+    }
+  };
+
+  const handleEditFromDone = async () => {
+    setReopening(true);
+    setReopenError(null);
+    try {
+      const payload = await responsesApi.editResponse(responseId, getDeviceId());
+      applyJoinPayload(payload);
+    } catch (err) {
+      setReopenError(err.message);
+    } finally {
+      setReopening(false);
     }
   };
 
@@ -287,6 +327,31 @@ export default function RespondForm() {
             </button>
           </form>
           {joinError && <p className="respond-code-error">{joinError}</p>}
+
+          {sessionInfo.responsesEditable && sessionInfo.status === "active" && (
+            <div className="respond-edit-code-section">
+              {showEditCodeForm ? (
+                <form onSubmit={handleEditCodeSubmit} className="respond-code-form">
+                  <input
+                    type="text"
+                    className="respond-code-input"
+                    placeholder="Your edit code"
+                    value={editCode}
+                    onChange={(e) => setEditCode(e.target.value)}
+                    autoFocus
+                  />
+                  <button type="submit" className="respond-code-submit" disabled={submittingEditCode || !editCode.trim()}>
+                    {submittingEditCode ? "Looking up…" : "Edit my response"}
+                  </button>
+                </form>
+              ) : (
+                <button type="button" className="respond-edit-code-link" onClick={() => setShowEditCodeForm(true)}>
+                  Already submitted? Edit your response
+                </button>
+              )}
+              {editCodeError && <p className="respond-code-error">{editCodeError}</p>}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -312,15 +377,24 @@ export default function RespondForm() {
             <div className="respond-review-list">
               {result.review.map((r) => (
                 <div
-                  className={`respond-review-item ${r.correct ? "respond-review-item-correct" : "respond-review-item-wrong"}`}
+                  className={`respond-review-item ${
+                    r.gradable ? (r.correct ? "respond-review-item-correct" : "respond-review-item-wrong") : ""
+                  }`}
                   key={r.questionId}
                 >
-                  <span className="respond-review-mark">{r.correct ? "✓" : "✗"}</span>
+                  {r.gradable && <span className="respond-review-mark">{r.correct ? "✓" : "✗"}</span>}
                   <div className="respond-review-text">
                     <span className="respond-review-question">
                       {r.title || questionsById[r.questionId]?.title || "Question"}
                     </span>
-                    {!r.correct && (
+                    {r.questionImageUrl && (
+                      <img className="respond-review-image" src={r.questionImageUrl} alt="" />
+                    )}
+                    <span className="respond-review-answer">Your answer: {r.submittedAnswer || "No answer"}</span>
+                    {r.fileUrl && isImageDataUri(r.fileUrl) && (
+                      <img className="respond-review-image" src={r.fileUrl} alt="" />
+                    )}
+                    {r.gradable && !r.correct && (
                       <span className="respond-review-answer">Correct answer: {r.correctAnswer}</span>
                     )}
                   </div>
@@ -337,6 +411,26 @@ export default function RespondForm() {
             >
               <span>↓</span> Download my answers
             </button>
+          )}
+
+          {result?.editCode && (
+            <div className="respond-edit-section">
+              {result?.session?.responsesEditable && result?.session?.status === "active" && (
+                <button
+                  type="button"
+                  className="respond-download-btn"
+                  onClick={handleEditFromDone}
+                  disabled={reopening}
+                >
+                  <span>✎</span> {reopening ? "Opening…" : "Edit my response"}
+                </button>
+              )}
+              <p className="respond-edit-code-note">
+                Your edit code: <strong>{result.editCode}</strong> — save this in case you want to edit your
+                response later from a different device (you'll also need this session's code).
+              </p>
+              {reopenError && <p className="respond-code-error">{reopenError}</p>}
+            </div>
           )}
 
           <button type="button" className="respond-code-submit respond-done-exit" onClick={() => navigate("/")}>

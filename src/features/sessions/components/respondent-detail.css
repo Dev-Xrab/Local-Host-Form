@@ -4,6 +4,111 @@
   gap: 16px;
 }
 
+.respondent-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.respondent-nav-position {
+  font-size: 12px;
+  color: #9b9a97;
+  min-width: 34px;
+  text-align: center;
+}
+
+.respondent-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 5px;
+  background: none;
+  color: #787774;
+  cursor: pointer;
+}
+
+.respondent-nav-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.respondent-nav-btn:hover:not(:disabled) {
+  background: #f7f7f5;
+  color: #37352f;
+}
+
+.respondent-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* Only rendered for the printed/PDF copy — see the @media print block below, which hides
+   everything else on the page and shows just the respondent-detail content. */
+.respondent-detail-print-header {
+  display: none;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .respondent-detail,
+  .respondent-detail * {
+    visibility: visible;
+  }
+
+  .respondent-detail {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+
+  .respondent-detail-questions {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .respondent-detail-print-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 12px;
+    margin-bottom: 8px;
+    border-bottom: 2px solid #37352f;
+  }
+
+  .respondent-detail-print-logo {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+  }
+
+  .respondent-detail-print-app {
+    margin: 0 0 2px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #787774;
+  }
+
+  .respondent-detail-print-header h2 {
+    margin: 0 0 2px;
+    font-size: 18px;
+  }
+
+  .respondent-detail-print-header p {
+    margin: 0;
+    font-size: 12.5px;
+    color: #37352f;
+  }
+}
+
 .respondent-detail-summary {
   display: flex;
   gap: 16px;
@@ -13,6 +118,46 @@
 
   font-size: 13.5px;
   color: #37352f;
+}
+
+.respondent-edit-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.respondent-edit-code strong {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+}
+
+.respondent-edit-code-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 5px;
+  background: none;
+  color: #9b9a97;
+  cursor: pointer;
+}
+
+.respondent-edit-code-toggle svg {
+  width: 14px;
+  height: 14px;
+}
+
+.respondent-edit-code-toggle:hover {
+  background: #ebebe9;
+  color: #37352f;
+}
+
+@media print {
+  .respondent-edit-code-toggle {
+    display: none;
+  }
 }
 
 .respondent-detail-questions {

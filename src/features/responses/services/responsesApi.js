@@ -39,4 +39,9 @@ export const responsesApi = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+  editResponse: (id, deviceId) =>
+    request(`${BASE}/responses/${id}/edit`, {
+      method: "POST",
+      body: JSON.stringify({ deviceId }),
+    }),
 };

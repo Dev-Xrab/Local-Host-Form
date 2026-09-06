@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import useAuthStore, { useAuthActions } from "../../../../store/useAuthStore";
 import "./host-login.css";
+import logo from "../../../../src/images/logo.png";
 
 export default function HostLogin() {
   const navigate = useNavigate();
@@ -28,6 +29,12 @@ export default function HostLogin() {
 
   return (
     <div className="host-login-content">
+      <img
+        src={logo}
+        alt="Host login illustration"
+        className="host-login-illustration"
+        style={{ width: "50px", height: "50px", paddingBottom: "10px" }}
+      />
       <h1>Log in as a Hoster</h1>
       <p className="host-login-subtitle">
         Manage your forms, sessions, and results.

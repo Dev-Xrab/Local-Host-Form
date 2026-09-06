@@ -5,6 +5,8 @@ import { useSubjects } from "../../features/subjects/hooks/useSubjects";
 import { useSessions } from "../../features/sessions/hooks/useSessions";
 import { Icons } from "./icons";
 import { Monogram, initial } from "./Monogram";
+import QrCodeThumb from "./QrCodeThumb";
+import { useServerOrigin } from "./useServerOrigin";
 import "../../features/sessions/components/session.css";
 
 export default function DashboardHome() {
@@ -12,11 +14,7 @@ export default function DashboardHome() {
   const { subjects } = useSubjects();
   const { sessions, refresh } = useSessions();
 
-  // The app is served by the same Express process students hit, so the page's own origin
-  // *is* the address to share — this stays correct however the host reaches it (a LAN IP,
-  // a custom PORT, etc.), unlike a hardcoded "localhost:5174" which only ever describes
-  // one specific dev setup and is unreachable from another device on the network.
-  const [serverAddress] = useState(window.location.origin);
+  const serverAddress = useServerOrigin();
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -68,6 +66,7 @@ export default function DashboardHome() {
               <button type="button" className="server-copy-btn" onClick={handleCopy} title="Copy address">
                 {copied ? <Icons.check /> : <Icons.copy />}
               </button>
+              <QrCodeThumb value={serverAddress} modalTitle="Scan to join server" />
             </div>
 
             <div className="server-stats">

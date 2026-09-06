@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import "./role-page.css";
 import hosterImg from "../../images/hosting.png";
 import responderImg from "../../images/responder.png";
+import logo from "../../images/logo.png";
 
 export default function RolePage() {
   const navigate = useNavigate();
@@ -9,7 +10,12 @@ export default function RolePage() {
   return (
 
     <div className="role-page-content">
-          <div className="role-page-icon">-</div>
+          <img
+                  src={logo}
+                  alt="Host login illustration"
+                  className="host-login-illustration"
+                  style={{ width: "50px", height: "50px", paddingBottom: "10px" }}
+                />
           <h1>StoneArch</h1>
           <p className="role-page-subtitle">
             Build forms your way, host them yourself, and keep your data locally.

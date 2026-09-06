@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { responsesApi } from "../../../features/responses/services/responsesApi";
 import { getDeviceId } from "../../../features/responses/utils/deviceId";
 import "./respondent-login.css";
+import logo from "../../../../src/images/logo.png";
 
 const NAME_STORAGE_KEY = "stonearch_respondent_name";
 
@@ -56,6 +57,12 @@ export default function RespondentLogin() {
 
   return (
     <div className="respondent-login-content">
+      <img
+              src={logo}
+              alt="Host login illustration"
+              className="host-login-illustration"
+              style={{ width: "50px", height: "50px", paddingBottom: "10px" }}
+            />
       <h1>Join as a Responder</h1>
       <p className="respondent-login-subtitle">
         Enter your details to continue to the form.

@@ -25,7 +25,14 @@ function sessionSummary(session) {
     code: session.code,
     status: session.status,
     durationMinutes: session.durationMinutes,
+    responsesEditable: session.responsesEditable,
   };
+}
+
+// Editing a submitted answer is only ever allowed while the host still has the session
+// open — ending it locks answers in place even if the "editable" toggle was left on.
+function canEditResponses(session) {
+  return session.responsesEditable && session.status === "active";
 }
 
 // A response with its own deadline can still be submitted a short grace period past it
@@ -51,7 +58,10 @@ function joinedPayload(session, response, form) {
   };
 
   if (response.status === "in_progress") {
-    return { ...base, form: stripAnswerKeys(form) };
+    // Included so a device reopening this response for editing (possibly not the device
+    // that originally answered — see the edit-code flow below) can prefill what was already
+    // there instead of starting blank; a brand-new in_progress response just has none yet.
+    return { ...base, form: stripAnswerKeys(form), answers: response.answers };
   }
 
   const answerable = answerableQuestionsOf(form);
@@ -64,6 +74,10 @@ function joinedPayload(session, response, form) {
       includeChoices: form.settings.downloadIncludesChoices,
     }),
     formTitle: form.title,
+    // Always shown so the respondent can note it down, even if editing is currently
+    // disabled — "responsesEditable" only gates whether the code can be *used* right now
+    // (see canEditResponses), not whether it's issued at submission time.
+    editCode: response.editCode,
   };
 }
 
@@ -80,7 +94,22 @@ publicRouter.post("/sessions/:code/join", (req, res) => {
   if (!session) return res.status(404).json({ error: "That code isn't valid." });
 
   const form = formsRepo.getForm(session.formId);
-  const { name, deviceId } = req.body || {};
+  const { name, deviceId, editCode } = req.body || {};
+
+  // Cross-device edit access: proving ownership with the response's own edit code instead
+  // of the device that originally submitted it, so a respondent can fix an answer from a
+  // different computer/phone without anyone else being able to reach their response.
+  if (editCode && typeof editCode === "string") {
+    if (!canEditResponses(session)) {
+      return res.status(403).json({ error: "Editing isn't currently allowed for this session." });
+    }
+    const existing = responsesRepo.findResponseByEditCode(session.id, editCode.trim().toUpperCase());
+    if (!existing) {
+      return res.status(404).json({ error: "That edit code doesn't match any response in this session." });
+    }
+    const reopened = responsesRepo.reopenResponseForEditing(existing.id, deviceId);
+    return res.json(joinedPayload(session, reopened, form));
+  }
 
   // Resuming an existing attempt (submitted -> show their result again; in_progress ->
   // keep answering) works regardless of the session's current status — ending a session
@@ -127,6 +156,29 @@ publicRouter.get("/responses/:id", (req, res) => {
   const session = sessionsRepo.getSession(response.sessionId);
   const form = formsRepo.getForm(response.formId);
   res.json(joinedPayload(session, response, form));
+});
+
+// Same-device edit: the respondent is looking at their own "done" screen right after
+// submitting and taps "Edit my response" — ownership is already established by deviceId,
+// same as GET /responses/:id above, so no edit code is needed on this path.
+publicRouter.post("/responses/:id/edit", (req, res) => {
+  const response = responsesRepo.getResponse(req.params.id);
+  if (!response) return res.status(404).json({ error: "Response not found" });
+  if (response.deviceId && response.deviceId !== req.body?.deviceId) {
+    return res.status(403).json({ error: "You don't have access to this response." });
+  }
+  if (response.status !== "submitted") {
+    return res.status(400).json({ error: "Only a submitted response can be edited." });
+  }
+
+  const session = sessionsRepo.getSession(response.sessionId);
+  if (!canEditResponses(session)) {
+    return res.status(403).json({ error: "Editing isn't currently allowed for this session." });
+  }
+
+  const form = formsRepo.getForm(response.formId);
+  const reopened = responsesRepo.reopenResponseForEditing(response.id);
+  res.json(joinedPayload(session, reopened, form));
 });
 
 publicRouter.post("/responses/:id/submit", (req, res) => {

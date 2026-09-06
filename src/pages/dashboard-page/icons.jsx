@@ -181,4 +181,31 @@ export const Icons = {
       <path d="M13 6.5l4.5 4.5" />
     </>
   ),
+
+  chevronLeft: makeIcon(<path d="M14.5 5.5l-6.5 6.5 6.5 6.5" />),
+
+  chevronRight: makeIcon(<path d="M9.5 5.5l6.5 6.5-6.5 6.5" />),
+
+  printer: makeIcon(
+    <>
+      <path d="M6.5 8.5V4.5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v4" />
+      <rect x="4" y="8.5" width="16" height="8" rx="1.5" />
+      <path d="M6.5 15h11v4.5a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1V15Z" />
+    </>
+  ),
+
+  eye: makeIcon(
+    <>
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+      <circle cx="12" cy="12" r="3" />
+    </>
+  ),
+
+  eyeOff: makeIcon(
+    <>
+      <path d="M3.5 3.5l17 17" />
+      <path d="M10.6 5.7A10.4 10.4 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a15.6 15.6 0 0 1-3.1 3.9M6.6 6.6C4 8.3 2.5 12 2.5 12S6 18.5 12 18.5a9.7 9.7 0 0 0 3.4-.6" />
+      <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+    </>
+  ),
 };

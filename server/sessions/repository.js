@@ -24,6 +24,7 @@ function rowToSession(row) {
     respondentCount: row.respondent_count ?? 0,
     inProgressCount: row.in_progress_count ?? 0,
     submittedCount: row.submitted_count ?? 0,
+    responsesEditable: !!row.responses_editable,
   };
 }
 
@@ -65,15 +66,15 @@ export function getSessionByCode(code) {
   return row ? rowToSession(row) : null;
 }
 
-export function createSession({ formId, name, durationMinutes }) {
+export function createSession({ formId, name, durationMinutes, responsesEditable }) {
   let code = generateCode();
   while (codeExistsStmt.get(code)) code = generateCode();
 
   const id = randomUUID();
   db.prepare(
-    `INSERT INTO sessions (id, form_id, name, code, status, duration_minutes, created_at)
-     VALUES (?, ?, ?, ?, 'draft', ?, ?)`
-  ).run(id, formId, name || "", code, durationMinutes ?? null, now());
+    `INSERT INTO sessions (id, form_id, name, code, status, duration_minutes, created_at, responses_editable)
+     VALUES (?, ?, ?, ?, 'draft', ?, ?, ?)`
+  ).run(id, formId, name || "", code, durationMinutes ?? null, now(), responsesEditable ? 1 : 0);
   return getSession(id);
 }
 
@@ -87,6 +88,17 @@ export function updateSession(id, { name, durationMinutes }) {
     durationMinutes !== undefined ? durationMinutes : existing.duration_minutes,
     id
   );
+  return getSession(id);
+}
+
+// Whether respondents may re-open and change a submitted answer. Unlike name/duration,
+// this can be flipped anytime (draft, active, or ended) — the host might turn it on before
+// starting, or partway through once they realize a question needs a redo. It only takes
+// effect while the session is actually active; see canEditResponses in public routes.
+export function setResponsesEditable(id, editable) {
+  const existing = selectOneStmt.get(id);
+  if (!existing) return null;
+  db.prepare("UPDATE sessions SET responses_editable = ? WHERE id = ?").run(editable ? 1 : 0, id);
   return getSession(id);
 }
 

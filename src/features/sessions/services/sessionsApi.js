@@ -28,6 +28,8 @@ export const sessionsApi = {
   get: (id) => request(`${BASE}/${id}`),
   create: (data) => request(BASE, { method: "POST", body: JSON.stringify(data) }),
   update: (id, data) => request(`${BASE}/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  setEditable: (id, editable) =>
+    request(`${BASE}/${id}/editable`, { method: "POST", body: JSON.stringify({ editable }) }),
   start: (id) => request(`${BASE}/${id}/start`, { method: "POST" }),
   end: (id) => request(`${BASE}/${id}/end`, { method: "POST" }),
   reopen: (id) => request(`${BASE}/${id}/reopen`, { method: "POST" }),

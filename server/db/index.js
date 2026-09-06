@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dataDir = path.join(__dirname, "..", "data");
+const dataDir = process.env.DATA_DIR || path.join(__dirname, "..", "data");
 if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true });
 
 const dbPath = path.join(dataDir, "stonearch.sqlite");
@@ -65,7 +65,8 @@ db.exec(`
     started_at TEXT,
     ends_at TEXT,
     ended_at TEXT,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    responses_editable INTEGER NOT NULL DEFAULT 0
   );
 
   CREATE INDEX IF NOT EXISTS idx_sessions_form_id ON sessions(form_id);
@@ -86,7 +87,8 @@ db.exec(`
     max_score INTEGER,
     started_at TEXT,
     deadline_at TEXT,
-    submitted_at TEXT
+    submitted_at TEXT,
+    edit_code TEXT
   );
 
   CREATE INDEX IF NOT EXISTS idx_responses_form_id ON responses(form_id);
@@ -148,6 +150,8 @@ ensureColumn("responses", "respondent_name", "TEXT NOT NULL DEFAULT ''");
 ensureColumn("responses", "status", "TEXT NOT NULL DEFAULT 'in_progress'");
 ensureColumn("responses", "started_at", "TEXT");
 ensureColumn("responses", "deadline_at", "TEXT");
+ensureColumn("responses", "edit_code", "TEXT");
+ensureColumn("sessions", "responses_editable", "INTEGER NOT NULL DEFAULT 0");
 
 // Backfill: sessions/responses created before this migration are already "started"/"submitted"
 // under the old single-shot model — reflect that in the new lifecycle columns instead of
@@ -159,3 +163,4 @@ db.exec(`
 `);
 
 db.exec("CREATE INDEX IF NOT EXISTS idx_forms_subject_id ON forms(subject_id);");
+db.exec("CREATE INDEX IF NOT EXISTS idx_responses_edit_code ON responses(session_id, edit_code);");

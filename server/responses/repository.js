@@ -4,6 +4,25 @@ import { scoreResponse } from "./grading.js";
 
 const now = () => new Date().toISOString();
 
+// A response's own edit code, separate from the session's shared join code: the join code
+// is public to the whole class, so it can't double as proof of ownership. This is generated
+// once (at first submit) and stays stable across edits, so a respondent can note it down and
+// use it — together with the session code — to reopen their own answer from another device
+// without anyone else being able to guess or reuse it to touch someone else's response.
+const EDIT_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const generateEditCode = () =>
+  Array.from({ length: 6 }, () => EDIT_CODE_CHARS[Math.floor(Math.random() * EDIT_CODE_CHARS.length)]).join("");
+
+const editCodeExistsInSessionStmt = db.prepare(
+  "SELECT 1 FROM responses WHERE session_id = ? AND edit_code = ?"
+);
+
+function uniqueEditCodeForSession(sessionId) {
+  let code = generateEditCode();
+  while (editCodeExistsInSessionStmt.get(sessionId, code)) code = generateEditCode();
+  return code;
+}
+
 function rowToResponseSummary(row) {
   return {
     id: row.id,
@@ -17,6 +36,7 @@ function rowToResponseSummary(row) {
     startedAt: row.started_at,
     deadlineAt: row.deadline_at,
     submittedAt: row.submitted_at,
+    editCode: row.edit_code,
   };
 }
 
@@ -49,6 +69,18 @@ export function findExistingResponse(sessionId, deviceId) {
   return row ? { ...rowToResponseSummary(row), answers: answersFor(row.id) } : null;
 }
 
+const selectByEditCodeStmt = db.prepare(
+  "SELECT * FROM responses WHERE session_id = ? AND edit_code = ?"
+);
+
+// Cross-device edit access: proves ownership via the response's own edit code (shown once
+// after submitting) instead of the device that originally submitted it.
+export function findResponseByEditCode(sessionId, editCode) {
+  if (!editCode) return null;
+  const row = selectByEditCodeStmt.get(sessionId, editCode);
+  return row ? { ...rowToResponseSummary(row), answers: answersFor(row.id) } : null;
+}
+
 // Each respondent gets their own deadline computed the moment THEY join — not a shared
 // session-wide clock — so someone who joins late still gets the full time limit, and
 // nobody's countdown is affected by when anyone else started.
@@ -65,24 +97,36 @@ export function createInProgressResponse({ formId, sessionId, deviceId, responde
   return rowToResponseSummary(selectResponseStmt.get(id));
 }
 
-// Finalizes an in_progress response. Guarded by the status check inside the UPDATE so a
-// double-submit race (e.g. two tabs) can't score the same attempt twice — the second
-// call affects 0 rows and the caller is told it was already submitted.
+// Finalizes an in_progress response — this covers both a first submit and a resubmit after
+// the respondent reopened an already-submitted answer to edit it (see reopenResponseForEditing),
+// since both start from status 'in_progress'. Guarded by the status check inside the UPDATE so
+// a double-submit race (e.g. two tabs) can't score the same attempt twice — the second call
+// affects 0 rows and the caller is told it was already submitted.
 export function submitResponse(id, { answers, score, maxScore }) {
+  const existing = selectResponseStmt.get(id);
+  if (!existing) return "already_submitted";
+  // Stable across edits: generated once at first submit, reused on every resubmit so the
+  // respondent's noted-down edit code keeps working.
+  const editCode = existing.edit_code || uniqueEditCodeForSession(existing.session_id);
+
   db.exec("BEGIN");
   try {
     const result = db
       .prepare(
-        `UPDATE responses SET status = 'submitted', submitted_at = ?, score = ?, max_score = ?
+        `UPDATE responses SET status = 'submitted', submitted_at = ?, score = ?, max_score = ?, edit_code = ?
          WHERE id = ? AND status = 'in_progress'`
       )
-      .run(now(), score, maxScore, id);
+      .run(now(), score, maxScore, editCode, id);
 
     if (result.changes === 0) {
       db.exec("ROLLBACK");
       return "already_submitted";
     }
 
+    // Clear any answers from a prior submit of this same response (a resubmit-after-edit)
+    // before inserting the new set, so editing an answer replaces it instead of stacking a
+    // second row for the same question.
+    db.prepare("DELETE FROM response_answers WHERE response_id = ?").run(id);
     const insertAnswer = db.prepare(
       "INSERT INTO response_answers (id, response_id, question_id, value) VALUES (?, ?, ?, ?)"
     );
@@ -95,6 +139,22 @@ export function submitResponse(id, { answers, score, maxScore }) {
     throw err;
   }
 
+  return getResponse(id);
+}
+
+// Reopens an already-submitted response so the respondent can change their answers, then
+// resubmit via submitResponse above. Answers are left in place (untouched) so the edit form
+// can prefill them. deadline_at is cleared — editing is untimed, unlike the original attempt.
+// When reopened from a different device (via edit code, see findResponseByEditCode), device_id
+// is rebound to that device so later ownership checks (view/submit) match whoever is now editing.
+export function reopenResponseForEditing(id, deviceId) {
+  const existing = selectResponseStmt.get(id);
+  if (!existing) return null;
+  const finalDeviceId = deviceId || existing.device_id;
+  db.prepare(
+    `UPDATE responses SET status = 'in_progress', submitted_at = NULL, deadline_at = NULL, device_id = ?
+     WHERE id = ?`
+  ).run(finalDeviceId, id);
   return getResponse(id);
 }
 

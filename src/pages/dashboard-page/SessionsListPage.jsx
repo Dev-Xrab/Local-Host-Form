@@ -11,7 +11,7 @@ import PageHeader from "./PageHeader";
 import Modal from "./Modal";
 import "../../features/sessions/components/session.css";
 
-const emptyForm = { name: "", formId: "", durationMinutes: "" };
+const emptyForm = { name: "", formId: "", durationMinutes: "", responsesEditable: false };
 
 export default function SessionsListPage() {
   const { sessions, loading, error, refresh } = useSessions();
@@ -45,6 +45,7 @@ export default function SessionsListPage() {
         name: form.name.trim(),
         formId: form.formId,
         durationMinutes: form.durationMinutes ? Number(form.durationMinutes) : null,
+        responsesEditable: form.responsesEditable,
       });
       setForm(emptyForm);
       setShowModal(false);
@@ -166,6 +167,15 @@ export default function SessionsListPage() {
                 value={form.durationMinutes}
                 onChange={(e) => setForm((f) => ({ ...f, durationMinutes: e.target.value }))}
               />
+            </label>
+
+            <label className="dash-form-field dash-form-checkbox-field">
+              <input
+                type="checkbox"
+                checked={form.responsesEditable}
+                onChange={(e) => setForm((f) => ({ ...f, responsesEditable: e.target.checked }))}
+              />
+              <span className="dash-form-label">Allow respondents to edit their answer after submitting</span>
             </label>
 
             {createError && <p className="dash-form-error">{createError}</p>}

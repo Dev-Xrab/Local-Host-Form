@@ -13,6 +13,8 @@ import {
 } from "../../features/sessions/utils/time";
 import { Icons } from "./icons";
 import { Monogram, initial } from "./Monogram";
+import QrCodeThumb from "./QrCodeThumb";
+import { useServerOrigin } from "./useServerOrigin";
 import "../../features/sessions/components/session.css";
 
 const SESSION_CONFIRM_CONFIG = {
@@ -52,6 +54,7 @@ export default function SessionDetailPage() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
 
+  const serverOrigin = useServerOrigin();
   const [session, setSession] = useState(null);
   const [respondents, setRespondents] = useState([]);
   const [status, setStatus] = useState("loading"); // loading | ready | not-found
@@ -66,6 +69,7 @@ export default function SessionDetailPage() {
   const [editForm, setEditForm] = useState({ name: "", durationMinutes: "" });
   const [editError, setEditError] = useState(null);
   const [confirmAction, setConfirmAction] = useState(null); // null | "end" | "reopen" | "delete"
+  const [togglingEditable, setTogglingEditable] = useState(false);
 
   const load = useCallback(() => {
     Promise.all([sessionsApi.get(sessionId), sessionsApi.respondents(sessionId)])
@@ -154,6 +158,19 @@ export default function SessionDetailPage() {
     setConfirmAction(null);
   };
 
+  const handleToggleEditable = async () => {
+    setTogglingEditable(true);
+    setActionError(null);
+    try {
+      const updated = await sessionsApi.setEditable(session.id, !session.responsesEditable);
+      setSession(updated);
+    } catch (err) {
+      setActionError(err.message);
+    } finally {
+      setTogglingEditable(false);
+    }
+  };
+
   const startEditing = () => {
     setEditForm({ name: session.name, durationMinutes: session.durationMinutes || "" });
     setEditError(null);
@@ -177,6 +194,10 @@ export default function SessionDetailPage() {
   const filtered = respondents.filter((r) =>
     (r.respondentName || "").toLowerCase().includes(query.toLowerCase())
   );
+  // The set the < > arrows in the detail modal step through — same rows that are clickable
+  // in the table below, in the same order, so paging never lands on one that isn't viewable.
+  const viewableRespondents = filtered.filter((r) => isEnded || r.status === "submitted");
+  const openIndex = openResponseId ? viewableRespondents.findIndex((r) => r.id === openResponseId) : -1;
 
   return (
     <>
@@ -303,21 +324,37 @@ export default function SessionDetailPage() {
           </form>
         )}
 
+        <div className="dash-toggle-row">
+          <button
+            type="button"
+            className={`dash-toggle ${session.responsesEditable ? "is-on" : ""}`}
+            role="switch"
+            aria-checked={session.responsesEditable}
+            disabled={togglingEditable}
+            onClick={handleToggleEditable}
+          />
+          <span>
+            Allow respondents to edit their answer after submitting
+            {session.responsesEditable && !isActive && " (only takes effect while the session is active)"}
+          </span>
+        </div>
+
         {!isEnded && (
           <div className="share-link-row">
             <span className="share-link-label">Share link</span>
-            <code className="share-link-value">{`${window.location.origin}/s/${session.code}`}</code>
+            <code className="share-link-value">{`${serverOrigin}/s/${session.code}`}</code>
             <button
               type="button"
               className="session-btn"
               onClick={() => {
-                navigator.clipboard?.writeText(`${window.location.origin}/s/${session.code}`).catch(() => {});
+                navigator.clipboard?.writeText(`${serverOrigin}/s/${session.code}`).catch(() => {});
                 setCopied(true);
                 setTimeout(() => setCopied(false), 1500);
               }}
             >
               {copied ? "Copied" : "Copy"}
             </button>
+            <QrCodeThumb value={`${serverOrigin}/s/${session.code}`} modalTitle="Scan to join session" />
           </div>
         )}
       </header>
@@ -342,9 +379,6 @@ export default function SessionDetailPage() {
               {session.durationMinutes ? `${session.durationMinutes} min per respondent` : "No limit"}
             </span>
           </div>
-        </div>
-
-        <div className="dash-stats-row">
           <div className="dash-card stat-card">
             <span className="dashboard-card-label">Started</span>
             <span className="stat-card-value stat-card-value-text">{formatDateTime(session.startedAt)}</span>
@@ -371,7 +405,8 @@ export default function SessionDetailPage() {
 
           {!isEnded && (
             <p className="session-privacy-note">
-              Scores and detailed answers are available once this session has ended.
+              A respondent's score and answers become viewable as soon as they submit. Everyone else's
+              are available once this session has ended.
             </p>
           )}
 
@@ -385,17 +420,18 @@ export default function SessionDetailPage() {
                   <span>Status</span>
                   <span>Time Left</span>
                   <span>Submitted</span>
-                  {isEnded && <span>Score</span>}
-                  {isEnded && <span></span>}
+                  <span>Score</span>
+                  <span></span>
                 </div>
 
                 {filtered.map((r) => {
                   const statusInfo = respondentStatusInfo(r, session);
+                  const viewable = isEnded || r.status === "submitted";
                   return (
                   <div
-                    className={`respondent-row ${isEnded ? "respondent-row-clickable" : ""}`}
+                    className={`respondent-row ${viewable ? "respondent-row-clickable" : ""}`}
                     key={r.id}
-                    onClick={() => isEnded && setOpenResponseId(r.id)}
+                    onClick={() => viewable && setOpenResponseId(r.id)}
                   >
                     <div className="quiz-name-cell">
                       <Monogram label={initial(r.respondentName || "?")} size={26} />
@@ -410,12 +446,10 @@ export default function SessionDetailPage() {
                       <span className="dash-item-meta">—</span>
                     )}
                     <span className="dash-item-meta">{formatDateTime(r.submittedAt)}</span>
-                    {isEnded && (
-                      <span className="dash-item-meta">
-                        {r.score != null ? `${r.score}/${r.maxScore}` : "—"}
-                      </span>
-                    )}
-                    {isEnded && <span className="respondent-row-open">View →</span>}
+                    <span className="dash-item-meta">
+                      {viewable && r.score != null ? `${r.score}/${r.maxScore}` : "—"}
+                    </span>
+                    {viewable && <span className="respondent-row-open">View →</span>}
                   </div>
                   );
                 })}
@@ -426,7 +460,21 @@ export default function SessionDetailPage() {
       </div>
 
       {openDetail && (
-        <RespondentDetailModal respondent={openDetail} onClose={() => { setOpenResponseId(null); setOpenDetail(null); }} />
+        <RespondentDetailModal
+          respondent={openDetail}
+          onClose={() => { setOpenResponseId(null); setOpenDetail(null); }}
+          onPrev={
+            viewableRespondents.length > 1 && openIndex > 0
+              ? () => setOpenResponseId(viewableRespondents[openIndex - 1].id)
+              : null
+          }
+          onNext={
+            viewableRespondents.length > 1 && openIndex >= 0 && openIndex < viewableRespondents.length - 1
+              ? () => setOpenResponseId(viewableRespondents[openIndex + 1].id)
+              : null
+          }
+          position={openIndex >= 0 ? { index: openIndex, total: viewableRespondents.length } : null}
+        />
       )}
 
       {confirmAction && (

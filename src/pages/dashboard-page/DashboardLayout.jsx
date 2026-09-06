@@ -2,6 +2,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import useAuthStore, { useAuthActions } from "../../../store/useAuthStore";
 import { Icons } from "./icons";
 import "./dashboard-page.css";
+import logo from "../../images/logo.png";
 
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard", icon: "grid", end: true },
@@ -29,8 +30,14 @@ export default function DashboardLayout() {
     <div className="dash">
       <aside className="dash-nav">
         <div className="dash-nav-brand">
-          <span className="dash-nav-logo">◆</span>
-          StoneArch
+          <img
+
+                  src={logo}
+                  alt="Host login illustration"
+                  id="dash-nav-logo"
+                  style={{ width: "25px", height: "25px"}}
+                />
+          <p>StoneArch</p>
         </div>
 
         <nav className="dash-nav-list">

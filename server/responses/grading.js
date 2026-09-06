@@ -87,14 +87,27 @@ function submittedAnswerText(question, value) {
   return String(value);
 }
 
-// Per-question correct/incorrect + the accepted answer, for forms that opt in to showing it.
+// Per-question review for forms that opt in to showing it: what the respondent submitted
+// (including an uploaded image's raw data: URI, and the question's own reference image if it
+// had one, so both can be shown back to them for context), plus correct/incorrect and the
+// accepted answer for questions that are actually gradable.
 export function buildAnswerReview(questions, answers) {
-  return questions.filter(isGradable).map((q) => ({
-    questionId: q.id,
-    title: q.title,
-    correct: isCorrect(q, answers[q.id]),
-    correctAnswer: correctAnswerText(q),
-  }));
+  return questions
+    .filter((q) => q.type !== "section")
+    .map((q) => {
+      const gradable = isGradable(q);
+      const value = answers[q.id];
+      return {
+        questionId: q.id,
+        title: q.title,
+        questionImageUrl: q.imageUrl || null,
+        submittedAnswer: submittedAnswerText(q, value),
+        fileUrl: q.type === "file_upload" && value ? value : null,
+        gradable,
+        correct: gradable ? isCorrect(q, value) : null,
+        correctAnswer: gradable ? correctAnswerText(q) : null,
+      };
+    });
 }
 
 // A respondent's own question+answer summary (their own download/copy) — independent of

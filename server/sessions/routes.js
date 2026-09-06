@@ -28,7 +28,7 @@ sessionsRouter.get("/", (req, res) => {
 });
 
 sessionsRouter.post("/", (req, res) => {
-  const { name, formId, durationMinutes } = req.body || {};
+  const { name, formId, durationMinutes, responsesEditable } = req.body || {};
   if (!formId || typeof formId !== "string") {
     return res.status(400).json({ error: "formId is required" });
   }
@@ -44,6 +44,7 @@ sessionsRouter.post("/", (req, res) => {
     formId,
     name: typeof name === "string" ? name.trim() : "",
     durationMinutes: durationMinutes || null,
+    responsesEditable: !!responsesEditable,
   });
   res.status(201).json(withFormTitle(session));
 });
@@ -62,6 +63,16 @@ sessionsRouter.put("/:id", (req, res) => {
     return res.status(400).json({ error: "Only a session that hasn't started yet can be edited." });
   }
   res.json(withFormTitle(result));
+});
+
+sessionsRouter.post("/:id/editable", (req, res) => {
+  const { editable } = req.body || {};
+  if (typeof editable !== "boolean") {
+    return res.status(400).json({ error: "editable must be a boolean" });
+  }
+  const session = sessionsRepo.setResponsesEditable(req.params.id, editable);
+  if (!session) return res.status(404).json({ error: "Session not found" });
+  res.json(withFormTitle(session));
 });
 
 sessionsRouter.post("/:id/start", (req, res) => {
@@ -100,20 +111,25 @@ sessionsRouter.get("/:id/respondents", (req, res) => {
   if (!session) return res.status(404).json({ error: "Session not found" });
 
   const respondents = sortRespondents(responsesRepo.listResponsesForSession(session.id));
-  const visible = session.status === "ended" ? respondents : respondents.map(stripSensitive);
+  // A respondent's own score/answers become visible to the host as soon as THEY submit —
+  // no need to wait for the whole session to end just to see one finished attempt. Anyone
+  // still in_progress stays hidden until the session itself ends.
+  const visible = session.status === "ended"
+    ? respondents
+    : respondents.map((r) => (r.status === "submitted" ? r : stripSensitive(r)));
   res.json(visible);
 });
 
 sessionsRouter.get("/:id/respondents/:responseId", (req, res) => {
   const session = sessionsRepo.getSession(req.params.id);
   if (!session) return res.status(404).json({ error: "Session not found" });
-  if (session.status !== "ended") {
-    return res.status(403).json({ error: "Detailed answers are available once the session has ended." });
-  }
 
   const response = responsesRepo.getResponse(req.params.responseId);
   if (!response || response.sessionId !== session.id) {
     return res.status(404).json({ error: "Response not found" });
+  }
+  if (session.status !== "ended" && response.status !== "submitted") {
+    return res.status(403).json({ error: "This respondent hasn't submitted yet." });
   }
 
   const form = formsRepo.getForm(session.formId);
