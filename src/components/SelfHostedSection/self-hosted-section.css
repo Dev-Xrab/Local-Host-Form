@@ -1,0 +1,125 @@
+.self-hosted-section {
+  background: var(--color-bg-dark);
+  color: var(--color-text-on-dark);
+}
+
+.self-hosted-inner {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: var(--space-8);
+  align-items: center;
+}
+
+.self-hosted-section .eyebrow {
+  color: var(--color-text-on-dark-muted);
+}
+
+.self-hosted-copy h2 {
+  font: var(--text-h2);
+  color: var(--color-text-on-dark);
+  letter-spacing: -0.01em;
+  margin-bottom: var(--space-4);
+}
+
+.self-hosted-lead {
+  font: var(--text-body-lg);
+  color: var(--color-text-on-dark-muted);
+  margin-bottom: var(--space-5);
+}
+
+.self-hosted-points {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.self-hosted-points li {
+  display: flex;
+  gap: 10px;
+  font: var(--text-small);
+  color: var(--color-text-on-dark-muted);
+  line-height: 1.55;
+}
+
+.self-hosted-point-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--color-text-on-dark);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.self-hosted-note {
+  font: var(--text-caption);
+  color: var(--color-text-on-dark-muted);
+  border-left: 2px solid var(--color-border-on-dark);
+  padding-left: var(--space-3);
+  line-height: 1.6;
+}
+
+.self-hosted-note strong {
+  color: var(--color-text-on-dark);
+}
+
+.self-hosted-dev-note {
+  margin-top: var(--space-5);
+  font: var(--text-small);
+  color: var(--color-text-on-dark-muted);
+}
+
+.self-hosted-dev-note span {
+  font-weight: 700;
+  color: var(--color-text-on-dark);
+}
+
+.self-hosted-diagram {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.diagram-node {
+  width: 100%;
+  max-width: 280px;
+  background: rgba(247, 247, 245, 0.05);
+  border: 1px solid var(--color-border-on-dark);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.diagram-icon {
+  width: 26px;
+  height: 26px;
+  color: var(--color-text-on-dark);
+  margin-bottom: 6px;
+}
+
+.diagram-node-sub {
+  font: var(--text-caption);
+  font-weight: 400;
+  color: var(--color-text-on-dark-muted);
+}
+
+.diagram-line {
+  width: 1px;
+  height: 32px;
+  background: var(--color-border-on-dark);
+}
+
+@media (max-width: 900px) {
+  .self-hosted-inner {
+    grid-template-columns: 1fr;
+  }
+
+  .self-hosted-diagram {
+    margin-top: var(--space-4);
+  }
+}

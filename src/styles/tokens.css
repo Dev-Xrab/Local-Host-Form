@@ -1,0 +1,73 @@
+:root {
+  /* Color — warm neutral base with a single blue accent, matching the app's palette */
+  --color-bg: #f7f7f5;
+  --color-bg-raised: #ffffff;
+  --color-bg-inset: #f7f6f3;
+  --color-bg-dark: #232220;
+  --color-text: #2f2e2b;
+  --color-text-secondary: #57564f;
+  --color-text-muted: #787774;
+  --color-text-faint: #9b9a97;
+  --color-text-on-dark: #f7f7f5;
+  --color-text-on-dark-muted: #b9b8b3;
+  --color-border: rgba(55, 53, 47, 0.11);
+  --color-border-strong: rgba(55, 53, 47, 0.18);
+  --color-border-on-dark: rgba(247, 247, 245, 0.14);
+  --color-accent: #171717;
+  --color-accent-hover: #000000;
+  --color-accent-active: #000000;
+  --color-accent-soft: rgba(23, 23, 23, 0.06);
+  --color-accent-soft-border: rgba(23, 23, 23, 0.16);
+  --color-success: #0f9d6c;
+  --color-success-soft: rgba(15, 157, 108, 0.1);
+  --color-danger: #c0392b;
+  --color-danger-soft: rgba(192, 57, 43, 0.1);
+  --color-focus-ring: #2383e2;
+
+  /* The app itself is a black-and-white interface — this single blue is its one
+     accent, used only to mark the answer a respondent has selected. Reused here
+     (and for the accessibility focus ring above) so the mockups match the real UI. */
+  --color-select: #2383e2;
+  --color-select-soft: #e7f1fc;
+
+  /* Typography */
+  --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+
+  --text-display: 700 clamp(2.5rem, 1.9rem + 2.6vw, 3.75rem)/1.08 var(--font-sans);
+  --text-h1: 700 clamp(2rem, 1.6rem + 1.8vw, 2.75rem)/1.15 var(--font-sans);
+  --text-h2: 700 clamp(1.5rem, 1.3rem + 0.9vw, 2rem)/1.2 var(--font-sans);
+  --text-h3: 600 clamp(1.15rem, 1.05rem + 0.4vw, 1.375rem)/1.3 var(--font-sans);
+  --text-body-lg: 400 1.125rem/1.6 var(--font-sans);
+  --text-body: 400 1rem/1.6 var(--font-sans);
+  --text-small: 400 0.875rem/1.5 var(--font-sans);
+  --text-caption: 500 0.75rem/1.4 var(--font-sans);
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+  --space-10: 128px;
+
+  /* Layout */
+  --container-width: 1180px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 999px;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgba(15, 15, 15, 0.06), 0 0 0 1px rgba(15, 15, 15, 0.04);
+  --shadow-md: 0 4px 12px rgba(15, 15, 15, 0.08), 0 0 0 1px rgba(15, 15, 15, 0.04);
+  --shadow-lg: 0 16px 40px rgba(15, 15, 15, 0.12), 0 0 0 1px rgba(15, 15, 15, 0.04);
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+}

@@ -1,0 +1,74 @@
+.how-it-works {
+  background: var(--color-bg-inset);
+  border-block: 1px solid var(--color-border);
+}
+
+.steps-list {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-4);
+  counter-reset: step;
+}
+
+.step-card {
+  position: relative;
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5) var(--space-4) var(--space-4);
+}
+
+.step-number {
+  display: block;
+  font: var(--text-caption);
+  font-weight: 700;
+  color: var(--color-text-faint);
+  font-family: var(--font-mono);
+  margin-bottom: var(--space-3);
+}
+
+.step-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  margin-bottom: var(--space-4);
+}
+
+.step-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.step-card h3 {
+  font: var(--text-h3);
+  font-size: 1rem;
+  margin-bottom: 6px;
+}
+
+.step-card p {
+  font: var(--text-small);
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 980px) {
+  .steps-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .steps-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 420px) {
+  .steps-list {
+    grid-template-columns: 1fr;
+  }
+}

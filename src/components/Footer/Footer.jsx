@@ -1,0 +1,77 @@
+import { Icons } from "../icons";
+import "./footer.css";
+
+const LINK_COLUMNS = [
+  {
+    heading: "Product",
+    links: [
+      { label: "Product", href: "#product" },
+      { label: "Features", href: "#features" },
+      { label: "Use Cases", href: "#use-cases" },
+      { label: "Self-Hosting", href: "#self-hosting" },
+      { label: "FAQ", href: "#faq" },
+    ],
+  },
+  {
+    heading: "Resources",
+    links: [
+      { label: "Documentation", href: "https://github.com/Dev-Xrab/Local-Host-Form#readme", external: true },
+      {
+        label: "GitHub",
+        href: "https://github.com/Dev-Xrab/Local-Host-Form",
+        external: true,
+        icon: "github",
+      },
+    ],
+  },
+  {
+    heading: "Contact",
+    links: [{ label: "b.d.senin@gmail.com", href: "mailto:b.d.senin@gmail.com" }],
+  },
+];
+
+export default function Footer() {
+  return (
+    <footer className="footer">
+      <div className="container footer-inner">
+        <div className="footer-brand">
+          <a href="#top" className="navbar-brand">
+            <span className="navbar-logo">
+              <Icons.network />
+            </span>
+            SelfHost Form
+          </a>
+          <p>Create forms, collect responses, host it yourself.</p>
+        </div>
+
+        <div className="footer-columns">
+          {LINK_COLUMNS.map((col) => (
+            <div className="footer-column" key={col.heading}>
+              <p className="footer-column-heading">{col.heading}</p>
+              <ul>
+                {col.links.map((link) => {
+                  const Icon = link.icon ? Icons[link.icon] : null;
+                  return (
+                    <li key={link.label}>
+                      <a
+                        href={link.href}
+                        {...(link.external ? { target: "_blank", rel: "noreferrer" } : {})}
+                      >
+                        {Icon && <Icon className="footer-link-icon" />}
+                        {link.label}
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="container footer-bottom">
+        <p>© {new Date().getFullYear()} SelfHost Form. An early-stage project — feedback welcome.</p>
+      </div>
+    </footer>
+  );
+}
