@@ -1,0 +1,19 @@
+{
+  "name": "self-host-form-cloud",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Central multi-tenant server: Google OAuth + form catalog for Self Host Form desktop clients.",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "main": "index.js",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env index.js",
+    "dev": "node --watch --env-file-if-exists=.env index.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "pg": "^8.13.0"
+  }
+}
