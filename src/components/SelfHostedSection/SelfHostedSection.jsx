@@ -42,6 +42,16 @@ export default function SelfHostedSection() {
             <span>For developers and IT teams —</span> deploy the platform within
             infrastructure that fits your environment and workflow.
           </p>
+
+          <div className="self-hosted-security-note" role="note">
+            <Icons.alertTriangle className="self-hosted-security-icon" />
+            <p>
+              <strong>Change the default password before you deploy.</strong> Every fresh
+              install ships with the host password set to <code>password</code>. Anyone who
+              can reach your deployment can sign in with it until you change it in settings —
+              do that as your first step after installing.
+            </p>
+          </div>
         </div>
 
         <div className="self-hosted-diagram" role="img" aria-label="Diagram: a user connects to Self Host Form, which runs on your server, PC, or network, backed by your own database">

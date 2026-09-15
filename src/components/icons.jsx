@@ -206,4 +206,11 @@ export const Icons = {
       <path d="M13 6.5 17.5 11" />
     </>
   ),
+  alertTriangle: makeIcon(
+    <>
+      <path d="M12 3.5 21.5 20h-19L12 3.5Z" />
+      <path d="M12 10v4.5" />
+      <circle cx="12" cy="18" r="0.15" fill="currentColor" />
+    </>
+  ),
 };
