@@ -46,6 +46,10 @@ It ships two ways:
 - Google OAuth–based import of existing Google Forms into Self Host Form, so a teacher doesn't have to rebuild forms that already exist
 - Entirely optional: the core app works fully offline/LAN-only without it
 
+## Security
+
+The host account ships with a default password of **`password`**. On first login, the host is prompted to change it — this should be done immediately, especially before running a session on a shared or otherwise untrusted network. A custom password can also be set ahead of time via the `HOST_PASSWORD` environment variable.
+
 ## Architecture
 
 ```text
