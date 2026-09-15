@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Icons } from "../icons";
 import { APP_REPO_URL, WINDOWS_DOWNLOAD_URL } from "../../constants";
+import SupportModal from "../Support/SupportModal";
 import "./footer.css";
 
 const LINK_COLUMNS = [
@@ -29,6 +31,8 @@ const LINK_COLUMNS = [
 ];
 
 export default function Footer() {
+  const [supportOpen, setSupportOpen] = useState(false);
+
   return (
     <footer className="footer">
       <div className="container footer-inner">
@@ -40,6 +44,10 @@ export default function Footer() {
             Self Host Form
           </a>
           <p>Create forms, collect responses, host it yourself.</p>
+          <button type="button" className="footer-support-btn" onClick={() => setSupportOpen(true)}>
+            <Icons.qrCode className="footer-link-icon" />
+            Support the project
+          </button>
         </div>
 
         <div className="footer-columns">
@@ -71,6 +79,8 @@ export default function Footer() {
       <div className="container footer-bottom">
         <p>© {new Date().getFullYear()} Self Host Form. An early-stage project — feedback welcome.</p>
       </div>
+
+      <SupportModal open={supportOpen} onClose={() => setSupportOpen(false)} />
     </footer>
   );
 }

@@ -4,9 +4,7 @@
 // The app's own repo (server, Electron, everything) — not this website's repo.
 export const APP_REPO_URL = "https://github.com/Dev-Xrab/Local-Host-Form";
 
-// GitHub's "latest release" alias always resolves to whichever release is
-// currently marked latest, as long as its asset keeps this exact filename —
-// so shipping a new version only means uploading a new release asset named
-// Self-Host-Form-Setup.exe, never touching this URL or any component.
-export const WINDOWS_DOWNLOAD_URL =
-  "https://github.com/Dev-Xrab/Local-Host-Form/releases/latest/download/Self-Host-Form-Setup.exe";
+// Served directly from this site's public/downloads folder (see the README
+// there) — shipping a new version only means replacing that file with the
+// same name and pushing, never touching this URL or any component.
+export const WINDOWS_DOWNLOAD_URL = "/downloads/Self-Host-Form-Setup.exe";
