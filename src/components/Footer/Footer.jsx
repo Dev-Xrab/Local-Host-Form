@@ -6,9 +6,10 @@ const LINK_COLUMNS = [
     heading: "Product",
     links: [
       { label: "Product", href: "#product" },
+      { label: "How it works", href: "#how-it-works" },
       { label: "Features", href: "#features" },
-      { label: "Use Cases", href: "#use-cases" },
       { label: "Self-Hosting", href: "#self-hosting" },
+      { label: "Who it's for", href: "#who-its-for" },
       { label: "FAQ", href: "#faq" },
     ],
   },
@@ -39,7 +40,7 @@ export default function Footer() {
             <span className="navbar-logo">
               <Icons.network />
             </span>
-            SelfHost Form
+            Self Host Form
           </a>
           <p>Create forms, collect responses, host it yourself.</p>
         </div>
@@ -70,7 +71,7 @@ export default function Footer() {
       </div>
 
       <div className="container footer-bottom">
-        <p>© {new Date().getFullYear()} SelfHost Form. An early-stage project — feedback welcome.</p>
+        <p>© {new Date().getFullYear()} Self Host Form. An early-stage project — feedback welcome.</p>
       </div>
     </footer>
   );

@@ -1,0 +1,41 @@
+.product-frame {
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.product-frame-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--color-bg-inset);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.product-frame-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-border-strong);
+}
+
+.product-frame-label {
+  margin-left: var(--space-2);
+  font: var(--text-caption);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.product-frame-viewport {
+  overflow: hidden;
+  line-height: 0;
+}
+
+.product-frame-viewport img {
+  display: block;
+  width: 100%;
+  height: auto;
+}

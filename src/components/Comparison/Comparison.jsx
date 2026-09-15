@@ -53,7 +53,7 @@ export default function Comparison() {
                 </th>
                 <th scope="col">Traditional Hosted Form Platform</th>
                 <th scope="col" className="comparison-col-highlight">
-                  SelfHost Form
+                  Self Host Form
                 </th>
               </tr>
             </thead>

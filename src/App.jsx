@@ -3,12 +3,10 @@ import Hero from "./components/Hero/Hero";
 import TrustSection from "./components/TrustSection/TrustSection";
 import WhatIsSection from "./components/WhatIsSection/WhatIsSection";
 import HowItWorks from "./components/HowItWorks/HowItWorks";
-import ProductPreview from "./components/ProductPreview/ProductPreview";
 import Features from "./components/Features/Features";
-import UseCases from "./components/UseCases/UseCases";
 import SelfHostedSection from "./components/SelfHostedSection/SelfHostedSection";
 import Comparison from "./components/Comparison/Comparison";
-import AudienceSection from "./components/AudienceSection/AudienceSection";
+import WhoItsFor from "./components/WhoItsFor/WhoItsFor";
 import FAQ from "./components/FAQ/FAQ";
 import FinalCTA from "./components/FinalCTA/FinalCTA";
 import Footer from "./components/Footer/Footer";
@@ -25,12 +23,10 @@ function App() {
         <TrustSection />
         <WhatIsSection />
         <HowItWorks />
-        <ProductPreview />
         <Features />
-        <UseCases />
         <SelfHostedSection />
         <Comparison />
-        <AudienceSection />
+        <WhoItsFor />
         <FAQ />
         <FinalCTA />
       </main>

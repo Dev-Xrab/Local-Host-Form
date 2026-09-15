@@ -1,36 +1,30 @@
-import { Icons } from "../icons";
+import ProductFrame from "../ProductFrame/ProductFrame";
 import "./how-it-works.css";
 
 const STEPS = [
   {
     number: "01",
-    icon: "questionBank",
-    title: "Build",
-    text: "Create your form using the form builder.",
+    title: "Build the form",
+    text: "Add short answer, paragraph, multiple choice, checkboxes, dropdowns, scales, dates, grids, and file uploads. Mark correct answers on any question where you want automatic grading.",
+    image: "/screenshots/form-builder.jpg",
+    alt: "Form builder showing a feedback form with a multiple choice, short answer, and linear scale question, and a sidebar listing every available question type",
+    label: "Self Host Form / Form Info",
   },
   {
     number: "02",
-    icon: "share",
-    title: "Share",
-    text: "Share the form through a link or your deployment's access method.",
+    title: "Share it your way",
+    text: "Start a session and share it with a link, a short join code, or a QR code — respondents scan or type the code and answer, no account needed on their end. Watch who's joined in real time.",
+    image: "/screenshots/session-share.jpg",
+    alt: "Session screen showing a share link, a QR code to join, and live respondent and submission counts",
+    label: "Self Host Form / Sessions",
   },
   {
     number: "03",
-    icon: "file",
-    title: "Collect",
-    text: "Respondents submit their answers.",
-  },
-  {
-    number: "04",
-    icon: "layers",
-    title: "Manage",
-    text: "Review and manage submissions from your dashboard.",
-  },
-  {
-    number: "05",
-    icon: "chart",
-    title: "Analyse",
-    text: "View response data and use it for your workflow.",
+    title: "Collect responses",
+    text: "Respondents answer on their own device — phone, tablet, or laptop. Timed sessions are enforced by the server, not the browser, and in-progress answers are saved automatically if the page reloads.",
+    image: "/screenshots/respondent-view.jpg",
+    alt: "The respondent-facing view of a form, showing a multiple choice question, a short answer question, and a linear scale question",
+    label: "Self Host Form / Respond",
   },
 ];
 
@@ -40,25 +34,24 @@ export default function HowItWorks() {
       <div className="container">
         <div className="section-head center">
           <p className="eyebrow">How it works</p>
-          <h2>From building to results in five steps</h2>
-          <p>No accounts required to respond — just a link.</p>
+          <h2>The same three steps, on your own network</h2>
+          <p>No accounts required to respond — just a link, a code, or a scanned QR.</p>
         </div>
 
-        <ol className="steps-list">
-          {STEPS.map((step) => {
-            const Icon = Icons[step.icon];
-            return (
-              <li className="step-card" key={step.number}>
-                <span className="step-number">{step.number}</span>
-                <span className="step-icon-wrap">
-                  <Icon className="step-icon" />
-                </span>
+        <div className="how-steps">
+          {STEPS.map((step, i) => (
+            <div className={`how-step ${i % 2 === 1 ? "how-step-reverse" : ""}`} key={step.number}>
+              <div className="how-step-copy">
+                <span className="how-step-number">{step.number}</span>
                 <h3>{step.title}</h3>
                 <p>{step.text}</p>
-              </li>
-            );
-          })}
-        </ol>
+              </div>
+              <div className="how-step-visual">
+                <ProductFrame src={step.image} alt={step.alt} label={step.label} />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

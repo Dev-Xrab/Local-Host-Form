@@ -4,11 +4,11 @@ import "./faq.css";
 
 const FAQS = [
   {
-    q: "What is SelfHost Form?",
+    q: "What is Self Host Form?",
     a: "A form builder you run yourself. You create a form, share it, and collect and manage the responses from your own deployment instead of a third-party's hosted service.",
   },
   {
-    q: "Is SelfHost Form similar to Google Forms?",
+    q: "Is Self Host Form similar to Google Forms?",
     a: "Conceptually, yes — build a form, share a link, collect responses. The main difference is that you run the platform on your own infrastructure instead of using a provider's hosted service.",
   },
   {
@@ -20,7 +20,7 @@ const FAQS = [
     a: "In the database of the deployment you run. By default that's a local database on the machine hosting the platform, not a third-party cloud service.",
   },
   {
-    q: "Can I run SelfHost Form on my own computer?",
+    q: "Can I run Self Host Form on my own computer?",
     a: "Yes. It's built to run as a desktop application on your own computer, with its own local server and database.",
   },
   {
@@ -33,7 +33,7 @@ const FAQS = [
   },
   {
     q: "What types of forms can I create?",
-    a: "Forms can include short answer, paragraph, multiple choice, checkboxes, dropdown, linear scale, date, time, and file upload fields.",
+    a: "Forms can include short answer, paragraph, multiple choice, checkboxes, dropdown, linear scale, date, time, file upload, and grid/matrix questions.",
   },
   {
     q: "Can I create quizzes and assessments?",
@@ -46,6 +46,10 @@ const FAQS = [
   {
     q: "Can multiple people manage forms?",
     a: "Each deployment currently has a single shared host password rather than individual accounts, so \"multiple people managing forms\" today means sharing that one login — separate per-person accounts and roles aren't available yet.",
+  },
+  {
+    q: "Does it work across multiple devices, or with existing Google Forms?",
+    a: "Everything works fully offline with no account. If you want it, an optional sync layer lets you sign in with Google to back up forms and responses to a cloud database you can pull from on another device, and to import an existing Google Form's questions. It's a bolt-on for that specific case — the local deployment doesn't require it.",
   },
 ];
 

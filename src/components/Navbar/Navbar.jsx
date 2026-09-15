@@ -5,8 +5,8 @@ import "./navbar.css";
 const NAV_LINKS = [
   { href: "#product", label: "Product" },
   { href: "#features", label: "Features" },
-  { href: "#use-cases", label: "Use Cases" },
   { href: "#self-hosting", label: "Self-Hosting" },
+  { href: "#who-its-for", label: "Who it's for" },
   { href: "#faq", label: "FAQ" },
 ];
 
@@ -37,7 +37,7 @@ export default function Navbar() {
           <span className="navbar-logo" aria-hidden="true">
             <Icons.network />
           </span>
-          SelfHost Form
+          Self Host Form
         </a>
 
         <nav className="navbar-links" aria-label="Primary">
@@ -49,8 +49,13 @@ export default function Navbar() {
         </nav>
 
         <div className="navbar-actions">
-          <a href="#get-started" className="btn btn-primary">
-            Try It
+          <a
+            href="https://github.com/Dev-Xrab/Local-Host-Form"
+            className="btn btn-primary"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Get the code
           </a>
         </div>
 
@@ -75,8 +80,14 @@ export default function Navbar() {
           ))}
         </nav>
         <div className="navbar-mobile-actions">
-          <a href="#get-started" className="btn btn-primary btn-lg" onClick={closeMenu}>
-            Try It
+          <a
+            href="https://github.com/Dev-Xrab/Local-Host-Form"
+            className="btn btn-primary btn-lg"
+            target="_blank"
+            rel="noreferrer"
+            onClick={closeMenu}
+          >
+            Get the code
           </a>
         </div>
       </div>

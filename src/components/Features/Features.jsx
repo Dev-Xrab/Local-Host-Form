@@ -5,7 +5,7 @@ const FEATURES = [
   {
     icon: "questionBank",
     title: "Form Builder",
-    text: "Create forms with short answer, paragraph, multiple choice, checkboxes, dropdown, linear scale, date, time, and file upload fields.",
+    text: "Create forms with short answer, paragraph, multiple choice, checkboxes, dropdown, linear scale, date, time, file upload, and grid/matrix fields.",
   },
   {
     icon: "chart",
@@ -30,12 +30,12 @@ const FEATURES = [
   {
     icon: "checkCircle",
     title: "Automatic Grading",
-    text: "Multiple choice, checkboxes, dropdown, and scale fields can be scored automatically.",
+    text: "Multiple choice, checkboxes, dropdown, and scale fields can be scored automatically, with points and correct answers set per question.",
   },
   {
     icon: "monitor",
     title: "Response Management",
-    text: "Review collected submissions and scores from a central dashboard.",
+    text: "Review collected submissions and scores from a central dashboard as they come in, not after the fact.",
   },
   {
     icon: "share",
@@ -47,9 +47,19 @@ const FEATURES = [
     title: "Sessions & Timing",
     text: "For workflows that need it, run a form as a timed, code-based session — the basis for quizzes and live activities.",
   },
+  {
+    icon: "bank",
+    title: "Roster & Gradebook",
+    text: "Keep a roster of students or members, and let it match respondents by name or alias across sessions to build a real gradebook.",
+  },
+  {
+    icon: "upload",
+    title: "Export",
+    text: "Export responses and gradebooks to Excel or PDF, or bulk-export an entire subject's sessions at once — no server round trip required.",
+  },
 ];
 
-const COMING_SOON = ["Leaderboards", "Roster import/export"];
+const COMING_SOON = ["Leaderboards"];
 
 export default function Features() {
   return (
@@ -57,8 +67,11 @@ export default function Features() {
       <div className="container">
         <div className="section-head center">
           <p className="eyebrow">Features</p>
-          <h2>Everything you need to run a form platform</h2>
-          <p>Build a form, share it, and manage what comes back — on infrastructure you choose.</p>
+          <h2>What's included</h2>
+          <p>
+            A form builder, timed sessions, automatic grading, a roster-aware gradebook, and
+            exports — all running on the deployment you control.
+          </p>
         </div>
 
         <div className="features-grid">

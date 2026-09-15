@@ -10,7 +10,7 @@ export default function SelfHostedSection() {
           <h2>Your Forms. Your Infrastructure. Your Control.</h2>
           <p className="self-hosted-lead">
             A hosted form service runs on the provider's servers, and your data lives there
-            too. SelfHost Form lets you run the same kind of platform on infrastructure you
+            too. Self Host Form lets you run the same kind of platform on infrastructure you
             choose — a personal computer, a home server, or hardware your organisation
             already manages.
           </p>
@@ -44,7 +44,7 @@ export default function SelfHostedSection() {
           </p>
         </div>
 
-        <div className="self-hosted-diagram" role="img" aria-label="Diagram: a user connects to SelfHost Form, which runs on your server, PC, or network, backed by your own database">
+        <div className="self-hosted-diagram" role="img" aria-label="Diagram: a user connects to Self Host Form, which runs on your server, PC, or network, backed by your own database">
           <div className="diagram-node diagram-node-user">
             <Icons.users className="diagram-icon" />
             <span>User</span>
@@ -53,7 +53,7 @@ export default function SelfHostedSection() {
           <div className="diagram-line" aria-hidden="true" />
           <div className="diagram-node diagram-node-app">
             <Icons.layers className="diagram-icon" />
-            <span>SelfHost Form</span>
+            <span>Self Host Form</span>
             <span className="diagram-node-sub">The platform</span>
           </div>
           <div className="diagram-line" aria-hidden="true" />

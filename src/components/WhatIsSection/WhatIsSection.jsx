@@ -15,11 +15,11 @@ export default function WhatIsSection() {
     <section id="product" className="section what-is-section">
       <div className="container">
         <div className="section-head center">
-          <p className="eyebrow">What is SelfHost Form?</p>
+          <p className="eyebrow">What is Self Host Form?</p>
           <h2>A Form Platform You Control</h2>
           <p>
             Traditional hosted form platforms handle hosting and infrastructure for you.
-            SelfHost Form gives you the option to run the platform yourself.
+            Self Host Form gives you the option to run the platform yourself.
           </p>
         </div>
 
