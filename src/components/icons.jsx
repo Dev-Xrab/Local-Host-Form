@@ -165,6 +165,12 @@ export const Icons = {
       <path d="M4.5 15.5v3a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-3" />
     </>
   ),
+  download: makeIcon(
+    <>
+      <path d="M12 4v11.5M8 11.5l4 4 4-4" />
+      <path d="M4.5 15.5v3a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-3" />
+    </>
+  ),
   share: makeIcon(
     <>
       <circle cx="18" cy="5.5" r="2.5" />

@@ -1,5 +1,6 @@
 import { Icons } from "../icons";
 import ProductFrame from "../ProductFrame/ProductFrame";
+import { APP_REPO_URL, WINDOWS_DOWNLOAD_URL } from "../../constants";
 import "./hero.css";
 
 export default function Hero() {
@@ -19,18 +20,19 @@ export default function Hero() {
             infrastructure you control.
           </p>
           <div className="hero-ctas">
-            <a
-              href="https://github.com/Dev-Xrab/self-host-form-bulsu-bsit"
-              className="btn btn-primary btn-lg"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Get the code
+            <a href={WINDOWS_DOWNLOAD_URL} className="btn btn-primary btn-lg" download>
+              Download for Windows
             </a>
             <a href="#how-it-works" className="btn btn-secondary btn-lg">
               See how it works
             </a>
           </div>
+          <p className="hero-cta-note">
+            .exe installer, Windows only ·{" "}
+            <a href={APP_REPO_URL} target="_blank" rel="noreferrer">
+              view the source on GitHub
+            </a>
+          </p>
           <p className="hero-flow" aria-label="Create, then share, then collect">
             <span>Create</span>
             <Icons.arrowRight className="hero-flow-arrow" />

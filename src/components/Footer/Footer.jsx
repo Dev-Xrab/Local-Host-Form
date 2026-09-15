@@ -1,4 +1,5 @@
 import { Icons } from "../icons";
+import { APP_REPO_URL, WINDOWS_DOWNLOAD_URL } from "../../constants";
 import "./footer.css";
 
 const LINK_COLUMNS = [
@@ -16,13 +17,9 @@ const LINK_COLUMNS = [
   {
     heading: "Resources",
     links: [
-      { label: "Documentation", href: "https://github.com/Dev-Xrab/self-host-form-bulsu-bsit#readme", external: true },
-      {
-        label: "GitHub",
-        href: "https://github.com/Dev-Xrab/self-host-form-bulsu-bsit",
-        external: true,
-        icon: "github",
-      },
+      { label: "Download for Windows", href: WINDOWS_DOWNLOAD_URL, download: true, icon: "download" },
+      { label: "Documentation", href: `${APP_REPO_URL}#readme`, external: true },
+      { label: "GitHub", href: APP_REPO_URL, external: true, icon: "github" },
     ],
   },
   {
@@ -57,6 +54,7 @@ export default function Footer() {
                       <a
                         href={link.href}
                         {...(link.external ? { target: "_blank", rel: "noreferrer" } : {})}
+                        {...(link.download ? { download: true } : {})}
                       >
                         {Icon && <Icon className="footer-link-icon" />}
                         {link.label}

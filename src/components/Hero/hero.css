@@ -58,7 +58,23 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
-  margin-bottom: var(--space-7);
+  margin-bottom: var(--space-4);
+}
+
+.hero-cta-note {
+  font: var(--text-small);
+  color: var(--color-text-faint);
+  margin-bottom: var(--space-6);
+}
+
+.hero-cta-note a {
+  color: var(--color-text-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.hero-cta-note a:hover {
+  color: var(--color-text);
 }
 
 .hero-flow {

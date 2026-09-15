@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Icons } from "../icons";
+import { WINDOWS_DOWNLOAD_URL } from "../../constants";
 import "./navbar.css";
 
 const NAV_LINKS = [
@@ -49,13 +50,8 @@ export default function Navbar() {
         </nav>
 
         <div className="navbar-actions">
-          <a
-            href="https://github.com/Dev-Xrab/self-host-form-bulsu-bsit"
-            className="btn btn-primary"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Get the code
+          <a href={WINDOWS_DOWNLOAD_URL} className="btn btn-primary" download>
+            Download for Windows
           </a>
         </div>
 
@@ -80,14 +76,8 @@ export default function Navbar() {
           ))}
         </nav>
         <div className="navbar-mobile-actions">
-          <a
-            href="https://github.com/Dev-Xrab/self-host-form-bulsu-bsit"
-            className="btn btn-primary btn-lg"
-            target="_blank"
-            rel="noreferrer"
-            onClick={closeMenu}
-          >
-            Get the code
+          <a href={WINDOWS_DOWNLOAD_URL} className="btn btn-primary btn-lg" download onClick={closeMenu}>
+            Download for Windows
           </a>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { APP_REPO_URL, WINDOWS_DOWNLOAD_URL } from "../../constants";
 import "./final-cta.css";
 
 export default function FinalCTA() {
@@ -6,27 +7,18 @@ export default function FinalCTA() {
       <div className="container final-cta-inner">
         <h2>Your forms. Your environment. Your data.</h2>
         <p>
-          Self Host Form is free and open source. Clone it, run it on your own machine or
-          server, and start building — no signup, no hosted account to create.
+          Download the Windows installer, or clone the source and run it yourself — no
+          signup, no hosted account to create.
         </p>
         <div className="final-cta-actions">
-          <a
-            href="https://github.com/Dev-Xrab/self-host-form-bulsu-bsit"
-            className="btn btn-on-dark btn-lg"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Get the code on GitHub
+          <a href={WINDOWS_DOWNLOAD_URL} className="btn btn-on-dark btn-lg" download>
+            Download for Windows
           </a>
-          <a
-            href="https://github.com/Dev-Xrab/self-host-form-bulsu-bsit#readme"
-            className="btn btn-outline-on-dark btn-lg"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Read the setup guide
+          <a href={APP_REPO_URL} className="btn btn-outline-on-dark btn-lg" target="_blank" rel="noreferrer">
+            View source on GitHub
           </a>
         </div>
+        <p className="final-cta-note">.exe installer, Windows only</p>
       </div>
     </section>
   );
