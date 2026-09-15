@@ -20,7 +20,7 @@ export default function Hero() {
           </p>
           <div className="hero-ctas">
             <a
-              href="https://github.com/Dev-Xrab/Local-Host-Form"
+              href="https://github.com/Dev-Xrab/self-host-form-bulsu-bsit"
               className="btn btn-primary btn-lg"
               target="_blank"
               rel="noreferrer"

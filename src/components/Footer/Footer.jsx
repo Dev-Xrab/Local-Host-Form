@@ -16,10 +16,10 @@ const LINK_COLUMNS = [
   {
     heading: "Resources",
     links: [
-      { label: "Documentation", href: "https://github.com/Dev-Xrab/Local-Host-Form#readme", external: true },
+      { label: "Documentation", href: "https://github.com/Dev-Xrab/self-host-form-bulsu-bsit#readme", external: true },
       {
         label: "GitHub",
-        href: "https://github.com/Dev-Xrab/Local-Host-Form",
+        href: "https://github.com/Dev-Xrab/self-host-form-bulsu-bsit",
         external: true,
         icon: "github",
       },
@@ -38,7 +38,7 @@ export default function Footer() {
         <div className="footer-brand">
           <a href="#top" className="navbar-brand">
             <span className="navbar-logo">
-              <Icons.network />
+              <img src="/logo.png" alt="" width="18" height="18" />
             </span>
             Self Host Form
           </a>

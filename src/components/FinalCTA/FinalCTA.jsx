@@ -11,7 +11,7 @@ export default function FinalCTA() {
         </p>
         <div className="final-cta-actions">
           <a
-            href="https://github.com/Dev-Xrab/Local-Host-Form"
+            href="https://github.com/Dev-Xrab/self-host-form-bulsu-bsit"
             className="btn btn-on-dark btn-lg"
             target="_blank"
             rel="noreferrer"
@@ -19,7 +19,7 @@ export default function FinalCTA() {
             Get the code on GitHub
           </a>
           <a
-            href="https://github.com/Dev-Xrab/Local-Host-Form#readme"
+            href="https://github.com/Dev-Xrab/self-host-form-bulsu-bsit#readme"
             className="btn btn-outline-on-dark btn-lg"
             target="_blank"
             rel="noreferrer"

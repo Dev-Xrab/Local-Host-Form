@@ -34,8 +34,8 @@ export default function Navbar() {
     <header className={`navbar ${scrolled ? "is-scrolled" : ""}`}>
       <div className="container navbar-inner">
         <a href="#top" className="navbar-brand" onClick={closeMenu}>
-          <span className="navbar-logo" aria-hidden="true">
-            <Icons.network />
+          <span className="navbar-logo">
+            <img src="/logo.png" alt="" width="18" height="18" />
           </span>
           Self Host Form
         </a>
@@ -50,7 +50,7 @@ export default function Navbar() {
 
         <div className="navbar-actions">
           <a
-            href="https://github.com/Dev-Xrab/Local-Host-Form"
+            href="https://github.com/Dev-Xrab/self-host-form-bulsu-bsit"
             className="btn btn-primary"
             target="_blank"
             rel="noreferrer"
@@ -81,7 +81,7 @@ export default function Navbar() {
         </nav>
         <div className="navbar-mobile-actions">
           <a
-            href="https://github.com/Dev-Xrab/Local-Host-Form"
+            href="https://github.com/Dev-Xrab/self-host-form-bulsu-bsit"
             className="btn btn-primary btn-lg"
             target="_blank"
             rel="noreferrer"
