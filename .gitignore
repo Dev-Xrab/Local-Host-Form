@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# The installer is too large for a normal git blob (GitHub hard-blocks >100MB) —
+# see public/downloads/README.md for how it's actually distributed.
+public/downloads/*.exe
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
