@@ -1,16 +1,19 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icons } from "../icons";
 import "./support-modal.css";
 
 export default function SupportModal({ open, onClose }) {
   const dialogRef = useRef(null);
   const closeBtnRef = useRef(null);
+  const [zoomed, setZoomed] = useState(false);
 
   useEffect(() => {
     if (!open) return;
 
     const onKeyDown = (e) => {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape") return;
+      if (zoomed) setZoomed(false);
+      else onClose();
     };
 
     document.addEventListener("keydown", onKeyDown);
@@ -21,7 +24,11 @@ export default function SupportModal({ open, onClose }) {
       document.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = "";
     };
-  }, [open, onClose]);
+  }, [open, zoomed, onClose]);
+
+  useEffect(() => {
+    if (!open) setZoomed(false);
+  }, [open]);
 
   if (!open) return null;
 
@@ -60,7 +67,13 @@ export default function SupportModal({ open, onClose }) {
         </p>
 
         <div className="support-modal-qr">
-          <img src="/support/gcash-qr.png" alt="GCash QR code for supporting Self-Host Form" />
+          <button type="button" className="support-modal-qr-btn" onClick={() => setZoomed(true)}>
+            <img src="/support/gcash-qr.png" alt="GCash QR code for supporting Self-Host Form" />
+            <span className="support-modal-qr-hint">
+              <Icons.qrCode className="support-modal-qr-hint-icon" />
+              Tap to enlarge
+            </span>
+          </button>
         </div>
 
         <p className="support-modal-note support-modal-note-muted">
@@ -69,6 +82,31 @@ export default function SupportModal({ open, onClose }) {
           Philippines, you may be able to use this option.
         </p>
       </div>
+
+      {zoomed && (
+        <div
+          className="support-modal-zoom"
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            setZoomed(false);
+          }}
+        >
+          <button
+            type="button"
+            className="support-modal-zoom-close"
+            aria-label="Close enlarged QR code"
+            onClick={() => setZoomed(false)}
+          >
+            <Icons.close />
+          </button>
+          <img
+            src="/support/gcash-qr.png"
+            alt="GCash QR code for supporting Self-Host Form, enlarged"
+            className="support-modal-zoom-img"
+            onMouseDown={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }
