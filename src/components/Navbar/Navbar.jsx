@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Icons } from "../icons";
 import { WINDOWS_DOWNLOAD_URL } from "../../constants";
+import SupportModal from "../Support/SupportModal";
 import "./navbar.css";
 
 const NAV_LINKS = [
@@ -14,6 +15,7 @@ const NAV_LINKS = [
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -31,6 +33,11 @@ export default function Navbar() {
 
   const closeMenu = () => setOpen(false);
 
+  const openSupport = () => {
+    closeMenu();
+    setSupportOpen(true);
+  };
+
   return (
     <header className={`navbar ${scrolled ? "is-scrolled" : ""}`}>
       <div className="container navbar-inner">
@@ -47,6 +54,9 @@ export default function Navbar() {
               {link.label}
             </a>
           ))}
+          <button type="button" onClick={openSupport}>
+            Support the Project
+          </button>
         </nav>
 
         <div className="navbar-actions">
@@ -74,6 +84,9 @@ export default function Navbar() {
               {link.label}
             </a>
           ))}
+          <button type="button" onClick={openSupport}>
+            Support the Project
+          </button>
         </nav>
         <div className="navbar-mobile-actions">
           <a href={WINDOWS_DOWNLOAD_URL} className="btn btn-primary btn-lg" download onClick={closeMenu}>
@@ -81,6 +94,8 @@ export default function Navbar() {
           </a>
         </div>
       </div>
+
+      <SupportModal open={supportOpen} onClose={() => setSupportOpen(false)} />
     </header>
   );
 }

@@ -54,14 +54,16 @@
   margin-inline: auto;
 }
 
-.navbar-links a {
+.navbar-links a,
+.navbar-links button {
   font: var(--text-small);
   font-weight: 500;
   color: var(--color-text-secondary);
   transition: color var(--duration-fast) var(--ease-out);
 }
 
-.navbar-links a:hover {
+.navbar-links a:hover,
+.navbar-links button:hover {
   color: var(--color-text);
 }
 
@@ -136,7 +138,11 @@
     margin-bottom: var(--space-6);
   }
 
-  .navbar-mobile-links a {
+  .navbar-mobile-links a,
+  .navbar-mobile-links button {
+    display: block;
+    width: 100%;
+    text-align: left;
     font: var(--text-h3);
     font-weight: 600;
     padding: var(--space-3) 0;
