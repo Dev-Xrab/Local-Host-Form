@@ -18,7 +18,7 @@ const GROUPS = [
   },
   {
     title: "Developers",
-    text: "Self-host it, read the source, and change what doesn't fit. A Node/Express server with SQLite by default, packaged as a desktop app or run standalone — plus an optional cloud sync and Google Forms import if you need it.",
+    text: "Self-host it, read the source, and change what doesn't fit. A Node/Express server with SQLite by default, packaged as a desktop app or run standalone — plus an optional cloud sync and Google Forms import (currently in beta, capped at the first 100 users) if you need it.",
     examples: ["Custom deployments", "Self-hosted infra", "Open source"],
   },
 ];

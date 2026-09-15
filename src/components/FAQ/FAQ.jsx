@@ -49,7 +49,7 @@ const FAQS = [
   },
   {
     q: "Does it work across multiple devices, or with existing Google Forms?",
-    a: "Everything works fully offline with no account. If you want it, an optional sync layer lets you sign in with Google to back up forms and responses to a cloud database you can pull from on another device, and to import an existing Google Form's questions. It's a bolt-on for that specific case — the local deployment doesn't require it.",
+    a: "Everything works fully offline with no account. If you want it, an optional sync layer lets you sign in with Google to back up forms and responses to a cloud database you can pull from on another device, and to import an existing Google Form's questions. It's a bolt-on for that specific case — the local deployment doesn't require it. This sync layer is in beta and currently limited to the first 100 people who connect it; once it's out of beta, it'll be open to everyone.",
   },
 ];
 
