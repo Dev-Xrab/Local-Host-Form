@@ -101,6 +101,55 @@
   box-shadow: var(--shadow-lg);
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .hero-kicker,
+  .hero-copy h1,
+  .hero-sub,
+  .hero-ctas,
+  .hero-cta-note,
+  .hero-flow,
+  .hero-visual {
+    opacity: 0;
+    animation: hero-rise var(--duration-slow) var(--ease-out) forwards;
+  }
+
+  .hero-kicker {
+    animation-delay: 0ms;
+  }
+
+  .hero-copy h1 {
+    animation-delay: 80ms;
+  }
+
+  .hero-sub {
+    animation-delay: 160ms;
+  }
+
+  .hero-ctas {
+    animation-delay: 240ms;
+  }
+
+  .hero-cta-note,
+  .hero-flow {
+    animation-delay: 280ms;
+  }
+
+  .hero-visual {
+    animation-delay: 340ms;
+  }
+}
+
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 980px) {
   .hero-inner {
     grid-template-columns: 1fr;

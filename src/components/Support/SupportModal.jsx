@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { Icons } from "../icons";
+import { useMountTransition } from "../../hooks/useMountTransition";
 import "./support-modal.css";
 
 export default function SupportModal({ open, onClose }) {
   const dialogRef = useRef(null);
   const closeBtnRef = useRef(null);
   const [zoomed, setZoomed] = useState(false);
+  const [renderModal, modalVisible] = useMountTransition(open, 220);
+  const [renderZoom, zoomVisible] = useMountTransition(zoomed, 200);
 
   useEffect(() => {
-    if (!open) return;
+    if (!renderModal) return;
 
     const onKeyDown = (e) => {
       if (e.key !== "Escape") return;
@@ -18,24 +21,24 @@ export default function SupportModal({ open, onClose }) {
 
     document.addEventListener("keydown", onKeyDown);
     document.body.style.overflow = "hidden";
-    closeBtnRef.current?.focus();
+    if (open) closeBtnRef.current?.focus();
 
     return () => {
       document.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = "";
     };
-  }, [open, zoomed, onClose]);
+  }, [renderModal, open, zoomed, onClose]);
 
   useEffect(() => {
     if (!open) setZoomed(false);
   }, [open]);
 
-  if (!open) return null;
+  if (!renderModal) return null;
 
   return (
-    <div className="support-modal-overlay" onMouseDown={onClose}>
+    <div className={`support-modal-overlay ${modalVisible ? "is-visible" : ""}`} onMouseDown={onClose}>
       <div
-        className="support-modal"
+        className={`support-modal ${modalVisible ? "is-visible" : ""}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="support-modal-title"
@@ -83,9 +86,9 @@ export default function SupportModal({ open, onClose }) {
         </p>
       </div>
 
-      {zoomed && (
+      {renderZoom && (
         <div
-          className="support-modal-zoom"
+          className={`support-modal-zoom ${zoomVisible ? "is-visible" : ""}`}
           onMouseDown={(e) => {
             e.stopPropagation();
             setZoomed(false);

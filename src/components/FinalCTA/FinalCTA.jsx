@@ -1,10 +1,11 @@
 import { APP_REPO_URL, WINDOWS_DOWNLOAD_URL } from "../../constants";
+import Reveal from "../Reveal/Reveal";
 import "./final-cta.css";
 
 export default function FinalCTA() {
   return (
     <section id="get-started" className="final-cta">
-      <div className="container final-cta-inner">
+      <Reveal as="div" className="container final-cta-inner">
         <h2>Your forms. Your environment. Your data.</h2>
         <p>
           Download the Windows installer, or clone the source and run it yourself — no
@@ -19,7 +20,7 @@ export default function FinalCTA() {
           </a>
         </div>
         <p className="final-cta-note">.exe installer, Windows only</p>
-      </div>
+      </Reveal>
     </section>
   );
 }

@@ -1,7 +1,10 @@
 import { Icons } from "../icons";
+import { useInView } from "../../hooks/useInView";
 import "./self-hosted-section.css";
 
 export default function SelfHostedSection() {
+  const [diagramRef, diagramInView] = useInView();
+
   return (
     <section id="self-hosting" className="section self-hosted-section">
       <div className="container self-hosted-inner">
@@ -54,7 +57,12 @@ export default function SelfHostedSection() {
           </div>
         </div>
 
-        <div className="self-hosted-diagram" role="img" aria-label="Diagram: a user connects to Self Host Form, which runs on your server, PC, or network, backed by your own database">
+        <div
+          className={`self-hosted-diagram ${diagramInView ? "is-in-view" : ""}`}
+          ref={diagramRef}
+          role="img"
+          aria-label="Diagram: a user connects to Self Host Form, which runs on your server, PC, or network, backed by your own database"
+        >
           <div className="diagram-node diagram-node-user">
             <Icons.users className="diagram-icon" />
             <span>User</span>

@@ -143,7 +143,7 @@ h4 {
 }
 
 .btn:active {
-  transform: translateY(1px);
+  transform: scale(0.97);
 }
 
 .btn-lg {

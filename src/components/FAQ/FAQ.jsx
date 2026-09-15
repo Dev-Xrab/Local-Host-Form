@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Icons } from "../icons";
 import "./faq.css";
 
@@ -55,6 +55,18 @@ const FAQS = [
 
 export default function FAQ() {
   const [openIndex, setOpenIndex] = useState(0);
+  const wrapRefs = useRef([]);
+  const innerRefs = useRef([]);
+
+  useLayoutEffect(() => {
+    FAQS.forEach((_, i) => {
+      const wrap = wrapRefs.current[i];
+      const inner = innerRefs.current[i];
+      if (!wrap || !inner) return;
+      const value = i === openIndex ? `${inner.scrollHeight}px` : "0px";
+      wrap.style.setProperty("max-height", value, "important");
+    });
+  }, [openIndex]);
 
   return (
     <section id="faq" className="section faq-section">
@@ -86,10 +98,13 @@ export default function FAQ() {
                   id={`faq-panel-${i}`}
                   role="region"
                   aria-labelledby={`faq-trigger-${i}`}
-                  className="faq-answer"
-                  hidden={!isOpen}
+                  className="faq-answer-wrap"
+                  inert={!isOpen}
+                  ref={(el) => (wrapRefs.current[i] = el)}
                 >
-                  <p>{item.a}</p>
+                  <div className="faq-answer" ref={(el) => (innerRefs.current[i] = el)}>
+                    <p>{item.a}</p>
+                  </div>
                 </div>
               </div>
             );

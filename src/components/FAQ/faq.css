@@ -36,12 +36,18 @@
   color: var(--color-accent);
 }
 
+.faq-answer-wrap {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height var(--duration-base) var(--ease-out);
+}
+
 .faq-answer {
-  padding: 0 4px var(--space-5);
   max-width: 68ch;
 }
 
 .faq-answer p {
   font: var(--text-body);
   color: var(--color-text-secondary);
+  padding: 0 4px var(--space-5);
 }

@@ -56,15 +56,35 @@
 
 .navbar-links a,
 .navbar-links button {
+  position: relative;
   font: var(--text-small);
   font-weight: 500;
   color: var(--color-text-secondary);
   transition: color var(--duration-fast) var(--ease-out);
 }
 
+.navbar-links a::after,
+.navbar-links button::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
 .navbar-links a:hover,
 .navbar-links button:hover {
   color: var(--color-text);
+}
+
+.navbar-links a:hover::after,
+.navbar-links button:hover::after {
+  transform: scaleX(1);
 }
 
 .navbar-actions {

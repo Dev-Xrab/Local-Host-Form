@@ -153,6 +153,43 @@
   background: var(--color-border-on-dark);
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .self-hosted-diagram .diagram-node,
+  .self-hosted-diagram .diagram-line {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out);
+  }
+
+  .self-hosted-diagram.is-in-view .diagram-node,
+  .self-hosted-diagram.is-in-view .diagram-line {
+    opacity: 1;
+    transform: none;
+  }
+
+  .self-hosted-diagram .diagram-node:nth-child(1) {
+    transition-delay: 0ms;
+  }
+  .self-hosted-diagram .diagram-line:nth-child(2) {
+    transition-delay: 110ms;
+  }
+  .self-hosted-diagram .diagram-node:nth-child(3) {
+    transition-delay: 180ms;
+  }
+  .self-hosted-diagram .diagram-line:nth-child(4) {
+    transition-delay: 290ms;
+  }
+  .self-hosted-diagram .diagram-node:nth-child(5) {
+    transition-delay: 360ms;
+  }
+  .self-hosted-diagram .diagram-line:nth-child(6) {
+    transition-delay: 470ms;
+  }
+  .self-hosted-diagram .diagram-node:nth-child(7) {
+    transition-delay: 540ms;
+  }
+}
+
 @media (max-width: 900px) {
   .self-hosted-inner {
     grid-template-columns: 1fr;

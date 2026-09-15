@@ -1,4 +1,5 @@
 import ProductFrame from "../ProductFrame/ProductFrame";
+import Reveal from "../Reveal/Reveal";
 import "./how-it-works.css";
 
 const STEPS = [
@@ -40,7 +41,11 @@ export default function HowItWorks() {
 
         <div className="how-steps">
           {STEPS.map((step, i) => (
-            <div className={`how-step ${i % 2 === 1 ? "how-step-reverse" : ""}`} key={step.number}>
+            <Reveal
+              as="div"
+              className={`how-step ${i % 2 === 1 ? "how-step-reverse" : ""}`}
+              key={step.number}
+            >
               <div className="how-step-copy">
                 <span className="how-step-number">{step.number}</span>
                 <h3>{step.title}</h3>
@@ -49,7 +54,7 @@ export default function HowItWorks() {
               <div className="how-step-visual">
                 <ProductFrame src={step.image} alt={step.alt} label={step.label} />
               </div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>

@@ -4,6 +4,13 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   overflow: hidden;
+  transition: transform var(--duration-base) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .product-frame:hover {
+    transform: translateY(-4px);
+  }
 }
 
 .product-frame-bar {
