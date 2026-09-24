@@ -3,7 +3,7 @@ import "./who-its-for.css";
 const GROUPS = [
   {
     title: "Teachers",
-    text: "Run a quiz or a check-in over your classroom's own Wi-Fi, grade the multiple-choice questions automatically, and see who's finished — without asking students to create an account or relying on the school's internet.",
+    text: "Run a quiz or a check-in over your classroom's own Wi-Fi, grade the multiple-choice questions automatically, and see who's finished — without asking students to create an account or relying on the school's internet. Lock a session to fullscreen and flag tab-switching if you need more confidence it's exam conditions.",
     examples: ["Classroom quizzes", "Exit tickets", "Assessments"],
   },
   {

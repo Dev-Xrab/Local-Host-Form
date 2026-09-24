@@ -133,6 +133,7 @@
     display: block;
     position: fixed;
     inset: 68px 0 0 0;
+    z-index: 150;
     background: var(--color-bg);
     padding: var(--space-6) var(--space-5);
     transform: translateY(-8px);

@@ -39,44 +39,51 @@ export default function Navbar() {
   };
 
   return (
-    <header className={`navbar ${scrolled ? "is-scrolled" : ""}`}>
-      <div className="container navbar-inner">
-        <a href="#top" className="navbar-brand" onClick={closeMenu}>
-          <span className="navbar-logo">
-            <img src="/logo.png" alt="" width="18" height="18" />
-          </span>
-          Self Host Form
-        </a>
-
-        <nav className="navbar-links" aria-label="Primary">
-          {NAV_LINKS.map((link) => (
-            <a key={link.href} href={link.href}>
-              {link.label}
-            </a>
-          ))}
-          <button type="button" onClick={openSupport}>
-            Support the Project
-          </button>
-        </nav>
-
-        <div className="navbar-actions">
-          <a href={WINDOWS_DOWNLOAD_URL} className="btn btn-primary" download>
-            Download for Windows
+    <>
+      <header className={`navbar ${scrolled ? "is-scrolled" : ""}`}>
+        <div className="container navbar-inner">
+          <a href="#top" className="navbar-brand" onClick={closeMenu}>
+            <span className="navbar-logo">
+              <img src="/logo.png" alt="" width="18" height="18" />
+            </span>
+            Self Host Form
           </a>
+
+          <nav className="navbar-links" aria-label="Primary">
+            {NAV_LINKS.map((link) => (
+              <a key={link.href} href={link.href}>
+                {link.label}
+              </a>
+            ))}
+            <button type="button" onClick={openSupport}>
+              Support the Project
+            </button>
+          </nav>
+
+          <div className="navbar-actions">
+            <a href={WINDOWS_DOWNLOAD_URL} className="btn btn-primary" download>
+              Download for Windows
+            </a>
+          </div>
+
+          <button
+            type="button"
+            className="navbar-menu-btn"
+            aria-label={open ? "Close menu" : "Open menu"}
+            aria-expanded={open}
+            aria-controls="mobile-menu"
+            onClick={() => setOpen((v) => !v)}
+          >
+            {open ? <Icons.close /> : <Icons.menu />}
+          </button>
         </div>
+      </header>
 
-        <button
-          type="button"
-          className="navbar-menu-btn"
-          aria-label={open ? "Close menu" : "Open menu"}
-          aria-expanded={open}
-          aria-controls="mobile-menu"
-          onClick={() => setOpen((v) => !v)}
-        >
-          {open ? <Icons.close /> : <Icons.menu />}
-        </button>
-      </div>
-
+      {/* Rendered as a sibling of <header>, not inside it: the header's own
+          backdrop-filter (for the frosted-glass effect) creates a CSS containing
+          block for any position:fixed descendant, which was pinning this panel to
+          the header's own ~68px box instead of the viewport — a full-height
+          fixed panel needs no filtered/transformed ancestor between it and <body>. */}
       <div id="mobile-menu" className={`navbar-mobile ${open ? "is-open" : ""}`}>
         <nav className="navbar-mobile-links" aria-label="Mobile">
           {NAV_LINKS.map((link) => (
@@ -96,6 +103,6 @@ export default function Navbar() {
       </div>
 
       <SupportModal open={supportOpen} onClose={() => setSupportOpen(false)} />
-    </header>
+    </>
   );
 }

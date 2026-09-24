@@ -43,9 +43,19 @@ const FEATURES = [
     text: "Distribute a form with a link, a short code, or a QR code — no account needed to respond.",
   },
   {
+    icon: "network",
+    title: "Remote Access",
+    text: "Respondents outside your Wi-Fi? Start a temporary public link with one click — no port forwarding, router setup, or account required. Stop it and the link stops working.",
+  },
+  {
     icon: "clock",
     title: "Sessions & Timing",
     text: "For workflows that need it, run a form as a timed, code-based session — the basis for quizzes and live activities.",
+  },
+  {
+    icon: "shield",
+    title: "Quiz Integrity",
+    text: "Optionally lock a session to fullscreen, detect when a respondent switches tabs or apps, and restrict copying on their screen — deterrents for live assessments, not a guarantee against a determined cheater.",
   },
   {
     icon: "bank",

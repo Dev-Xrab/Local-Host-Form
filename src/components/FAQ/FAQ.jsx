@@ -48,6 +48,10 @@ const FAQS = [
     a: "Each deployment currently has a single shared host password rather than individual accounts, so \"multiple people managing forms\" today means sharing that one login — separate per-person accounts and roles aren't available yet.",
   },
   {
+    q: "What if respondents aren't on my Wi-Fi or local network?",
+    a: "The dashboard can start a temporary public link (backed by a Cloudflare Tunnel) with one click — no port forwarding, router configuration, or account needed. It only runs while you leave it on, and stopping it or closing the app takes the link down immediately.",
+  },
+  {
     q: "Does it work across multiple devices, or with existing Google Forms?",
     a: "Everything works fully offline with no account. If you want it, an optional sync layer lets you sign in with Google to back up forms and responses to a cloud database you can pull from on another device, and to import an existing Google Form's questions. It's a bolt-on for that specific case — the local deployment doesn't require it. This sync layer is in beta and currently limited to the first 100 people who connect it; once it's out of beta, it'll be open to everyone.",
   },
