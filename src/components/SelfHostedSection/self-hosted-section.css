@@ -79,8 +79,8 @@
   align-items: flex-start;
   margin-top: var(--space-6);
   padding: var(--space-4);
-  background: var(--color-danger-soft);
-  border: 1px solid rgba(192, 57, 43, 0.35);
+  background: var(--color-success-soft);
+  border: 1px solid rgba(15, 157, 108, 0.3);
   border-radius: var(--radius-md);
 }
 
@@ -89,7 +89,7 @@
   height: 20px;
   flex-shrink: 0;
   margin-top: 1px;
-  color: var(--color-danger);
+  color: var(--color-success);
 }
 
 .self-hosted-security-note p {

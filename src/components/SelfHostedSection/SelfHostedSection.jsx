@@ -47,12 +47,11 @@ export default function SelfHostedSection() {
           </p>
 
           <div className="self-hosted-security-note" role="note">
-            <Icons.alertTriangle className="self-hosted-security-icon" />
+            <Icons.checkCircle className="self-hosted-security-icon" />
             <p>
-              <strong>Change the default password before you deploy.</strong> Every fresh
-              install ships with the host password set to <code>password</code>. Anyone who
-              can reach your deployment can sign in with it until you change it in settings —
-              do that as your first step after installing.
+              <strong>There's no default password to forget about.</strong> The first time you
+              open a fresh install, it asks you to create the host account on the spot — you
+              choose the password before anyone can sign in, not after.
             </p>
           </div>
         </div>
