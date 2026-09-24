@@ -98,6 +98,35 @@
   color: var(--color-text-muted);
 }
 
+.support-modal-roadmap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.support-modal-roadmap li {
+  position: relative;
+  padding-left: var(--space-4);
+  font: var(--text-small);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.support-modal-roadmap li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.65em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+}
+
+.support-modal-roadmap strong {
+  color: var(--color-text);
+}
+
 .support-modal-qr {
   margin-block: var(--space-4);
   padding: var(--space-4);

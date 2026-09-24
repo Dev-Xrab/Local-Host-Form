@@ -63,6 +63,30 @@ export default function SupportModal({ open, onClose }) {
 
         <div className="support-modal-divider" />
 
+        <h3>What your support unlocks</h3>
+        <ul className="support-modal-roadmap">
+          <li>
+            <strong>Signed installers.</strong> Both the Windows and macOS builds are unsigned
+            right now, so Windows SmartScreen and macOS Gatekeeper warn on first launch. Code
+            signing certificates are a real yearly cost — this is first in line.
+          </li>
+          <li>
+            <strong>Multi-user accounts &amp; roles.</strong> Every deployment currently shares
+            one host password. Separate per-person accounts and permissions are planned, not
+            built yet.
+          </li>
+          <li>
+            <strong>Leaderboards.</strong> A session-ranking view for quizzes, on the roadmap.
+          </li>
+          <li>
+            <strong>Cloud sync out of beta.</strong> The optional Google-account sync is capped
+            at the first 100 users while it's in beta — opening it up means paying for more
+            server capacity to run it on.
+          </li>
+        </ul>
+
+        <div className="support-modal-divider" />
+
         <h3>Support via GCash</h3>
         <p className="support-modal-note">
           For supporters in the Philippines, scan the QR code using GCash or a participating
