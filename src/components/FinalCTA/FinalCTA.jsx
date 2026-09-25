@@ -1,4 +1,4 @@
-import { APP_REPO_URL, WINDOWS_DOWNLOAD_URL } from "../../constants";
+import { WINDOWS_DOWNLOAD_URL } from "../../constants";
 import Reveal from "../Reveal/Reveal";
 import "./final-cta.css";
 
@@ -14,9 +14,6 @@ export default function FinalCTA() {
         <div className="final-cta-actions">
           <a href={WINDOWS_DOWNLOAD_URL} className="btn btn-on-dark btn-lg" download>
             Download for Windows
-          </a>
-          <a href={APP_REPO_URL} className="btn btn-outline-on-dark btn-lg" target="_blank" rel="noreferrer">
-            View source on GitHub
           </a>
         </div>
         <p className="final-cta-note">.exe installer, Windows only</p>

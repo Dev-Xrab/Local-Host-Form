@@ -1,6 +1,6 @@
 import { Icons } from "../icons";
 import ProductFrame from "../ProductFrame/ProductFrame";
-import { APP_REPO_URL, WINDOWS_DOWNLOAD_URL } from "../../constants";
+import { WINDOWS_DOWNLOAD_URL } from "../../constants";
 import "./hero.css";
 
 export default function Hero() {
@@ -28,10 +28,7 @@ export default function Hero() {
             </a>
           </div>
           <p className="hero-cta-note">
-            .exe installer, Windows only ·{" "}
-            <a href={APP_REPO_URL} target="_blank" rel="noreferrer">
-              view the source on GitHub
-            </a>
+            .exe installer, Windows only
           </p>
           <p className="hero-flow" aria-label="Create, then share, then collect">
             <span>Create</span>
