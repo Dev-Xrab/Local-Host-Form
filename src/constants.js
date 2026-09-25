@@ -2,7 +2,7 @@
 // only needs an edit here instead of a hunt across every component.
 
 // The app's own repo (server, Electron, everything) — not this website's repo.
-export const APP_REPO_URL = "https://github.com/Dev-Xrab/Local-Host-Form";
+export const APP_REPO_URL = "https://github.com/Dev-Xrab/self-host-form-app";
 
 // GitHub's "latest release" alias always resolves to whichever release is
 // currently marked latest, as long as its asset keeps this exact filename —
