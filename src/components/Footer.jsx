@@ -17,7 +17,7 @@ export default function Footer() {
             </span>
             Self Host Form
           </a>
-          <p>Build quizzes and forms. Host them on your own computer.</p>
+          <p>Build forms, quizzes and surveys. Host them on your own computer.</p>
           <button type="button" className="btn btn-secondary" onClick={() => setSupportOpen(true)}>
             <Icons.qrCode className="btn-icon" /> Support the project
           </button>
@@ -61,7 +61,7 @@ export default function Footer() {
       </div>
 
       <div className="container footer-bottom">
-        <p>© {new Date().getFullYear()} Self Host Form. Source-available and free for personal and school use. Feedback welcome.</p>
+        <p>© {new Date().getFullYear()} Self Host Form. Source-available and free for personal and educational use. Feedback welcome.</p>
       </div>
 
       <SupportModal open={supportOpen} onClose={() => setSupportOpen(false)} />

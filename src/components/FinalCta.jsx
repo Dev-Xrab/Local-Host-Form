@@ -7,10 +7,10 @@ export default function FinalCta() {
     <section id="get-started" className="cta">
       <div className="cta-glow" aria-hidden="true" />
       <Rise className="container cta-inner">
-        <h2>Run your next quiz on your own machine.</h2>
+        <h2>Run your next form on your own machine.</h2>
         <p>
           Download the Windows installer and start a session in minutes. No signup, no hosted
-          account, and free for personal and school use.
+          account, and free for personal and educational use.
         </p>
         <div className="cta-actions">
           <a href={WINDOWS_DOWNLOAD_URL} className="btn btn-light btn-lg" download>

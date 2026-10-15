@@ -49,7 +49,7 @@ export default function Story() {
       </div>
       <div className="container">
         <SectionHead eyebrow="How it works" title="From blank form to graded results in four steps">
-          Students never need an account. All they need is a link, a code or a scanned QR.
+          Respondents never need an account. All they need is a link, a code or a scanned QR.
         </SectionHead>
 
         <div className="story-grid">

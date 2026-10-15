@@ -5,7 +5,7 @@ import { SELF_POINTS } from "../content";
 import { Rise, ease } from "./ui/Section";
 
 const NODES = [
-  { icon: "users", title: "Student", sub: "Joins with a code" },
+  { icon: "users", title: "Respondent", sub: "Joins with a code" },
   { icon: "layers", title: "Self Host Form", sub: "The app" },
   { icon: "monitor", title: "Your computer or network", sub: "Where it runs" },
   { icon: "database", title: "Local database", sub: "Forms & responses" },
@@ -19,7 +19,7 @@ function Diagram() {
       ref={ref}
       className="arch"
       role="img"
-      aria-label="Diagram: a student connects to Self Host Form, which runs on your computer or network, backed by a local database"
+      aria-label="Diagram: a respondent connects to Self Host Form, which runs on your computer or network, backed by a local database"
     >
       {NODES.map((n, i) => {
         const Icon = Icons[n.icon];
@@ -68,7 +68,7 @@ export default function SelfHost() {
             <h2>Your forms. Your computer. Your control.</h2>
             <p className="lead">
               A hosted form service stores every response on the provider's servers. Self Host Form
-              runs on a computer you own, so your students' answers sit in a local database next to
+              runs on a computer you own, so everyone's answers sit in a local database next to
               the app that collected them.
             </p>
           </Rise>
@@ -82,7 +82,7 @@ export default function SelfHost() {
           </ul>
           <Rise className="note">
             <strong>To be precise:</strong> self-hosted describes where the software runs, not whether
-            a network is required. Students still need to reach your computer, whether that's over
+            a network is required. Respondents still need to reach your computer, whether that's over
             local Wi-Fi with no internet at all, or through the optional public link.
           </Rise>
           <Rise className="note note-dev">

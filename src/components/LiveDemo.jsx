@@ -3,9 +3,9 @@ import { AnimatePresence, motion, useInView, useReducedMotion } from "motion/rea
 import { Icons } from "./icons";
 import { SectionHead, ease } from "./ui/Section";
 
-// An illustration of a live session, not real data: students join one by one, submit, and the
+// An illustration of a live session, not real data: people join one by one, submit, and the
 // leaderboard re-ranks. It mirrors what the Sessions screen in the app shows.
-const STUDENTS = [
+const PEOPLE = [
   { name: "Ana Reyes", score: 5 },
   { name: "Ben Cruz", score: 7 },
   { name: "Carla Santos", score: 5 },
@@ -14,9 +14,9 @@ const STUDENTS = [
   { name: "Farah Khan", score: 4 },
 ];
 const MAX = 7;
-const JOIN_EVERY = 2; // ticks between students joining
-const ANSWER_FOR = 3; // ticks a student spends answering
-const LAST = (STUDENTS.length - 1) * JOIN_EVERY + ANSWER_FOR;
+const JOIN_EVERY = 2; // ticks between people joining
+const ANSWER_FOR = 3; // ticks a person spends answering
+const LAST = (PEOPLE.length - 1) * JOIN_EVERY + ANSWER_FOR;
 const HOLD = 5;
 
 function useTick(running, reduced) {
@@ -56,7 +56,7 @@ export default function LiveDemo() {
   const tick = useTick(inView, reduced);
 
   const rows = useMemo(() => {
-    return STUDENTS.map((s, i) => {
+    return PEOPLE.map((s, i) => {
       const joinedAt = i * JOIN_EVERY;
       const doneAt = joinedAt + ANSWER_FOR;
       const status = tick >= doneAt ? "submitted" : tick >= joinedAt ? "answering" : "waiting";
@@ -68,7 +68,7 @@ export default function LiveDemo() {
   const sorted = [...rows].sort((a, b) => {
     if (a.status !== b.status) return a.status === "submitted" ? -1 : 1;
     if (a.status === "submitted") return b.score - a.score;
-    return STUDENTS.findIndex((s) => s.name === a.name) - STUDENTS.findIndex((s) => s.name === b.name);
+    return PEOPLE.findIndex((s) => s.name === a.name) - PEOPLE.findIndex((s) => s.name === b.name);
   });
   const avg = submitted.length ? Math.round((submitted.reduce((n, r) => n + r.score, 0) / submitted.length / MAX) * 1000) / 10 : 0;
 
@@ -76,7 +76,7 @@ export default function LiveDemo() {
     <section id="live-demo" className="section demo" ref={ref}>
       <div className="container">
         <SectionHead eyebrow="See it live" title="Watch a session come to life">
-          Students join with a code, answer, and the leaderboard re-ranks as each submission lands. This
+          People join with a code, answer, and the leaderboard re-ranks as each submission lands. This
           animation illustrates the Sessions screen with sample names and scores.
         </SectionHead>
 
@@ -86,7 +86,7 @@ export default function LiveDemo() {
               <span className="badge badge-live">
                 <span className="pill-dot" /> Active
               </span>
-              <h3>Period 3 — Cell Quiz</h3>
+              <h3>Safety Briefing — Morning Shift</h3>
             </div>
             <div className="demo-code">
               <span>Join code</span>

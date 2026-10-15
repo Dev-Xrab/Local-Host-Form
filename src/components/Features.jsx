@@ -41,9 +41,9 @@ export default function Features() {
   return (
     <section id="features" className="section features">
       <div className="container">
-        <SectionHead eyebrow="Features" title="Built for running real assessments">
-          A form builder, live sessions, automatic grading, a leaderboard and exports, all running
-          on your own computer.
+        <SectionHead eyebrow="Features" title="Everything you need to collect answers">
+          Build forms, run live sessions, grade answers automatically and export the results, all
+          running on your own computer.
         </SectionHead>
         <div className="bento">
           {FEATURES.map((f, i) => (

@@ -106,14 +106,14 @@ export default function Hero() {
       <div className="container hero-inner">
         <motion.div className="hero-copy" variants={container} initial="hidden" animate="show">
           <motion.p variants={item} className="pill">
-            <span className="pill-dot" /> Forms and quizzes you host yourself
+            <span className="pill-dot" /> Forms, quizzes and surveys you host yourself
           </motion.p>
           <motion.h1 variants={item}>
-            Run quizzes and forms from <span className="grad">your own computer.</span>
+            Collect answers with <span className="grad">your own computer.</span>
           </motion.h1>
           <motion.p variants={item} className="hero-sub">
-            Build a form or exam, hand students a join code, and watch graded results come in
-            live, over your classroom Wi-Fi, with no student accounts and no cloud required.
+            Build a form, quiz or survey, share a join code, and watch responses and scores come
+            in live, over your own Wi-Fi, with no respondent accounts and no cloud required.
             Responses are stored on your machine, not a vendor's servers.
           </motion.p>
           <motion.div variants={item} className="hero-ctas">
@@ -125,7 +125,7 @@ export default function Hero() {
             </a>
           </motion.div>
           <motion.p variants={item} className="hero-note">
-            Windows installer · Free for personal and school use ·{" "}
+            Windows installer · Free for personal and educational use ·{" "}
             <a className="link" href={ANDROID_DOWNLOAD_URL} download>
               Android APK (experimental)
             </a>

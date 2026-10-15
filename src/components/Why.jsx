@@ -7,8 +7,8 @@ export default function Why() {
   return (
     <section id="product" className="section why">
       <div className="container">
-        <SectionHead eyebrow="Why Self Host Form" title="Your classroom. Your machine. Your data.">
-          Hosted form tools keep your students' answers on someone else's servers. Self Host Form
+        <SectionHead eyebrow="Why Self Host Form" title="Your network. Your machine. Your data.">
+          Hosted form tools keep everyone's answers on someone else's servers. Self Host Form
           runs on a computer you control, so you decide where the data lives and who can reach it.
         </SectionHead>
         <div className="why-grid">

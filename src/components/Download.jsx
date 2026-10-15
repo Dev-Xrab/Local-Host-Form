@@ -13,8 +13,8 @@ const CARDS = [
     href: WINDOWS_DOWNLOAD_URL,
     cta: "Download for Windows",
     points: [
-      "Starts its own local server. Students join from any browser on your network.",
-      "Includes the one-click public link for remote students.",
+      "Starts its own local server. Respondents join from any browser on your network.",
+      "Includes the one-click public link for remote respondents.",
       "Not code-signed yet, so SmartScreen may warn. Choose More info, then Run anyway.",
     ],
   },
@@ -27,7 +27,7 @@ const CARDS = [
     href: ANDROID_DOWNLOAD_URL,
     cta: "Download the APK",
     points: [
-      "Hosts a session from your phone to students on the same Wi-Fi.",
+      "Hosts a session from your phone to respondents on the same Wi-Fi.",
       "Open the file on your phone and allow installs from this source. It isn't on Google Play.",
       "No public link, and the app must stay open during a session.",
     ],
@@ -39,7 +39,7 @@ export default function Download() {
     <section id="download" className="section download">
       <div className="container">
         <SectionHead eyebrow={`Download · ${RELEASE_VERSION}`} title="Get Self Host Form">
-          Free for personal and school use. No account and no signup.
+          Free for personal and educational use. No account and no signup.
         </SectionHead>
 
         <div className="download-grid">

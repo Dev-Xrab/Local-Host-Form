@@ -10,8 +10,8 @@ export default function Audience() {
   return (
     <section id="who-its-for" className="section audience">
       <div className="container">
-        <SectionHead eyebrow="Who it's for" title="Built for people who run their own assessments">
-          If you collect answers from a room full of people, this is for you.
+        <SectionHead eyebrow="Who it's for" title="Built for anyone who collects answers">
+          From quizzes to RSVPs to internal surveys: if the people are on your network, it works.
         </SectionHead>
 
         <div className="audience-card">
