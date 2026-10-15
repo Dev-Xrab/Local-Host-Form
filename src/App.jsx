@@ -1,38 +1,40 @@
-import Navbar from "./components/Navbar/Navbar";
-import Hero from "./components/Hero/Hero";
-import TrustSection from "./components/TrustSection/TrustSection";
-import WhatIsSection from "./components/WhatIsSection/WhatIsSection";
-import HowItWorks from "./components/HowItWorks/HowItWorks";
-import Features from "./components/Features/Features";
-import SelfHostedSection from "./components/SelfHostedSection/SelfHostedSection";
-import Comparison from "./components/Comparison/Comparison";
-import WhoItsFor from "./components/WhoItsFor/WhoItsFor";
-import FAQ from "./components/FAQ/FAQ";
-import FinalCTA from "./components/FinalCTA/FinalCTA";
-import Footer from "./components/Footer/Footer";
+import { MotionConfig } from "motion/react";
+import Nav from "./components/Nav";
+import Hero from "./components/Hero";
+import FactStrip from "./components/FactStrip";
+import Why from "./components/Why";
+import Story from "./components/Story";
+import Features from "./components/Features";
+import LiveDemo from "./components/LiveDemo";
+import SelfHost from "./components/SelfHost";
+import Compare from "./components/Compare";
+import Audience from "./components/Audience";
+import Faq from "./components/Faq";
+import FinalCta from "./components/FinalCta";
+import Footer from "./components/Footer";
+import "./styles/site.css";
 
-function App() {
+export default function App() {
   return (
-    <>
+    <MotionConfig reducedMotion="user">
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
-      <Navbar />
+      <Nav />
       <main id="main-content">
         <Hero />
-        <TrustSection />
-        <WhatIsSection />
-        <HowItWorks />
+        <FactStrip />
+        <Why />
+        <Story />
         <Features />
-        <SelfHostedSection />
-        <Comparison />
-        <WhoItsFor />
-        <FAQ />
-        <FinalCTA />
+        <LiveDemo />
+        <SelfHost />
+        <Compare />
+        <Audience />
+        <Faq />
+        <FinalCta />
       </main>
       <Footer />
-    </>
+    </MotionConfig>
   );
 }
-
-export default App;
