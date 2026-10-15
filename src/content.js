@@ -1,3 +1,9 @@
+import dashboardImg from "./assets/screenshots/dashboard-home.jpg";
+import builderImg from "./assets/screenshots/form-builder.jpg";
+import sessionImg from "./assets/screenshots/session-share.jpg";
+import respondentImg from "./assets/screenshots/respondent-view.jpg";
+import leaderboardImg from "./assets/screenshots/leaderboard.jpg";
+
 // All marketing copy lives here so it can be checked against the app in one place.
 // Every claim below was verified against the app's source (see git history for details).
 
@@ -14,28 +20,28 @@ export const SHOWCASE = [
   {
     id: "dashboard",
     tab: "Dashboard",
-    src: "/screenshots/dashboard-home.jpg",
+    src: dashboardImg,
     alt: "Self Host Form dashboard showing live sessions, the local server address with a join QR code, and form and folder counts",
     caption: "Your server address, live sessions and QR code in one place.",
   },
   {
     id: "builder",
     tab: "Form builder",
-    src: "/screenshots/form-builder.jpg",
+    src: builderImg,
     alt: "Form builder showing a quiz with the correct answer marked, a points field, and a sidebar of question types",
     caption: "11 question types, correct answers and points on every question.",
   },
   {
     id: "session",
     tab: "Live session",
-    src: "/screenshots/session-share.jpg",
+    src: sessionImg,
     alt: "Session screen with the join code, QR code, live counts and a table of respondents with scores",
     caption: "Join code, QR and live respondent status while students answer.",
   },
   {
     id: "leaderboard",
     tab: "Leaderboard",
-    src: "/screenshots/leaderboard.jpg",
+    src: leaderboardImg,
     alt: "Session leaderboard ranking respondents by score",
     caption: "Scores and ranks update the moment students submit.",
   },
@@ -59,7 +65,7 @@ export const STEPS = [
     number: "01",
     title: "Build the form",
     text: "Pick from 11 question types plus section breaks, or start from one of 16 templates. Mark the correct answer and set points on any question you want graded automatically.",
-    image: "/screenshots/form-builder.jpg",
+    image: builderImg,
     alt: "Form builder showing a quiz with a multiple choice question, the correct answer marked, a points field, and a sidebar listing every question type",
     label: "Form builder",
   },
@@ -67,7 +73,7 @@ export const STEPS = [
     number: "02",
     title: "Start a session and share the code",
     text: "A session gives your form a join code, a link and a QR code. Set an optional time limit, turn on fullscreen or tab-switch locks, and watch students join in real time.",
-    image: "/screenshots/session-share.jpg",
+    image: sessionImg,
     alt: "Session screen showing the join code, a link and QR code, live respondent counts, an average score and a table of respondents with their status and score",
     label: "Sessions",
   },
@@ -75,7 +81,7 @@ export const STEPS = [
     number: "03",
     title: "Students answer on any device",
     text: "Students enter their name and the code in any modern browser on a phone, tablet or laptop. Time limits are tracked per student and enforced by the server, and in-progress answers survive a page reload.",
-    image: "/screenshots/respondent-view.jpg",
+    image: respondentImg,
     alt: "The student-facing form showing a multiple choice question, a checkbox question and a short answer field, with a countdown timer at the top",
     label: "Student view",
   },
@@ -83,7 +89,7 @@ export const STEPS = [
     number: "04",
     title: "Review scores and export",
     text: "Scores, averages and a leaderboard update as answers come in. When the session ends, export to Excel or PDF, or combine several sessions into one workbook.",
-    image: "/screenshots/leaderboard.jpg",
+    image: leaderboardImg,
     alt: "Session leaderboard ranking respondents by score, with score bars and submission times",
     label: "Leaderboard",
   },

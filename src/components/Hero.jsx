@@ -4,6 +4,7 @@ import { Icons } from "./icons";
 import { SHOWCASE } from "../content";
 import { WINDOWS_DOWNLOAD_URL } from "../constants";
 import { ease } from "./ui/Section";
+import Lightbox from "./ui/Lightbox";
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } } };
 const item = { hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0, transition: { duration: 0.7, ease } } };
@@ -12,6 +13,7 @@ const item = { hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0, transiti
 function Showcase() {
   const [index, setIndex] = useState(0);
   const [auto, setAuto] = useState(true);
+  const [zoom, setZoom] = useState(null);
   const wrap = useRef(null);
   const visible = useInView(wrap, { margin: "-20% 0px" });
   const { scrollYProgress } = useScroll({ target: wrap, offset: ["start end", "end start"] });
@@ -59,7 +61,12 @@ function Showcase() {
           <span />
           <em>Self Host Form / {current.tab}</em>
         </div>
-        <div className="showcase-screen">
+        <button
+          type="button"
+          className="showcase-screen zoomable"
+          aria-label={`Enlarge ${current.tab} screenshot`}
+          onClick={() => setZoom(current)}
+        >
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.img
               key={current.id}
@@ -82,8 +89,9 @@ function Showcase() {
               transition={{ duration: 5.2, ease: "linear" }}
             />
           )}
-        </div>
+        </button>
       </div>
+      <Lightbox image={zoom} onClose={() => setZoom(null)} />
       <p className="showcase-caption" aria-live="polite">
         {current.caption}
       </p>
