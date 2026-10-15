@@ -69,7 +69,7 @@
 }
 
 .self-hosted-dev-note span {
-  font-weight: 700;
+  font-weight: 600;
   color: var(--color-text-on-dark);
 }
 
@@ -80,7 +80,7 @@
   margin-top: var(--space-6);
   padding: var(--space-4);
   background: var(--color-success-soft);
-  border: 1px solid rgba(15, 157, 108, 0.3);
+  border: 1px solid rgba(62, 207, 142, 0.25);
   border-radius: var(--radius-md);
 }
 
@@ -131,7 +131,7 @@
   align-items: center;
   text-align: center;
   gap: 6px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .diagram-icon {

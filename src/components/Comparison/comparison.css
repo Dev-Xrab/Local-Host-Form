@@ -21,7 +21,7 @@
 }
 
 .comparison-table thead th {
-  font-weight: 700;
+  font-weight: 600;
   color: var(--color-text-muted);
   font-size: 0.85rem;
   background: var(--color-bg-inset);
@@ -54,7 +54,7 @@
 
 .comparison-table thead .comparison-col-highlight {
   color: var(--color-accent) !important;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .comparison-check {

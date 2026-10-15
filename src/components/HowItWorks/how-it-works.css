@@ -27,7 +27,7 @@
 .how-step-number {
   display: block;
   font: var(--text-caption);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--color-text-faint);
   font-family: var(--font-mono);
   margin-bottom: var(--space-3);

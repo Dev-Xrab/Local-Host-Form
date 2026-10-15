@@ -82,7 +82,7 @@ h4 {
 }
 
 .section {
-  padding-block: var(--space-9);
+  padding-block: 88px;
 }
 
 @media (max-width: 640px) {
@@ -107,7 +107,7 @@ h4 {
 .eyebrow {
   display: inline-block;
   font: var(--text-caption);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-accent);
   margin-bottom: var(--space-3);
@@ -132,8 +132,8 @@ h4 {
   justify-content: center;
   gap: var(--space-2);
   font: var(--text-small);
-  font-weight: 600;
-  padding: 12px 22px;
+  font-weight: 500;
+  padding: 9px 16px;
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
   transition: background var(--duration-fast) var(--ease-out),
@@ -142,22 +142,21 @@ h4 {
   white-space: nowrap;
 }
 
-.btn:active {
-  transform: scale(0.97);
-}
+
 
 .btn-lg {
-  padding: 14px 28px;
-  font-size: 1rem;
+  padding: 11px 20px;
+  font-size: 0.9375rem;
 }
 
 .btn-primary {
-  background: var(--color-accent);
+  background: var(--color-primary);
+  border-color: var(--color-primary-border);
   color: #fff;
 }
 
 .btn-primary:hover {
-  background: var(--color-accent-hover);
+  background: var(--color-primary-hover);
 }
 
 .btn-secondary {
@@ -216,7 +215,7 @@ h4 {
   position: absolute;
   left: var(--space-4);
   top: -60px;
-  background: var(--color-accent);
+  background: var(--color-primary);
   color: #fff;
   padding: 10px 16px;
   border-radius: var(--radius-sm);

@@ -2,7 +2,7 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(247, 247, 245, 0.85);
+  background: rgba(18, 18, 18, 0.85);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid transparent;
@@ -16,7 +16,7 @@
 .navbar-inner {
   display: flex;
   align-items: center;
-  height: 68px;
+  height: 60px;
   gap: var(--space-5);
 }
 
@@ -24,7 +24,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 1.05rem;
   letter-spacing: -0.01em;
   color: var(--color-text);
@@ -38,7 +38,7 @@
   width: 30px;
   height: 30px;
   border-radius: var(--radius-sm);
-  background: var(--color-accent-soft);
+  background: #ededed;
   color: var(--color-accent);
 }
 
@@ -50,7 +50,7 @@
 .navbar-links {
   display: flex;
   align-items: center;
-  gap: var(--space-6);
+  gap: var(--space-5);
   margin-inline: auto;
 }
 
@@ -59,6 +59,7 @@
   position: relative;
   font: var(--text-small);
   font-weight: 500;
+  white-space: nowrap;
   color: var(--color-text-secondary);
   transition: color var(--duration-fast) var(--ease-out);
 }
@@ -118,7 +119,7 @@
   display: none;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 1020px) {
   .navbar-links,
   .navbar-actions {
     display: none;
@@ -132,7 +133,7 @@
   .navbar-mobile {
     display: block;
     position: fixed;
-    inset: 68px 0 0 0;
+    inset: 60px 0 0 0;
     z-index: 150;
     background: var(--color-bg);
     padding: var(--space-6) var(--space-5);
