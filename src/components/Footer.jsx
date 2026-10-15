@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Icons } from "./icons";
 import { NAV_LINKS } from "../content";
-import { ANDROID_DOWNLOAD_URL, APP_REPO_URL, WINDOWS_DOWNLOAD_URL } from "../constants";
+import { ANDROID_DOWNLOAD_URL, WINDOWS_DOWNLOAD_URL } from "../constants";
 import SupportModal from "./Support/SupportModal";
 
 export default function Footer() {
@@ -45,16 +45,6 @@ export default function Footer() {
               <li>
                 <a href={ANDROID_DOWNLOAD_URL} download>
                   Download for Android
-                </a>
-              </li>
-              <li>
-                <a href={`${APP_REPO_URL}#readme`} target="_blank" rel="noreferrer">
-                  Documentation
-                </a>
-              </li>
-              <li>
-                <a href={APP_REPO_URL} target="_blank" rel="noreferrer">
-                  GitHub
                 </a>
               </li>
             </ul>

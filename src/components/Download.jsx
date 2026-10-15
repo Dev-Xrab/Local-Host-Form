@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
 import { Icons } from "./icons";
-import { ANDROID_DOWNLOAD_URL, RELEASE_URL, RELEASE_VERSION, WINDOWS_DOWNLOAD_URL } from "../constants";
+import { ANDROID_DOWNLOAD_URL, RELEASE_VERSION, WINDOWS_DOWNLOAD_URL } from "../constants";
 import { SectionHead, ease } from "./ui/Section";
 
 const CARDS = [
@@ -81,11 +81,7 @@ export default function Download() {
         </div>
 
         <p className="download-foot">
-          Checksums and older versions are on the{" "}
-          <a className="link" href={RELEASE_URL} target="_blank" rel="noreferrer">
-            release page
-          </a>
-          . Other platforms are not available as downloads yet.
+Other platforms are not available as downloads yet.
         </p>
       </div>
     </section>
