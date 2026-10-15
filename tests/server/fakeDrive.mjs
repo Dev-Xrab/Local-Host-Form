@@ -5,11 +5,12 @@ import { randomUUID } from "node:crypto";
 
 export const TOKEN = "test-token";
 
-export function startFakeDrive() {
+export function startFakeDrive({ port = 0 } = {}) {
   const files = new Map(); // id -> { id, name, content, modifiedTime }
   const pendingUploads = new Map(); // upload id -> { method, id?, metadata }
   let clock = Date.UTC(2026, 0, 1, 0, 0, 0);
   let revoked = false;
+  let offline = false;
   const stats = { multipart: 0, media: 0, resumable: 0, lists: 0, reads: 0, deletes: 0, exchanges: 0, refreshes: 0, revokes: 0, verifiers: [] };
   const now = () => new Date((clock += 5)).toISOString(); // strictly increasing, like real writes
 
@@ -24,6 +25,40 @@ export function startFakeDrive() {
     const chunks = [];
     for await (const c of req) chunks.push(c);
     const raw = Buffer.concat(chunks).toString("utf8");
+
+    // A stand-in consent page so the real app can be clicked through without a Google OAuth client.
+    if (req.method === "GET" && url.pathname === "/auth") {
+      const back = new URL(url.searchParams.get("redirect_uri"));
+      back.searchParams.set("code", "good-code");
+      back.searchParams.set("state", url.searchParams.get("state"));
+      const denied = new URL(back);
+      denied.searchParams.delete("code");
+      denied.searchParams.set("error", "access_denied");
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      return res.end(`<!doctype html><meta charset="utf-8"><title>Fake Google sign-in</title>
+<body style="font-family:system-ui;background:#121212;color:#ededed;max-width:520px;margin:48px auto;padding:0 20px">
+<p style="color:#f2b24c">FAKE GOOGLE. For local testing only. Nothing here is sent to Google.</p>
+<h2>Self Host Form wants to access your Google Account</h2>
+<p>Signed in as <b>teacher@example.com</b></p>
+<ul><li>Associate you with your personal info on Google</li><li>See your email address</li>
+<li>See your personal info, including any personal info you've made publicly available</li>
+<li><b>See, create, and delete its own configuration data in your Google Drive</b> (drive.appdata)</li></ul>
+<p><a href="${back}" style="background:#006239;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none">Allow</a>
+&nbsp; <a href="${denied}" style="color:#a0a0a0">Cancel</a></p></body>`);
+    }
+    // Connectivity probe used by the app, and a switch to simulate losing the connection.
+    if (req.method === "GET" && url.pathname === "/generate_204") {
+      res.writeHead(offline ? 503 : 204);
+      return res.end();
+    }
+    if (req.method === "POST" && url.pathname === "/__offline") {
+      offline = url.searchParams.get("on") === "1";
+      return json(res, 200, { offline });
+    }
+    // Lets you see what the app stored in the fake Drive app folder.
+    if (req.method === "GET" && url.pathname === "/__files") {
+      return json(res, 200, [...files.values()].map((f) => ({ name: f.name, bytes: Buffer.byteLength(f.content), modifiedTime: f.modifiedTime })));
+    }
 
     // Fake Google OAuth endpoints, used by the end-to-end test.
     if (req.method === "POST" && url.pathname === "/token") {
@@ -142,10 +177,11 @@ export function startFakeDrive() {
   });
 
   return new Promise((resolve) => {
-    server.listen(0, "127.0.0.1", () => {
+    server.listen(port, "127.0.0.1", () => {
       const base = `http://127.0.0.1:${server.address().port}`;
       process.env.DRIVE_API_BASE = `${base}/drive/v3`;
       process.env.DRIVE_UPLOAD_BASE = `${base}/upload/drive/v3`;
+      process.env.GOOGLE_AUTH_URL = `${base}/auth`;
       process.env.GOOGLE_TOKEN_URL = `${base}/token`;
       process.env.GOOGLE_REVOKE_URL = `${base}/revoke`;
       process.env.GOOGLE_USERINFO_URL = `${base}/userinfo`;

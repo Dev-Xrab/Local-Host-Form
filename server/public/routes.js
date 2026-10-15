@@ -9,6 +9,7 @@ import {
   buildRespondentSummary,
 } from "../responses/grading.js";
 import { validateAnswers } from "../responses/validateAnswers.js";
+import { scheduleAutoSync } from "../cloud/autosave.js";
 import {
   joinLimiter,
   editCodeLimiter,
@@ -351,5 +352,6 @@ publicRouter.post("/responses/:id/submit", (req, res) => {
     return res.status(409).json({ error: "This response has already been submitted." });
   }
 
+  scheduleAutoSync();
   res.status(200).json(joinedPayload(session, saved, form));
 });

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { scheduleAutoSave } from "../cloud/autosave.js";
 import * as repo from "./repository.js";
 import { getSubject } from "../subjects/repository.js";
 import { recalculateResponsesForForm, importResponses } from "../responses/repository.js";
@@ -77,6 +78,7 @@ formsRouter.post("/", (req, res) => {
     return res.status(400).json({ error: "subjectId does not refer to an existing subject" });
   }
   const form = repo.createForm({ title, description, subjectId: subjectId || null });
+  scheduleAutoSave(form.id);
   res.status(201).json(form);
 });
 
@@ -120,6 +122,7 @@ formsRouter.post("/import", (req, res) => {
     const sessionId = createEndedSession(form.id, "Imported responses");
     importedResponseCount = importResponses(form.id, sessionId, responses, idMap);
   }
+  scheduleAutoSave(form.id);
   res.status(201).json({ ...form, importedResponseCount });
 });
 
@@ -163,6 +166,7 @@ formsRouter.put("/:id", (req, res) => {
     recalculated = recalculateResponsesForForm(form.id, form.questions);
   }
 
+  scheduleAutoSave(form.id);
   res.json({ ...form, recalculatedResponses: recalculated });
 });
 

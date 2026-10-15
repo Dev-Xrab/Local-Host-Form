@@ -1,4 +1,5 @@
 import express from "express";
+import { startAutoSave } from "./cloud/autosave.js";
 import helmet from "helmet";
 import { networkInterfaces } from "node:os";
 import { formsRouter } from "./forms/routes.js";
@@ -163,6 +164,9 @@ export function createApp({ port, mountWebUi } = {}) {
     res.status(500).json({ error: "Internal server error", detail });
   });
 
+
+  // Background saving of forms and responses to Google Drive (a no-op until the user signs in).
+  startAutoSave();
 
   return app;
 }

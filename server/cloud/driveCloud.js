@@ -147,7 +147,7 @@ async function createForm(token, body, id = randomUUID()) {
 
 // Publishing an edit adds a new snapshot rather than overwriting the old one, so a device that
 // imported an older version still has a definition that matches the responses it collected.
-async function publishVersion(token, id, body) {
+async function publishVersion(token, id, body, coalesceSeconds = 0) {
   const error = validateFormBody(body);
   if (error) return reply(400, { error });
   const found = await findForm(token, id);
@@ -156,9 +156,16 @@ async function publishVersion(token, id, body) {
   if (!found) return createForm(token, body, id).then((r) => (r.status === 201 ? reply(200, r.body) : r));
 
   const { file, doc } = found;
-  const nextVersion = doc.currentVersion + 1;
-  doc.versions.push(snapshotOf(nextVersion, body));
-  doc.currentVersion = nextVersion;
+  const latest = doc.versions.find((v) => v.version === doc.currentVersion);
+  const recent = latest && coalesceSeconds > 0 && Date.now() - Date.parse(latest.createdAt) < coalesceSeconds * 1000;
+  if (recent) {
+    // Same editing session: refresh the newest snapshot instead of adding another near-identical one.
+    Object.assign(latest, snapshotOf(latest.version, body), { createdAt: latest.createdAt });
+  } else {
+    const nextVersion = doc.currentVersion + 1;
+    doc.versions.push(snapshotOf(nextVersion, body));
+    doc.currentVersion = nextVersion;
+  }
   doc.title = body.title || "";
   doc.description = body.description || "";
   doc.updatedAt = new Date().toISOString();
@@ -306,7 +313,7 @@ export async function handleCloudRequest(token, method, path, body, ctx) {
         const result = detail(found.doc, wanted);
         return result ? reply(200, result) : notFound();
       }
-      if (method === "PUT") return publishVersion(token, id, body);
+      if (method === "PUT") return publishVersion(token, id, body, Number(url.searchParams.get("coalesce")) || 0);
       if (method === "DELETE") return deleteForm(token, id);
     }
 

@@ -8,7 +8,7 @@ import { timeAgo } from "../timeAgo";
 
 export interface SyncSummary { uploaded: number; downloaded: number; rejected?: unknown[]; downloadFailed?: unknown[]; incomplete?: boolean }
 export interface SyncState {
-  status: { pendingCount?: number; failedCount?: number; unsavedToCloudCount?: number; lastSyncedAt?: string } | null;
+  status: { pendingCount?: number; failedCount?: number; unsavedToCloudCount?: number; lastSyncedAt?: string; autoSave?: boolean; autoSaveError?: string | null } | null;
   phase: "checking" | "disconnected" | "offline" | "online" | "syncing" | "synced" | "error";
   result: SyncSummary | null;
   error: string | null;
@@ -52,7 +52,7 @@ export function SyncStatus({ sync, compact }: { sync: SyncState; compact?: boole
 
   const detail =
     phase === "offline" ? (pending > 0 ? `${pending} response${pending === 1 ? "" : "s"} waiting to sync` : "Responses save locally")
-    : phase === "online" ? `${status?.lastSyncedAt ? `Last synced ${timeAgo(status.lastSyncedAt)}` : "Never synced"}${pending > 0 ? ` · ${pending} pending` : ""}`
+    : phase === "online" ? `${status?.lastSyncedAt ? `Last synced ${timeAgo(status.lastSyncedAt)}` : "Never synced"}${pending > 0 ? ` · ${pending} pending` : ""}${status?.autoSave === false ? " · auto-save off" : ""}${status?.autoSaveError ? ` · auto-save: ${status.autoSaveError}` : ""}`
     : phase === "syncing" ? "Uploading and downloading changes"
     : phase === "synced" && result ? `${result.uploaded} uploaded · ${result.downloaded} downloaded${result.incomplete ? " · more to sync" : ""}`
     : error || (result ? `Uploaded ${result.uploaded}, downloaded ${result.downloaded}, ${(result.rejected?.length || 0) + (result.downloadFailed?.length || 0)} failed` : "");

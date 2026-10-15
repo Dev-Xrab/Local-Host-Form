@@ -157,6 +157,24 @@ test("an expired token surfaces as a 401 DriveError so the client can refresh", 
   await assert.rejects(() => handle("bad-token", "GET", "/api/forms", undefined, deviceA), (err) => err instanceof DriveError && err.status === 401);
 });
 
+test("automatic saves within a few minutes replace the newest version instead of adding one", async () => {
+  const id = (await call("POST", "/api/forms", formBody("Draft"))).body.id;
+
+  const first = await call("PUT", `/api/forms/${id}?coalesce=600`, formBody("Draft edit 1"));
+  assert.equal(first.body.version, 1, "a recent version should be updated in place");
+  assert.equal((await call("GET", `/api/forms/${id}`)).body.title, "Draft edit 1");
+
+  const manual = await call("PUT", `/api/forms/${id}`, formBody("Manual save"));
+  assert.equal(manual.body.version, 2, "a manual save always adds a version");
+
+  const second = await call("PUT", `/api/forms/${id}?coalesce=600`, { ...formBody("Auto after manual"), questions: [question(), question("q9")] });
+  assert.equal(second.body.version, 2);
+  assert.equal(second.body.questions.length, 2);
+  assert.deepEqual((await call("GET", `/api/forms/${id}/versions`)).body.map((v) => v.version), [2, 1]);
+  // the older snapshot is untouched
+  assert.equal((await call("GET", `/api/forms/${id}?version=1`)).body.title, "Draft edit 1");
+});
+
 test("sync only touches the app-data folder", async () => {
   assert.ok([...drive.files.values()].every((f) => /^(form|resp)-/.test(f.name)));
 });

@@ -48,6 +48,9 @@ export const cloudApi = {
   // `id` here is the CLOUD form's own id, not a local one — these operate on forms browsed in
   // "Import from Cloud" that may not be imported onto this device at all.
   deleteCloudForm: (id) => request(`/forms/cloud/${id}`, { method: "DELETE" }),
+  // Automatic saving of forms and responses to Drive while signed in and online.
+  getAutoSave: () => request("/auto-save"),
+  setAutoSave: (enabled) => request("/auto-save", { method: "PUT", body: JSON.stringify({ enabled }) }),
   syncStatus: () => request("/sync/status"),
   sync: () => request("/sync", { method: "POST" }),
   listSyncIssues: () => request("/sync/issues"),

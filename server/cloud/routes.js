@@ -17,6 +17,8 @@ import * as formsRepo from "../forms/repository.js";
 import * as responsesRepo from "../responses/repository.js";
 import { requireAuth } from "../auth/middleware.js";
 import { runSync, pingCloudServer, downloadResponsesForForm } from "./sync.js";
+import { publishFormToCloud } from "./publish.js";
+import { getLastAutoSaveError, isAutoSaveEnabled, scheduleAutoSync } from "./autosave.js";
 
 export const cloudRouter = Router();
 
@@ -368,45 +370,23 @@ cloudRouter.post("/forms/:id/import", requireAuth, requireCloudAccount, async (r
 // cloud-server/forms/repository.js publishNewVersion) — history the app itself never exposes: an
 // import always takes the latest.
 cloudRouter.post("/forms/:id/publish", requireAuth, requireCloudAccount, async (req, res) => {
-  const form = formsRepo.getForm(req.params.id);
-  if (!form) return res.status(404).json({ error: "Form not found." });
-
-  const payload = {
-    title: form.title,
-    description: form.description,
-    settings: form.settings,
-    questions: form.questions,
-  };
-
   try {
-    const upstream = await cloudFetch(
-      form.remoteFormId ? `/api/forms/${encodeURIComponent(form.remoteFormId)}` : "/api/forms",
-      { method: form.remoteFormId ? "PUT" : "POST", body: JSON.stringify(payload) }
-    );
-    if (!upstream.ok) {
-      const body = await upstream.json().catch(() => ({}));
-      return res.status(upstream.status).json({ error: body.error || "Failed to publish the form." });
-    }
-    const published = await upstream.json();
-    const account = cloudRepo.getCloudAccount();
-    const updated = formsRepo.setRemoteInfo(form.id, {
-      remoteFormId: published.id,
-      remoteVersion: published.version,
-      ownerUserId: account.userId,
-    });
-
-    // Saving a form to the cloud carries the responses collected under it: they became eligible
-    // for upload the moment remote_form_id was set. That upload can take a while (a real network
-    // round-trip per batch, more if there's a backlog) and has nothing to do with whether the
-    // FORM itself saved — so it's kicked off in the background, not awaited, and the host's "Save
-    // to cloud" click resolves as soon as the form is saved. Uncaught here on purpose: any failure
-    // just leaves those responses queued as pending for the next manual or automatic sync.
-    runSync().catch(() => {});
-
-    res.json(formsRepo.getForm(updated.id));
+    res.json(await publishFormToCloud(req.params.id));
   } catch (err) {
-    res.status(502).json({ error: err.message });
+    res.status(err.status || 502).json({ error: err.message });
   }
+});
+
+// Automatic saving of forms and responses to Drive (see autosave.js).
+cloudRouter.get("/auto-save", requireAuth, (req, res) => {
+  res.json({ enabled: isAutoSaveEnabled() });
+});
+
+cloudRouter.put("/auto-save", requireAuth, (req, res) => {
+  if (typeof req.body?.enabled !== "boolean") return res.status(400).json({ error: "enabled must be true or false." });
+  cloudRepo.setAutoSave(req.body.enabled);
+  if (req.body.enabled) scheduleAutoSync();
+  res.json({ enabled: isAutoSaveEnabled() });
 });
 
 // Backs the sync status indicator (Online/Offline/last-synced-time) — cheap enough to poll
@@ -424,6 +404,8 @@ cloudRouter.get("/sync/status", requireAuth, async (req, res) => {
     // see GET /sync/issues below.
     failedCount: responsesRepo.listSyncIssues().length,
     lastSyncedAt: cloudRepo.getLastSyncedAt(),
+    autoSave: isAutoSaveEnabled(),
+    autoSaveError: getLastAutoSaveError()?.message || null,
     // Google responses fetched onto this device that the host hasn't chosen to save to the cloud.
     unsavedToCloudCount: responsesRepo.countLocalOnlyResponses(),
   });

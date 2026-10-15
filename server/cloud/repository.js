@@ -74,6 +74,15 @@ export function clearCloudAccount() {
   db.prepare("DELETE FROM cloud_account WHERE id = 1").run();
 }
 
+// Automatic saving to Drive is on unless the user turned it off in Settings.
+export function getAutoSave() {
+  return getSettingStmt.get("auto_save_drive")?.value !== "0";
+}
+
+export function setAutoSave(enabled) {
+  setSettingStmt.run("auto_save_drive", enabled ? "1" : "0");
+}
+
 // The last server_seq this device has fully applied — see server/cloud/sync.js. Stored in
 // app_settings (same table the host-password/recovery settings already use) rather than a
 // dedicated table, since it's a single scalar with no other fields.

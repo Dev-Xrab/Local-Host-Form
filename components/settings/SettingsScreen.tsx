@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { useRouter } from "expo-router";
 import { Check, Cloud, Copy, Globe, LogOut, Trash2 } from "lucide-react-native";
 import useAuthStore, { useAuthActions } from "../../store/useAuthStore";
 import { authApi } from "../../src/features/auth/services/authApi";
 import { settingsApi } from "../../src/features/settings/services/settingsApi";
-import { Button, Dialog, IconButton, Notice, Page, PageHeader, SegmentedControl, Section, SettingRow, Surface, Text, TextField, radius, space, useTheme, useToast } from "../../ui";
+import { cloudApi } from "../../src/features/cloud/services/cloudApi";
+import { Button, Dialog, IconButton, Notice, Page, PageHeader, SegmentedControl, Section, SettingRow, Surface, Switch, Text, TextField, radius, space, useTheme, useToast } from "../../ui";
 import { useCloudAccount, useTunnel } from "../../lib/data";
 import { copyText } from "../../lib/platform";
 import { useServerOrigin } from "../../lib/useServerOrigin";
@@ -82,6 +83,22 @@ function CloudSection() {
   const { account, connected, loading, login, logout } = useCloudAccount();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [autoSave, setAutoSave] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!connected) return;
+    cloudApi.getAutoSave().then((r: { enabled: boolean }) => setAutoSave(r.enabled)).catch(() => setAutoSave(null));
+  }, [connected]);
+
+  const toggleAutoSave = async (next: boolean) => {
+    setAutoSave(next);
+    try {
+      setAutoSave((await cloudApi.setAutoSave(next)).enabled);
+    } catch (e) {
+      setAutoSave(!next);
+      setError((e as Error).message);
+    }
+  };
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
     setError(null);
@@ -93,9 +110,14 @@ function CloudSection() {
         {loading ? (
           <View style={{ padding: space[4] }}><Text tone="secondary">Checking cloud connection…</Text></View>
         ) : connected && account ? (
-          <SettingRow last label={account.name || account.email || "Signed in"} description={`Signed in as ${account.email}. Forms and responses sync to a private folder in this Google Drive that only this app can see.`}>
-            <Button label={busy ? "Signing out…" : "Sign out"} icon={LogOut} loading={busy} onPress={() => run(logout)} />
-          </SettingRow>
+          <>
+            <SettingRow label={account.name || account.email || "Signed in"} description={`Signed in as ${account.email}. Forms and responses sync to a private folder in this Google Drive that only this app can see.`}>
+              <Button label={busy ? "Signing out…" : "Sign out"} icon={LogOut} loading={busy} onPress={() => run(logout)} />
+            </SettingRow>
+            <SettingRow last label="Save to Drive automatically" description="Saves new and changed forms, and responses as they come in, whenever you're online. Anything that couldn't go up is retried when the connection is back.">
+              <Switch label={autoSave ? "On" : "Off"} checked={!!autoSave} disabled={autoSave === null} onChange={toggleAutoSave} />
+            </SettingRow>
+          </>
         ) : (
           <SettingRow last label="Not connected" description="Sign in with Google to sync forms and responses between your devices. They are stored in a private folder in your own Google Drive, not on our servers.">
             <Button label={busy ? "Opening browser…" : "Sign in with Google"} icon={Cloud} variant="primary" loading={busy} onPress={() => run(login)} />
