@@ -6,26 +6,34 @@ const STEPS = [
   {
     number: "01",
     title: "Build the form",
-    text: "Add short answer, paragraph, multiple choice, checkboxes, dropdowns, scales, dates, grids, and file uploads. Mark correct answers on any question where you want automatic grading.",
+    text: "Pick from 11 question types plus section breaks, or start from one of 16 templates. Mark the correct answer and set points on any question you want graded automatically.",
     image: "/screenshots/form-builder.jpg",
-    alt: "Form builder showing a feedback form with a multiple choice, short answer, and linear scale question, and a sidebar listing every available question type",
-    label: "Self Host Form / Form Info",
+    alt: "Form builder showing a quiz with a multiple choice question, the correct answer marked, a points field, and a sidebar listing every question type",
+    label: "Self Host Form / Form builder",
   },
   {
     number: "02",
-    title: "Share it your way",
-    text: "Start a session and share it with a link, a short join code, or a QR code — respondents scan or type the code and answer, no account needed on their end. Watch who's joined in real time.",
+    title: "Start a session and share the code",
+    text: "A session gives your form a join code, a link and a QR code. Set an optional time limit, turn on fullscreen or tab-switch locks, and watch students join in real time.",
     image: "/screenshots/session-share.jpg",
-    alt: "Session screen showing a share link, a QR code to join, and live respondent and submission counts",
+    alt: "Session screen showing the join code, a link and QR code, live respondent counts, an average score and a table of respondents with their status and score",
     label: "Self Host Form / Sessions",
   },
   {
     number: "03",
-    title: "Collect responses",
-    text: "Respondents answer on their own device — phone, tablet, or laptop. Timed sessions are enforced by the server, not the browser, and in-progress answers are saved automatically if the page reloads.",
+    title: "Students answer on any device",
+    text: "Students enter their name and the code in any modern browser on a phone, tablet or laptop. Time limits are tracked per student and enforced by the server, and in-progress answers survive a page reload.",
     image: "/screenshots/respondent-view.jpg",
-    alt: "The respondent-facing view of a form, showing a multiple choice question, a short answer question, and a linear scale question",
+    alt: "The student-facing form showing a multiple choice question, a checkbox question and a short answer field, with a countdown timer at the top",
     label: "Self Host Form / Respond",
+  },
+  {
+    number: "04",
+    title: "Review scores and export",
+    text: "Scores, averages and a leaderboard update as answers come in. When the session ends, export to Excel or PDF, or combine several sessions into one workbook.",
+    image: "/screenshots/leaderboard.jpg",
+    alt: "Session leaderboard ranking respondents by score, with score bars and submission times",
+    label: "Self Host Form / Leaderboard",
   },
 ];
 
@@ -35,8 +43,8 @@ export default function HowItWorks() {
       <div className="container">
         <div className="section-head center">
           <p className="eyebrow">How it works</p>
-          <h2>The same three steps, on your own network</h2>
-          <p>No accounts required to respond — just a link, a code, or a scanned QR.</p>
+          <h2>From blank form to graded results in four steps</h2>
+          <p>Students never need an account. All they need is a link, a code or a scanned QR.</p>
         </div>
 
         <div className="how-steps">

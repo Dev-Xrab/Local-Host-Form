@@ -76,12 +76,9 @@ export default function SupportModal({ open, onClose }) {
             built yet.
           </li>
           <li>
-            <strong>Leaderboards.</strong> A session-ranking view for quizzes, on the roadmap.
-          </li>
-          <li>
-            <strong>Cloud sync out of beta.</strong> The optional Google-account sync is capped
-            at the first 100 users while it's in beta — opening it up means paying for more
-            server capacity to run it on.
+            <strong>Cloud sync out of beta.</strong> The optional Google-account sync is in beta
+            with limited access. Opening it up to everyone means paying for more server
+            capacity to run it on.
           </li>
         </ul>
 

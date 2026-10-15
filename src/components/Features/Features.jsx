@@ -4,72 +4,65 @@ import "./features.css";
 const FEATURES = [
   {
     icon: "questionBank",
-    title: "Form Builder",
-    text: "Create forms with short answer, paragraph, multiple choice, checkboxes, dropdown, linear scale, date, time, file upload, and grid/matrix fields.",
-  },
-  {
-    icon: "chart",
-    title: "Response Collection",
-    text: "Collect submissions and see them appear as respondents complete a form.",
-  },
-  {
-    icon: "layers",
-    title: "Form Management",
-    text: "Create, edit, organise, import, and export your forms, grouped by subject.",
-  },
-  {
-    icon: "database",
-    title: "Self-Hosting",
-    text: "Deploy the platform on infrastructure you control — a personal computer or a server.",
-  },
-  {
-    icon: "sliders",
-    title: "Customisation",
-    text: "Set required fields, correct answers, time limits, and response-editing rules per form.",
+    title: "Form builder",
+    text: "Short answer, paragraph, multiple choice, checkboxes, dropdown, linear scale, date, time, file upload and two grid types, plus section breaks and 16 ready-made templates.",
   },
   {
     icon: "checkCircle",
-    title: "Automatic Grading",
-    text: "Multiple choice, checkboxes, dropdown, and scale fields can be scored automatically, with points and correct answers set per question.",
+    title: "Automatic grading",
+    text: "Multiple choice, dropdown, checkboxes, short answer and paragraph questions can be scored automatically, with per-question points and accepted answer variations for text.",
   },
   {
-    icon: "monitor",
-    title: "Response Management",
-    text: "Review collected submissions and scores from a central dashboard as they come in, not after the fact.",
+    icon: "users",
+    title: "Live sessions",
+    text: "Each session gets a join code, link and QR code. Add a per-student time limit enforced by the server, and watch respondents, submissions and average score update live.",
   },
   {
-    icon: "share",
-    title: "Sharing",
-    text: "Distribute a form with a link, a short code, or a QR code — no account needed to respond.",
-  },
-  {
-    icon: "network",
-    title: "Remote Access",
-    text: "Respondents outside your Wi-Fi? Start a temporary public link with one click — no port forwarding, router setup, or account required. Stop it and the link stops working.",
-  },
-  {
-    icon: "clock",
-    title: "Sessions & Timing",
-    text: "For workflows that need it, run a form as a timed, code-based session — the basis for quizzes and live activities.",
+    icon: "trophy",
+    title: "Leaderboard",
+    text: "Rank a session's respondents by score as submissions arrive, or open any respondent to review their answers question by question.",
   },
   {
     icon: "shield",
-    title: "Quiz Integrity",
-    text: "Optionally lock a session to fullscreen, detect when a respondent switches tabs or apps, and restrict copying on their screen — deterrents for live assessments, not a guarantee against a determined cheater.",
+    title: "Exam integrity tools",
+    text: "Require fullscreen, lock the screen with a countdown when a student switches tabs, and restrict copying and printing. These are deterrents, not a guarantee against a determined cheater.",
   },
   {
     icon: "bank",
-    title: "Roster & Gradebook",
-    text: "Keep a roster of students or members, and let it match respondents by name or alias across sessions to build a real gradebook.",
+    title: "Folders & rosters",
+    text: "Organise forms into folders. Keep a class roster with aliases so \"Jon\" and \"Jonathan D.\" match one student across sessions.",
   },
   {
     icon: "upload",
-    title: "Export",
-    text: "Export responses and gradebooks to Excel or PDF, or bulk-export an entire subject's sessions at once — no server round trip required.",
+    title: "Bulk export",
+    text: "Pick several finished sessions, see who responded to each, and export everything to a single Excel workbook. Uploaded files are bundled into a ZIP.",
+  },
+  {
+    icon: "download",
+    title: "Excel & PDF export",
+    text: "Export any session's responses to Excel or PDF straight from your machine. Forms can also be exported and imported as files.",
+  },
+  {
+    icon: "network",
+    title: "Remote access",
+    text: "Students outside your Wi-Fi? Start a temporary public link in one click, with no port forwarding or router setup. Stop it and the link goes down. Desktop app only.",
+  },
+  {
+    icon: "cloud",
+    title: "Google Forms import",
+    text: "Optionally sign in with Google to import an existing Google Form and its responses, or publish forms to your account. The local app works fully without it.",
+  },
+  {
+    icon: "database",
+    title: "Private by default",
+    text: "Responses live in a local database on your machine. The host password is created on first launch from the host computer itself, and login attempts are rate-limited.",
+  },
+  {
+    icon: "devices",
+    title: "Any device, any theme",
+    text: "Students answer from a phone, tablet or laptop. The host interface adapts to each screen size and ships with dark, light and follow-system themes.",
   },
 ];
-
-const COMING_SOON = ["Leaderboards"];
 
 export default function Features() {
   return (
@@ -77,10 +70,10 @@ export default function Features() {
       <div className="container">
         <div className="section-head center">
           <p className="eyebrow">Features</p>
-          <h2>What's included</h2>
+          <h2>Built for running real assessments</h2>
           <p>
-            A form builder, timed sessions, automatic grading, a roster-aware gradebook, and
-            exports — all running on the deployment you control.
+            A form builder, live sessions, automatic grading, a leaderboard and exports, all
+            running on your own computer.
           </p>
         </div>
 
@@ -99,9 +92,6 @@ export default function Features() {
           })}
         </div>
 
-        <p className="features-coming-soon">
-          <span>Coming soon:</span> {COMING_SOON.join(" · ")}
-        </p>
       </div>
     </section>
   );

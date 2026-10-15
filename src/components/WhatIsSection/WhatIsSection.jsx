@@ -2,12 +2,12 @@ import { Icons } from "../icons";
 import "./what-is-section.css";
 
 const CONTROLS = [
-  { icon: "monitor", title: "Deployment", text: "Run the platform on infrastructure you choose, instead of a provider's servers." },
-  { icon: "database", title: "Data", text: "Form definitions and responses live in your own database." },
-  { icon: "share", title: "Access", text: "Decide how a form is shared and who can reach it." },
-  { icon: "layers", title: "Infrastructure", text: "Fits a personal computer, a home server, or organisational hardware." },
-  { icon: "sliders", title: "Customisation", text: "Configure fields, timing, and grading to match your workflow." },
-  { icon: "bank", title: "Internal workflows", text: "Adapt forms to how your team, class, or organisation already works." },
+  { icon: "monitor", title: "Runs on your computer", text: "Install it on a Windows PC and it starts its own local server. Nothing to sign up for and nothing to subscribe to." },
+  { icon: "database", title: "Data stays with you", text: "Forms and responses are stored in a local database on the host machine, not on a vendor's servers." },
+  { icon: "qrCode", title: "Join by code", text: "Students open a link, scan a QR code or type a short session code. No student accounts." },
+  { icon: "wifiOff", title: "Works without internet", text: "Run a whole session over your classroom Wi-Fi, even when the school's connection is down." },
+  { icon: "network", title: "Public link when needed", text: "Start a temporary public link in one click for students off your network. No router changes." },
+  { icon: "cloud", title: "Cloud is optional", text: "Sign in with Google only if you want to import Google Forms or sync forms to your account." },
 ];
 
 export default function WhatIsSection() {
@@ -15,11 +15,12 @@ export default function WhatIsSection() {
     <section id="product" className="section what-is-section">
       <div className="container">
         <div className="section-head center">
-          <p className="eyebrow">What is Self Host Form?</p>
-          <h2>A Form Platform You Control</h2>
+          <p className="eyebrow">Why Self Host Form</p>
+          <h2>Your classroom. Your machine. Your data.</h2>
           <p>
-            Traditional hosted form platforms handle hosting and infrastructure for you.
-            Self Host Form gives you the option to run the platform yourself.
+            Hosted form tools keep your students' answers on someone else's servers. Self Host
+            Form runs on a computer you control, so you decide where the data lives and who
+            can reach it.
           </p>
         </div>
 
@@ -39,8 +40,8 @@ export default function WhatIsSection() {
         </div>
 
         <p className="whatis-resolve">
-          It's a form builder first — the self-hosting option is what sets it apart from
-          most online form tools.
+          It's a form and quiz builder first. Self-hosting is what lets you keep the whole
+          thing in your own hands.
         </p>
       </div>
     </section>

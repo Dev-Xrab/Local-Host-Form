@@ -3,34 +3,34 @@ import "./comparison.css";
 
 const ROWS = [
   {
-    label: "Hosting",
-    cloud: "Runs on the provider's servers",
-    self: "Runs on infrastructure you choose",
+    label: "Where it runs",
+    cloud: "On the provider's servers",
+    self: "On a computer you own",
   },
   {
-    label: "Data location",
-    cloud: "Stored in the provider's database",
-    self: "Stored in your own database",
+    label: "Where responses live",
+    cloud: "In the provider's database",
+    self: "In a local database on your machine",
   },
   {
-    label: "Deployment control",
-    cloud: "Managed entirely by the provider",
-    self: "You control how and where it's deployed",
+    label: "Student sign-in",
+    cloud: "Depends on the provider and plan",
+    self: "None. Students join with a code and a name",
   },
   {
-    label: "Customisation",
-    cloud: "Limited to what the provider exposes",
-    self: "Configurable to fit your own workflow",
+    label: "Internet required",
+    cloud: "Yes, for everyone",
+    self: "No. Local Wi-Fi is enough",
   },
   {
-    label: "Infrastructure control",
-    cloud: "None — infrastructure is the provider's",
-    self: "Runs on hardware you manage",
+    label: "Remote students",
+    cloud: "Always reachable online",
+    self: "Optional temporary public link",
   },
   {
-    label: "Network environment",
-    cloud: "Always reached over the public internet",
-    self: "Reachable over whichever network you connect it to",
+    label: "Exam controls",
+    cloud: "Depends on the provider",
+    self: "Fullscreen gate, tab-switch lock, copy restrictions",
   },
 ];
 
@@ -40,8 +40,8 @@ export default function Comparison() {
       <div className="container">
         <div className="section-head center">
           <p className="eyebrow">Comparison</p>
-          <h2>Two approaches to running a form platform</h2>
-          <p>A general comparison of approach — not a claim about any specific competitor.</p>
+          <h2>Hosted form tools vs. Self Host Form</h2>
+          <p>A general comparison of approach, not a claim about any specific product.</p>
         </div>
 
         <div className="comparison-table-wrap">
@@ -51,7 +51,7 @@ export default function Comparison() {
                 <th scope="col" className="comparison-row-label-head">
                   <span className="visually-hidden">Dimension</span>
                 </th>
-                <th scope="col">Traditional Hosted Form Platform</th>
+                <th scope="col">Typical hosted form tool</th>
                 <th scope="col" className="comparison-col-highlight">
                   Self Host Form
                 </th>

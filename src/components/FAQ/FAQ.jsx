@@ -5,55 +5,63 @@ import "./faq.css";
 const FAQS = [
   {
     q: "What is Self Host Form?",
-    a: "A form builder you run yourself. You create a form, share it, and collect and manage the responses from your own deployment instead of a third-party's hosted service.",
+    a: "A form and quiz builder that runs on your own computer. You build a form, start a session, students join with a code, and the responses are stored on your machine instead of a third-party service.",
   },
   {
-    q: "Is Self Host Form similar to Google Forms?",
-    a: "Conceptually, yes — build a form, share a link, collect responses. The main difference is that you run the platform on your own infrastructure instead of using a provider's hosted service.",
+    q: "Is it free?",
+    a: "Yes, it's free to run for personal and school use. The source is available to read, but it isn't open source: you can't redistribute or sell it, or modified versions of it, without permission.",
   },
   {
-    q: "What does self-hosted mean?",
-    a: "It means the software runs on infrastructure you choose — a personal computer or a server you manage — rather than a provider's servers. It describes where the platform runs, not whether a network connection is needed to reach it.",
+    q: "Is it similar to Google Forms?",
+    a: "The basics are the same: build a form, share it, collect responses. The differences are that it runs on your own computer, works over a local network without internet, and is built around live graded sessions with join codes, time limits and exam controls.",
   },
   {
-    q: "Where is my form data stored?",
-    a: "In the database of the deployment you run. By default that's a local database on the machine hosting the platform, not a third-party cloud service.",
+    q: "Which platforms does it run on?",
+    a: "The installer is for Windows. Students can answer from any device with a modern browser. There is also an experimental Android build that can host from a phone, with some limits: no public link, and the app must stay open during a session.",
   },
   {
-    q: "Can I run Self Host Form on my own computer?",
-    a: "Yes. It's built to run as a desktop application on your own computer, with its own local server and database.",
+    q: "Where is my data stored?",
+    a: "In a local SQLite database on the computer running the app. Nothing is sent to a cloud service unless you choose to connect a Google account.",
   },
   {
-    q: "Can I deploy it on a server?",
-    a: "The platform includes a Node.js server component that can run independently of the desktop app, so it can also be deployed on a server you manage.",
+    q: "Do students need an account?",
+    a: "No. They open the link, scan the QR code or type the session code, enter a name, email or N/A, and answer. Only the host needs a password.",
   },
   {
-    q: "Do respondents need an account?",
-    a: "No. Respondents just enter a name to submit a form. An account is only needed to create and manage forms.",
+    q: "What question types are supported?",
+    a: "Short answer, paragraph, multiple choice, checkboxes, dropdown, linear scale, date, time, file upload, multiple choice grid and checkbox grid, plus section breaks. There are also 16 templates for common forms.",
   },
   {
-    q: "What types of forms can I create?",
-    a: "Forms can include short answer, paragraph, multiple choice, checkboxes, dropdown, linear scale, date, time, file upload, and grid/matrix questions.",
+    q: "How does grading work?",
+    a: "Mark the correct answer and set points on multiple choice, dropdown, checkboxes, short answer or paragraph questions. Text questions accept a list of correct variations. Scores are calculated on the server when a student submits, and the session shows averages and a leaderboard.",
   },
   {
-    q: "Can I create quizzes and assessments?",
-    a: "Yes. Multiple choice, checkboxes, dropdown, and linear scale fields can have correct answers for automatic scoring, and a form can be run as a timed session — quizzes are one use case built on the same form builder.",
+    q: "Can I run timed exams and stop cheating?",
+    a: "You can set a time limit per student, require fullscreen, lock the screen with a countdown when a student switches tabs, and restrict copying and printing. These are deterrents that work in the browser and desktop app. They are not a guarantee against a determined cheater.",
   },
   {
-    q: "Can I use it for surveys and research?",
-    a: "Yes. The same builder works for open-ended and choice-based questions without needing a scored or timed session.",
+    q: "Can I use it for surveys and registrations?",
+    a: "Yes. Forms without answer keys simply collect responses, and the templates include event registration, RSVP, job application, time-off request and feedback forms.",
   },
   {
-    q: "Can multiple people manage forms?",
-    a: "Each deployment currently has a single shared host password rather than individual accounts, so \"multiple people managing forms\" today means sharing that one login — separate per-person accounts and roles aren't available yet.",
+    q: "What if students aren't on my Wi-Fi?",
+    a: "In the desktop app you can start a temporary public link with one click. It uses a Cloudflare tunnel, so there's no port forwarding or router setup. Stopping it or closing the app takes the link down, and the host login isn't reachable through it.",
   },
   {
-    q: "What if respondents aren't on my Wi-Fi or local network?",
-    a: "The dashboard can start a temporary public link (backed by a Cloudflare Tunnel) with one click — no port forwarding, router configuration, or account needed. It only runs while you leave it on, and stopping it or closing the app takes the link down immediately.",
+    q: "Can I export results?",
+    a: "Yes. Export a session to Excel or PDF, or pick several finished sessions and export them into one Excel workbook, matched against your class roster. Uploaded files are bundled into a ZIP with the workbook.",
   },
   {
-    q: "Does it work across multiple devices, or with existing Google Forms?",
-    a: "Everything works fully offline with no account. If you want it, an optional sync layer lets you sign in with Google to back up forms and responses to a cloud database you can pull from on another device, and to import an existing Google Form's questions. It's a bolt-on for that specific case — the local deployment doesn't require it. This sync layer is in beta and currently limited to the first 100 people who connect it; once it's out of beta, it'll be open to everyone.",
+    q: "Can multiple teachers manage forms?",
+    a: "Not with separate accounts yet. Each installation has a single host password, so sharing access means sharing that login. Per-person accounts and roles aren't built yet.",
+  },
+  {
+    q: "What does the optional Google account do?",
+    a: "Signing in with Google lets you import an existing Google Form, with its responses if you want them, and publish forms to your account. It's an optional layer that is currently in beta with limited access. The local app doesn't need it.",
+  },
+  {
+    q: "Can I run it on a server?",
+    a: "Yes. The Node and Express server that powers the desktop app can run on its own and serve the web UI, so you can host it on a machine you manage.",
   },
 ];
 

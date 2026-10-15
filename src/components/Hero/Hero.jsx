@@ -10,14 +10,13 @@ export default function Hero() {
         <div className="hero-copy">
           <p className="hero-kicker">
             <Icons.database className="hero-kicker-icon" />
-            Self-hosted form platform
+            Forms and quizzes you host yourself
           </p>
-          <h1>Create forms. Run them yourself.</h1>
+          <h1>Run quizzes and forms from your own computer.</h1>
           <p className="hero-sub">
-            Self Host Form is a form and quiz builder that runs on your own machine or
-            network — no account, no cloud dependency, and no internet connection required
-            once it's running. Build a form, share it, and the responses stay on
-            infrastructure you control.
+            Build a form or exam, hand students a join code, and watch graded results come
+            in live — over your classroom Wi-Fi, with no student accounts and no cloud
+            required. Responses are stored on your machine, not a vendor's servers.
           </p>
           <div className="hero-ctas">
             <a href={WINDOWS_DOWNLOAD_URL} className="btn btn-primary btn-lg" download>
@@ -28,21 +27,21 @@ export default function Hero() {
             </a>
           </div>
           <p className="hero-cta-note">
-            .exe installer, Windows only
+            Windows installer · Free for personal and school use
           </p>
-          <p className="hero-flow" aria-label="Create, then share, then collect">
-            <span>Create</span>
+          <p className="hero-flow" aria-label="Build, then share, then grade">
+            <span>Build</span>
             <Icons.arrowRight className="hero-flow-arrow" />
             <span>Share</span>
             <Icons.arrowRight className="hero-flow-arrow" />
-            <span>Collect</span>
+            <span>Grade</span>
           </p>
         </div>
 
         <div className="hero-visual">
           <ProductFrame
             src="/screenshots/dashboard-home.jpg"
-            alt="Self Host Form dashboard showing a live session, the local server address with a join QR code, and a list of forms and subjects"
+            alt="Self Host Form dashboard showing live sessions, the local server address with a join QR code, and form and folder counts"
             label="Self Host Form / Dashboard"
           />
         </div>
