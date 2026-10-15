@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
-import { View } from "react-native";
 import { useRouter } from "expo-router";
 import { Cloud, FileText, Plus, Upload } from "lucide-react-native";
 import { formsApi } from "../../../src/features/forms/services/formsApi";
 import { cloudApi } from "../../../src/features/cloud/services/cloudApi";
 import { describeCloudError } from "../../../src/features/cloud/utils/describeCloudError";
 import { groupBySubjects } from "../../../src/features/subjects/utils/groupBySubjects";
-import { Button, EmptyState, Notice, Page, PageHeader, SearchField, Section, Skeleton, Surface, TableHeader, space, useToast } from "../../../ui";
+import { Button, EmptyState, Notice, Page, PageHeader, SearchField, Section, Skeleton, Surface, TableHeader, useToast } from "../../../ui";
 import { useCloudAccount, useForms, useSubjects } from "../../../lib/data";
 import { pickJsonText } from "../../../lib/platform";
 import type { FormSummary, Subject } from "../../../lib/domain";
@@ -14,12 +13,9 @@ import { FormRow, FORM_ACTIONS_WIDTH } from "../../../components/forms/FormRow";
 import { useFormExport } from "../../../components/forms/useFormExport";
 import { TemplateGallery } from "../../../components/forms/TemplateGallery";
 import { CreateFormDialog } from "../../../components/forms/CreateFormDialog";
-import { CloudImportDialog, GoogleImportDialog } from "../../../components/forms/ImportDialogs";
-import { GoogleAuthRequiredDialog, GoogleSyncDialog, SaveResponsesPrompt, type GoogleDiff } from "../../../components/forms/CloudDialogs";
+import { CloudImportDialog } from "../../../components/forms/ImportDialogs";
+import { GoogleAuthRequiredDialog } from "../../../components/forms/CloudDialogs";
 import { DeleteFormDialog } from "../../../components/forms/DeleteFormDialog";
-
-type CloudAction = "cloud" | "google";
-interface RefreshResult { formTitle: string; formId: string; checkedResponseCount: number; newResponseCount: number; unsavedCount?: number; responseImportError?: string }
 
 export default function FormsPage() {
   const router = useRouter();
@@ -34,31 +30,25 @@ export default function FormsPage() {
   const [deleteTarget, setDeleteTarget] = useState<FormSummary | null>(null);
   const [importing, setImporting] = useState(false);
   const [publishingId, setPublishingId] = useState<string | null>(null);
-  const [refreshingId, setRefreshingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const exporter = useFormExport(setNotice);
 
-  // Which import was requested while signed out. The Google sign-in itself happens in the OS
-  // browser, so the request is resumed once `connected` flips true, not when login() resolves.
-  const [pending, setPending] = useState<CloudAction | null>(null);
+  // An import requested while signed out. The Google sign-in itself happens in the OS browser, so the
+  // request is resumed once `connected` flips true, not when login() resolves.
+  const [pending, setPending] = useState(false);
   const [showAuthRequired, setShowAuthRequired] = useState(false);
   const [showCloud, setShowCloud] = useState(false);
-  const [showGoogle, setShowGoogle] = useState(false);
-  const [diffTarget, setDiffTarget] = useState<{ form: FormSummary; diff: GoogleDiff } | null>(null);
-  const [applying, setApplying] = useState(false);
-  const [refreshResult, setRefreshResult] = useState<RefreshResult | null>(null);
 
   useEffect(() => {
     if (!connected || !pending) return;
-    if (pending === "cloud") setShowCloud(true);
-    else setShowGoogle(true);
-    setPending(null);
+    setShowCloud(true);
+    setPending(false);
   }, [connected, pending]);
 
-  const requireCloudThen = (action: CloudAction) => {
-    if (connected) return action === "cloud" ? setShowCloud(true) : setShowGoogle(true);
+  const requireCloudThen = () => {
+    if (connected) return setShowCloud(true);
     setNotice(null);
-    setPending(action);
+    setPending(true);
     setShowAuthRequired(true);
   };
 
@@ -68,7 +58,7 @@ export default function FormsPage() {
       await login();
     } catch (err) {
       setNotice(describeCloudError(err));
-      setPending(null);
+      setPending(false);
     }
   };
 
@@ -113,54 +103,13 @@ export default function FormsPage() {
     setNotice(null);
     try {
       await cloudApi.publishForm(f.id);
-      toast("Saved to your cloud account", "success");
+      toast("Saved to your Google Drive", "success");
       await refresh();
     } catch (err) {
       setNotice((err as Error).message);
     } finally {
       setPublishingId(null);
     }
-  };
-
-  // Check for structural changes first (read-only). Only show the decision dialog when something
-  // changed; otherwise go straight to a response-only sync.
-  const refreshGoogle = async (f: FormSummary) => {
-    setRefreshingId(f.id);
-    setNotice(null);
-    try {
-      const diff = await cloudApi.checkGoogleFormChanges(f.id);
-      if (diff.hasChanges) setDiffTarget({ form: f, diff });
-      else {
-        const result = await cloudApi.applyGoogleFormChanges(f.id, "keep-local");
-        setRefreshResult({ formTitle: f.title, formId: f.id, ...result });
-        refresh();
-      }
-    } catch (err) {
-      setNotice(describeCloudError(err));
-    } finally {
-      setRefreshingId(null);
-    }
-  };
-
-  const applyChanges = async (decision: "keep-local" | "sync-from-online") => {
-    if (!diffTarget) return;
-    setApplying(true);
-    try {
-      const result = await cloudApi.applyGoogleFormChanges(diffTarget.form.id, decision);
-      setRefreshResult({ formTitle: diffTarget.form.title, formId: diffTarget.form.id, ...result });
-      setDiffTarget(null);
-      refresh();
-    } catch (err) {
-      setNotice(describeCloudError(err));
-    } finally {
-      setApplying(false);
-    }
-  };
-
-  const saveResponsesToCloud = async (formId: string) => {
-    await cloudApi.saveGoogleResponsesToCloud(formId);
-    setRefreshResult((p) => (p?.formId === formId ? { ...p, unsavedCount: 0 } : p));
-    refresh();
   };
 
   const filtered = forms.filter((f) => (f.title || "").toLowerCase().includes(query.toLowerCase()));
@@ -174,8 +123,7 @@ export default function FormsPage() {
         actions={
           <>
             <Button label={importing ? "Importing…" : "Import file"} icon={Upload} disabled={importing} onPress={importFile} />
-            <Button label={pending === "cloud" ? "Waiting for sign-in…" : "From cloud"} icon={Cloud} disabled={pending === "cloud"} onPress={() => requireCloudThen("cloud")} />
-            <Button label={pending === "google" ? "Waiting for sign-in…" : "Google Form"} icon={FileText} disabled={pending === "google"} onPress={() => requireCloudThen("google")} />
+            <Button label={pending ? "Waiting for sign-in…" : "From Drive"} icon={Cloud} disabled={pending} onPress={requireCloudThen} />
             <Button label="New form" icon={Plus} variant="primary" onPress={() => setShowCreate(true)} />
           </>
         }
@@ -184,15 +132,6 @@ export default function FormsPage() {
       <TemplateGallery onBlank={() => setShowCreate(true)} onPick={createFromTemplate} />
 
       {notice ? <Notice tone="danger" actionLabel="Dismiss" onAction={() => setNotice(null)}>{notice}</Notice> : null}
-      {refreshResult ? (
-        <View style={{ gap: space[2] }}>
-          <Notice tone={refreshResult.responseImportError ? "warning" : "success"} actionLabel="Dismiss" onAction={() => setRefreshResult(null)}>
-            {`Synced "${refreshResult.formTitle}" from Google. ${refreshResult.checkedResponseCount} checked, ${refreshResult.newResponseCount === 0 ? "no new responses found" : `${refreshResult.newResponseCount} new imported`}.${refreshResult.responseImportError ? ` Responses couldn't be pulled in: ${refreshResult.responseImportError}` : ""}`}
-          </Notice>
-          {refreshResult.unsavedCount ? <SaveResponsesPrompt count={refreshResult.unsavedCount} onSave={() => saveResponsesToCloud(refreshResult.formId)} onDismiss={() => setRefreshResult({ ...refreshResult, unsavedCount: 0 })} /> : null}
-        </View>
-      ) : null}
-
       <SearchField value={query} onChangeText={setQuery} placeholder="Search forms" />
 
       {loading && forms.length === 0 ? (
@@ -215,10 +154,8 @@ export default function FormsPage() {
                     cloudConnected: connected,
                     exporting: exporter.exportingId === f.id,
                     publishing: publishingId === f.id,
-                    refreshing: refreshingId === f.id,
                     onExport: exporter.request,
                     onPublish: publish,
-                    onRefreshGoogle: refreshGoogle,
                     onDelete: setDeleteTarget,
                   }}
                 />
@@ -243,10 +180,8 @@ export default function FormsPage() {
         }}
       />
 
-      <GoogleAuthRequiredDialog visible={showAuthRequired} onConfirm={confirmSignIn} onCancel={() => { setShowAuthRequired(false); setPending(null); }} />
+      <GoogleAuthRequiredDialog visible={showAuthRequired} onConfirm={confirmSignIn} onCancel={() => { setShowAuthRequired(false); setPending(false); }} />
       <CloudImportDialog visible={showCloud} forms={forms} onClose={() => setShowCloud(false)} onOpenForm={open} onChanged={refresh} />
-      <GoogleImportDialog visible={showGoogle} forms={forms} onClose={() => setShowGoogle(false)} onOpenForm={open} onSaveResponses={saveResponsesToCloud} />
-      <GoogleSyncDialog diff={diffTarget?.diff ?? null} busy={applying} onCancel={() => setDiffTarget(null)} onKeepLocal={() => applyChanges("keep-local")} onSyncFromOnline={() => applyChanges("sync-from-online")} />
     </Page>
   );
 }

@@ -12,7 +12,7 @@ import { File } from "expo-file-system";
 import JSZip from "jszip";
 import { attachConnection } from "../http/connection.js";
 import { startHostService, stopHostService } from "../../modules/host-service";
-import { DEFAULT_CLOUD_SERVER_URL, DEFAULT_PORT, LAN_REFRESH_MS, PORT_ATTEMPTS } from "../config.js";
+import { DEFAULT_PORT, LAN_REFRESH_MS, PORT_ATTEMPTS } from "../config.js";
 
 const KEEP_AWAKE_TAG = "self-host-form-server";
 const MAX_BODY_BYTES = 14 * 1024 * 1024;
@@ -74,7 +74,6 @@ async function boot({ preferredPort }) {
   // server/db/index.js opens the database as a side effect of being imported.
   globalThis.__SHF_SQLITE__ = SQLite;
   process.env.DATA_DIR = process.env.DATA_DIR || "/shf-data";
-  process.env.CLOUD_SERVER_URL = process.env.CLOUD_SERVER_URL || DEFAULT_CLOUD_SERVER_URL;
   await refreshLan();
   const lanTimer = setInterval(refreshLan, LAN_REFRESH_MS);
 

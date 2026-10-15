@@ -10,11 +10,11 @@ A desktop app for teachers to build forms, quizzes, and exams and host them from
 - **Exam integrity tools**: fullscreen gate, refocus lock, and connection overlays for respondents
 - **Exports** to Excel, PDF, and ZIP
 - **Public links** through a built-in Cloudflare tunnel, with no port forwarding needed
-- **Optional cloud sync** and Google Forms import through the separate `cloud-server`
+- **Optional Google Drive sync**: forms and responses are stored in a private app folder in the user's own Drive, with no server of ours in between
 
 ## Tech stack
 
-React Native (Expo + expo-router, rendered to the web with React Native Web) · TypeScript · Express 5 · Electron · SQLite (Node's built-in `node:sqlite`) · Zustand · PostgreSQL (cloud server only)
+React Native (Expo + expo-router, rendered to the web with React Native Web) · TypeScript · Express 5 · Electron · SQLite (Node's built-in `node:sqlite`) · Zustand
 
 ## Getting started
 
@@ -40,26 +40,31 @@ npm install
 
 For day-to-day UI work run `npm run server` and `npm run dev` together, then open http://localhost:8081.
 
-### Cloud server (optional)
+### Google Drive sync (optional)
 
-The cloud server handles sync and Google sign-in. It needs PostgreSQL and a Google OAuth client.
+Sync runs entirely on the user's device: the local server signs in to Google and stores forms and
+responses in the hidden app-data folder of the user's own Google Drive (scope `drive.appdata`, plus
+basic profile). There is no cloud server or database to host.
+
+To turn it on in a build, create an OAuth client of type **Desktop app** in Google Cloud Console, enable
+the **Google Drive API**, and set `GOOGLE_CLIENT_ID` (and `GOOGLE_CLIENT_SECRET`) in the environment or
+in `server/cloud/googleConfig.js`. Google documents that an installed-app client secret is not
+confidential. Without a client id the sync buttons report that sync is not set up.
+
+Tests for the Drive layer and the full two-device flow run against a fake Google, with no account needed:
 
 ```bash
-cd cloud-server
-npm install
-cp .env.example .env   # then fill in the values
-cd ..
-npm run cloud-server
+npm run test:drive
 ```
 
-Never commit `cloud-server/.env`.
+The old `cloud-server/` (Postgres + Google OAuth server) is no longer used by the app.
 
 ## Project layout
 
 ```
 electron/      Electron main process, preload, and splash screen
-server/        Local Express API (auth, forms, responses, sessions, tunnel, ...)
-cloud-server/  Optional central sync server (PostgreSQL + Google OAuth)
+server/        Local Express API (auth, forms, responses, sessions, tunnel, Drive sync, ...)
+cloud-server/  Legacy sync server (PostgreSQL + Google OAuth), no longer used
 app/           Screens and routes (expo-router; URLs match the old app: /dashboard, /forms/:id, /s/:code)
 components/    App-level components: shell, editor, respondent flow, sessions, settings
 ui/            Design system: tokens, theme, Text, Button, TextField, Dialog, Select, ...
@@ -81,7 +86,7 @@ The UI is React Native, so the same components can target web, desktop (Electron
 
 ### Hosting on a phone (Android)
 
-The mobile app can be the host, the same way the desktop app is: it runs the real server code (`server/`) inside the app, stores everything on the phone, serves the web UI to students on the same Wi-Fi, and syncs to your cloud account when it's online. Choose **Host on this phone** the first time you open the app, or **connect to a host computer** to use a desktop as the host.
+The mobile app can be the host, the same way the desktop app is: it runs the real server code (`server/`) inside the app, stores everything on the phone, serves the web UI to students on the same Wi-Fi, and syncs to your Google Drive when it's online. Choose **Host on this phone** the first time you open the app, or **connect to a host computer** to use a desktop as the host.
 
 How it works (no code is duplicated; `mobile-server/` only supplies what Node provides on desktop):
 - `server/createApp.js` builds the Express app; both `server/index.js` (desktop) and the phone call it.
@@ -93,7 +98,7 @@ How it works (no code is duplicated; `mobile-server/` only supplies what Node pr
 Build and run on a phone: `npm run build && npm run pack:web-ui`, then `npx expo run:android` (a phone with USB debugging, or an emulator). Tests: `npm run test:phone` runs the API smoke test and the HTTP edge-case suite against the phone runtime in Node.
 
 **Phone hosting limits**
-- Remote access through the Cloudflare tunnel is desktop-only. Students must be on the same Wi-Fi as the phone (or use your cloud sync).
+- Remote access through the Cloudflare tunnel is desktop-only. Students must be on the same Wi-Fi as the phone.
 - Keep the app open during a session. Android keeps it running in the background with a notification; iOS suspends background apps, so on iOS the app must stay in the foreground.
 - Signing in with Google opens your phone's browser and returns to the app's own server on the phone.
 - Logging in is slower on a phone (password hashing runs in JavaScript).

@@ -2,21 +2,14 @@ import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { FileText, Trash2 } from "lucide-react-native";
 import { cloudApi } from "../../src/features/cloud/services/cloudApi";
-import { describeCloudError } from "../../src/features/cloud/utils/describeCloudError";
-import { Badge, Button, ConfirmDialog, Dialog, EmptyState, IconButton, ListRow, Notice, SearchField, Spinner, Text, space } from "../../ui";
+import { Button, ConfirmDialog, Dialog, EmptyState, IconButton, ListRow, Notice, SearchField, Spinner, Text, space } from "../../ui";
 import type { FormSummary } from "../../lib/domain";
-import { SaveResponsesPrompt } from "./CloudDialogs";
 
 interface RemoteForm { id: string; title: string; questionCount: number; version: number }
-interface GoogleForm { id: string; name: string; modifiedTime: string }
-interface GoogleImportResult {
-  id: string; title: string; skipped: { title: string; reason: string }[];
-  importedResponseCount?: number; unsavedCount?: number; responseImportError?: string;
-}
 
 const untitled = (t?: string) => t || "Untitled form";
 
-/** Import from (or update/save/delete on) the user's own cloud account. */
+/** Import from (or update/save/delete on) the user's own Google Drive. */
 export function CloudImportDialog({ visible, forms, onClose, onOpenForm, onChanged }: {
   visible: boolean; forms: FormSummary[]; onClose: () => void; onOpenForm: (id: string) => void; onChanged: () => void | Promise<unknown>;
 }) {
@@ -136,94 +129,5 @@ export function CloudImportDialog({ visible, forms, onClose, onOpenForm, onChang
         }}
       />
     </>
-  );
-}
-
-/** Import a real Google Form (forms.google.com) and, optionally, its responses. */
-export function GoogleImportDialog({ visible, forms, onClose, onOpenForm, onSaveResponses }: {
-  visible: boolean; forms: FormSummary[]; onClose: () => void; onOpenForm: (id: string) => void; onSaveResponses: (formId: string) => Promise<void>;
-}) {
-  const [query, setQuery] = useState("");
-  const [list, setList] = useState<GoogleForm[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
-  // Kept on screen (rather than jumping straight into the form) when something was skipped or responses came over, so the user sees what did and didn't.
-  const [result, setResult] = useState<GoogleImportResult | null>(null);
-
-  useEffect(() => {
-    if (!visible) return;
-    setQuery("");
-    setResult(null);
-    setError(null);
-    setLoading(true);
-    cloudApi.listGoogleForms().then(setList).catch((e: Error) => setError(describeCloudError(e))).finally(() => setLoading(false));
-  }, [visible]);
-
-  const importOne = async (g: GoogleForm) => {
-    setBusyId(g.id);
-    setError(null);
-    try {
-      const created: GoogleImportResult = await cloudApi.importGoogleForm(g.id);
-      if (created.skipped?.length || created.importedResponseCount || created.unsavedCount || created.responseImportError) setResult(created);
-      else { onClose(); onOpenForm(created.id); }
-    } catch (err) {
-      const e = err as Error & { body?: { skipped?: unknown[] } };
-      const n = e.body?.skipped?.length;
-      setError(n ? `${describeCloudError(e)} (${n} unsupported question${n === 1 ? "" : "s"})` : describeCloudError(e));
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const shown = list.filter((g) => (g.name || "Untitled form").toLowerCase().includes(query.toLowerCase()));
-
-  return (
-    <Dialog visible={visible} title="Import Google Form" onClose={onClose} width={560}>
-      {error ? <Notice tone="danger">{error}</Notice> : null}
-      {result ? (
-        <>
-          <Notice tone={result.responseImportError ? "warning" : "success"} title={`Imported "${result.title}"`}>
-            {`${result.importedResponseCount || 0} response${result.importedResponseCount === 1 ? "" : "s"} brought over.${result.responseImportError ? ` Responses couldn't be pulled in: ${result.responseImportError}` : ""}`}
-          </Notice>
-          {result.skipped.length > 0 ? (
-            <View style={{ gap: 2 }}>
-              <Text variant="label">{`${result.skipped.length} question${result.skipped.length === 1 ? "" : "s"} couldn't be brought over`}</Text>
-              {result.skipped.map((s, i) => <Text key={i} variant="small" tone="secondary">{s.title}: {s.reason}</Text>)}
-            </View>
-          ) : null}
-          {result.unsavedCount ? <SaveResponsesPrompt count={result.unsavedCount} onSave={() => onSaveResponses(result.id).then(() => setResult({ ...result, unsavedCount: 0 }))} /> : null}
-          <Button label="Go to form" variant="primary" onPress={() => { onClose(); onOpenForm(result.id); }} />
-        </>
-      ) : loading ? <Spinner label="Loading your Google Forms" /> : list.length === 0 ? (
-        <EmptyState icon={FileText} title="No forms found" body="There are no forms in your Google account." />
-      ) : (
-        <>
-          <SearchField value={query} onChangeText={setQuery} placeholder="Search your Google Forms" />
-          <View>
-            {shown.map((g, i) => {
-              // Already linked on this device: no reason to round-trip to confirm what we know locally.
-              const linked = forms.find((f) => f.googleFormId === g.id);
-              return (
-                <ListRow
-                  key={g.id}
-                  last={i === shown.length - 1}
-                  icon={FileText}
-                  title={g.name || "Untitled form"}
-                  subtitle={`Edited ${new Date(g.modifiedTime).toLocaleDateString()}`}
-                  trailing={linked ? (
-                    <View style={{ flexDirection: "row", gap: space[2], alignItems: "center" }}>
-                      <Badge label="Imported" tone="success" />
-                      <Button label="Open" compact variant="ghost" onPress={() => { onClose(); onOpenForm(linked.id); }} />
-                    </View>
-                  ) : <Button label="Import" variant="primary" compact loading={busyId === g.id} onPress={() => importOne(g)} />}
-                />
-              );
-            })}
-            {shown.length === 0 ? <Text tone="secondary" align="center">No forms match "{query}".</Text> : null}
-          </View>
-        </>
-      )}
-    </Dialog>
   );
 }

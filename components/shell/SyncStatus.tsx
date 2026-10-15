@@ -29,7 +29,6 @@ export function SyncStatus({ sync, compact }: { sync: SyncState; compact?: boole
 
   const pending = status?.pendingCount || 0;
   const failed = status?.failedCount || 0;
-  const unsaved = status?.unsavedToCloudCount || 0;
   const busy = phase === "syncing";
 
   if (phase === "disconnected") {
@@ -53,7 +52,7 @@ export function SyncStatus({ sync, compact }: { sync: SyncState; compact?: boole
 
   const detail =
     phase === "offline" ? (pending > 0 ? `${pending} response${pending === 1 ? "" : "s"} waiting to sync` : "Responses save locally")
-    : phase === "online" ? `${status?.lastSyncedAt ? `Last synced ${timeAgo(status.lastSyncedAt)}` : "Never synced"}${pending > 0 ? ` · ${pending} pending` : ""}${unsaved > 0 ? ` · ${unsaved} from Google not saved to cloud` : ""}`
+    : phase === "online" ? `${status?.lastSyncedAt ? `Last synced ${timeAgo(status.lastSyncedAt)}` : "Never synced"}${pending > 0 ? ` · ${pending} pending` : ""}`
     : phase === "syncing" ? "Uploading and downloading changes"
     : phase === "synced" && result ? `${result.uploaded} uploaded · ${result.downloaded} downloaded${result.incomplete ? " · more to sync" : ""}`
     : error || (result ? `Uploaded ${result.uploaded}, downloaded ${result.downloaded}, ${(result.rejected?.length || 0) + (result.downloadFailed?.length || 0)} failed` : "");

@@ -3,11 +3,19 @@ import { randomBytes, randomUUID, createHash } from "node:crypto";
 import os from "node:os";
 import * as cloudRepo from "./repository.js";
 import { cloudFetch, isCloudConfigured } from "./client.js";
+import {
+  DRIVE_APPDATA_SCOPE,
+  GOOGLE_SCOPES,
+  googleAuthUrl,
+  googleClientId,
+  googleClientSecret,
+  googleRevokeUrl,
+  googleTokenUrl,
+  googleUserinfoUrl,
+} from "./googleConfig.js";
 import * as formsRepo from "../forms/repository.js";
-import { diffQuestions, mergeQuestions } from "../forms/questionDiff.js";
 import * as responsesRepo from "../responses/repository.js";
 import { requireAuth } from "../auth/middleware.js";
-import * as sessionsRepo from "../sessions/repository.js";
 import { runSync, pingCloudServer, downloadResponsesForForm } from "./sync.js";
 
 export const cloudRouter = Router();
@@ -48,7 +56,7 @@ function base64url(buffer) {
 
 function requireCloudConfigured(req, res, next) {
   if (!isCloudConfigured()) {
-    return res.status(503).json({ error: "This install has no CLOUD_SERVER_URL configured." });
+    return res.status(503).json({ error: "Google Drive sync is not set up in this build (no Google OAuth client id)." });
   }
   next();
 }
@@ -69,7 +77,7 @@ cloudRouter.post("/auth/launch", requireAuth, (req, res) => {
 });
 
 
-// The cloud server only accepts a loopback callback (http://localhost:PORT/...), but the host may
+// Google only accepts a loopback callback for a desktop client (http://localhost:PORT/...), but the host may
 // have opened this app through its LAN address (http://192.168.x.x:PORT). When the browser is on
 // the same machine as this server, localhost reaches the very same process, so the callback is
 // pointed there. A request from another device can't complete the sign-in (the callback would land
@@ -95,78 +103,109 @@ cloudRouter.get("/auth/start", (req, res) => {
   const state = randomUUID();
   const codeVerifier = base64url(randomBytes(32));
   const codeChallenge = createHash("sha256").update(codeVerifier).digest("base64url");
-  pendingAttempts.set(state, { codeVerifier, createdAt: Date.now() });
 
   let callbackHost = req.get("host");
   if (!isLoopbackHost(callbackHost)) {
     if (!isSameMachine(req)) {
-      pendingAttempts.delete(state);
       return res.status(403).send("<p>Google sign-in has to be done on the computer that runs Self Host Form, using http://localhost:" + req.socket.localPort + ". Open it there and try again.</p>");
     }
     callbackHost = `localhost:${req.socket.localPort}`;
   }
   const redirectUri = `http://${callbackHost}/api/cloud/auth/callback`;
-  const startUrl = new URL(`${process.env.CLOUD_SERVER_URL.replace(/\/+$/, "")}/auth/google/start`);
-  startUrl.searchParams.set("state", state);
-  startUrl.searchParams.set("code_challenge", codeChallenge);
-  startUrl.searchParams.set("redirect_uri", redirectUri);
+  pendingAttempts.set(state, { codeVerifier, redirectUri, createdAt: Date.now() });
 
-  res.redirect(startUrl.toString());
+  const url = new URL(googleAuthUrl());
+  url.search = new URLSearchParams({
+    client_id: googleClientId(),
+    redirect_uri: redirectUri,
+    response_type: "code",
+    scope: GOOGLE_SCOPES,
+    state,
+    code_challenge: codeChallenge,
+    code_challenge_method: "S256",
+    // offline + consent so Google issues a refresh token: syncing happens long after sign-in.
+    access_type: "offline",
+    prompt: "consent",
+  }).toString();
+  res.redirect(url.toString());
 });
 
-// Hit by the OS browser after the cloud server finishes the Google leg. Exchanges the one-time
-// handoff code for real tokens server-to-server (see server/cloud/client.js) — those tokens
-// never pass through this HTTP response or the browser at all.
+// Google sends the browser back here with a one-time code. It is exchanged for tokens by this
+// server directly (with the PKCE verifier that never left this process), so tokens never pass through
+// the browser or any server we run.
 cloudRouter.get("/auth/callback", async (req, res) => {
-  const { handoff, state } = req.query;
+  const { code, state, error } = req.query;
   const attempt = typeof state === "string" && pendingAttempts.get(state);
 
-  if (typeof handoff !== "string" || handoff.length > 200 || !attempt) {
-    return res
-      .status(400)
-      .send("<p>This sign-in attempt is no longer valid. Close this tab and try again from the app.</p>");
+  if (!attempt) {
+    return res.status(400).send("<p>This sign-in attempt is no longer valid. Close this tab and try again from the app.</p>");
   }
   pendingAttempts.delete(String(state));
 
-  try {
-    const exchangeRes = await fetch(`${process.env.CLOUD_SERVER_URL.replace(/\/+$/, "")}/auth/exchange`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        handoff,
-        codeVerifier: attempt.codeVerifier,
-        deviceId: cloudRepo.getDeviceId(),
-        deviceName: process.env.COMPUTERNAME || process.env.HOSTNAME || "Self Host Form device",
-      }),
-    });
+  if (typeof error === "string") {
+    const message = error === "access_denied" ? "You cancelled the sign-in." : `Google returned an error: ${escapeHtml(error)}.`;
+    return res.status(400).send(`<p>${message} Close this tab and try again from the app.</p>`);
+  }
+  if (typeof code !== "string" || code.length > 2048) {
+    return res.status(400).send("<p>Google did not send a valid sign-in code. Close this tab and try again.</p>");
+  }
 
-    if (!exchangeRes.ok) {
-      const body = await exchangeRes.json().catch(() => ({}));
-      return res.status(502).send(`<p>Sign-in failed: ${escapeHtml(body.error || "unexpected error")}.</p>`);
+  try {
+    const params = new URLSearchParams({
+      code,
+      client_id: googleClientId(),
+      redirect_uri: attempt.redirectUri,
+      grant_type: "authorization_code",
+      code_verifier: attempt.codeVerifier,
+    });
+    if (googleClientSecret()) params.set("client_secret", googleClientSecret());
+
+    const tokenRes = await fetch(googleTokenUrl(), {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: params,
+    });
+    const tokens = await tokenRes.json().catch(() => ({}));
+    if (!tokenRes.ok) {
+      return res.status(502).send(`<p>Sign-in failed: ${escapeHtml(tokens.error_description || tokens.error || "unexpected error")}.</p>`);
     }
 
-    const data = await exchangeRes.json();
+    // The user can untick individual permissions on the consent screen. Without the app-data folder
+    // there is nothing to sync to, so say so instead of failing later.
+    if (!String(tokens.scope || "").split(" ").includes(DRIVE_APPDATA_SCOPE)) {
+      return res
+        .status(400)
+        .send("<p>Sync needs permission to store the app's data in your Google Drive. Close this tab, sign in again, and leave that permission ticked.</p>");
+    }
+    if (!tokens.refresh_token) {
+      return res.status(502).send("<p>Google did not return a long-lived sign-in. Remove this app at myaccount.google.com/permissions, then sign in again.</p>");
+    }
+
+    const infoRes = await fetch(googleUserinfoUrl(), { headers: { Authorization: `Bearer ${tokens.access_token}` } });
+    if (!infoRes.ok) throw new Error(`Google profile request failed (${infoRes.status})`);
+    const info = await infoRes.json();
+
     cloudRepo.saveCloudAccount({
-      userId: data.user.id,
-      email: data.user.email,
-      name: data.user.name,
-      avatarUrl: data.user.avatarUrl,
-      accessToken: data.accessToken,
-      accessTokenExpiresAt: data.accessTokenExpiresAt,
-      refreshToken: data.refreshToken,
+      userId: info.sub,
+      email: info.email,
+      name: info.name || "",
+      avatarUrl: info.picture || null,
+      accessToken: tokens.access_token,
+      accessTokenExpiresAt: new Date(Date.now() + (Number(tokens.expires_in) || 3600) * 1000).toISOString(),
+      refreshToken: tokens.refresh_token,
     });
 
     res.send("<p>Signed in. You can close this tab and return to Self Host Form.</p>");
   } catch (err) {
-    console.error("Cloud sign-in exchange failed:", err);
+    console.error("Google sign-in failed:", err);
     res.status(502).send("<p>Sign-in failed while completing the connection. Please try again.</p>");
   }
 });
 
 cloudRouter.get("/auth/status", requireAuth, (req, res) => {
   const account = cloudRepo.getCloudAccount();
-  // Only ever the derived, non-sensitive fields — accessToken/refreshToken are never sent to
-  // the renderer.
+  // Only ever the derived, non-sensitive fields: accessToken/refreshToken are never sent to the
+  // renderer.
   res.json({
     connected: !!account,
     email: account?.email || null,
@@ -175,17 +214,20 @@ cloudRouter.get("/auth/status", requireAuth, (req, res) => {
   });
 });
 
+// Signing out removes the tokens from this device and asks Google to revoke the refresh token.
+// Data already in the user's Drive app folder is left alone: it is theirs, and signing back in
+// (here or on another device) picks it up again.
 cloudRouter.post("/auth/logout", requireAuth, async (req, res) => {
   const account = cloudRepo.getCloudAccount();
   if (account) {
     try {
-      await fetch(`${process.env.CLOUD_SERVER_URL.replace(/\/+$/, "")}/auth/logout`, {
+      await fetch(googleRevokeUrl(), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refreshToken: account.refreshToken }),
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ token: account.refreshToken }),
       });
     } catch {
-      // Best-effort revoke — the local account is cleared either way below.
+      // Best-effort revoke: the local account is cleared either way below.
     }
   }
   cloudRepo.clearCloudAccount();
@@ -232,13 +274,10 @@ cloudRouter.delete("/forms/cloud/:remoteId", requireAuth, requireCloudAccount, a
   }
 });
 
-// Shared by both "import a form already on the cloud server" (below) and "import a real Google
-// Form" (see the /google-forms/:id/import route) — the latter creates the cloud-side form first
-// (see cloud-server/google-forms/routes.js) and then funnels through this exact same path, so a
-// Google-sourced form is indistinguishable from any other cloud form from this point on: same
-// dedup-on-re-import guard, same preserved question ids, same publish/sync behavior.
+// Brings a form from the user's Drive down to this device: the dedup-on-re-import guard, the
+// preserved question ids and the publish/sync behavior below all hang off the form's remote id.
 //
-// The cloud copy is always fetched at its latest version — there is no version picking. If this
+// The Drive copy is always fetched at its latest version — there is no version picking. If this
 // device already has a local copy (importing the same cloud form twice, including the common
 // "publish it here, then also click Import for it" case, must not mint a second one: remote_form_id
 // is a unique index, see server/db/index.js):
@@ -428,214 +467,5 @@ cloudRouter.post("/sync", requireAuth, requireCloudAccount, async (req, res) => 
     res.json(result);
   } catch (err) {
     res.status(502).json({ error: err.message });
-  }
-});
-
-// Fetches the live Google Form's responses that neither the cloud copy nor this device holds yet and
-// stores them here as 'local' — on this device, visible everywhere, but not uploaded until the host
-// chooses to save them to the cloud (see POST /google-forms/:id/save-to-cloud). Dedup is by Google's
-// own response id, both against the cloud's ledger (done cloud-side) and against what's already here.
-async function pullGoogleResponsesLocally(form) {
-  const upstream = await cloudFetch(`/api/google-forms/${encodeURIComponent(form.remoteFormId)}/responses/new`);
-  const body = await upstream.json().catch(() => ({}));
-  if (!upstream.ok) throw new Error(body.error || "Failed to fetch responses from Google.");
-
-  let sessionId = null;
-  let inserted = 0;
-  let skipped = body.skippedExistingCount || 0;
-  for (const r of body.responses || []) {
-    if (responsesRepo.findResponseByGoogleId(form.id, r.googleResponseId)) {
-      skipped += 1;
-      continue;
-    }
-    sessionId ??= sessionsRepo.findOrCreateGoogleSession(form.id);
-    responsesRepo.insertGoogleResponse({
-      formId: form.id,
-      sessionId,
-      googleResponseId: r.googleResponseId,
-      respondentName: r.respondentName,
-      startedAt: r.startedAt,
-      submittedAt: r.submittedAt,
-      formVersion: form.remoteVersion,
-      answers: r.answers,
-    });
-    inserted += 1;
-  }
-  return { inserted, skipped };
-}
-
-// Real Google Forms (forms.google.com) — distinct from the "/forms" routes above, which only
-// ever deal with forms created in this app and published to the cloud server. Listing here
-// hits the user's actual Google Drive; nothing is imported until they pick one.
-cloudRouter.get("/google-forms", requireAuth, requireCloudAccount, async (req, res) => {
-  try {
-    const upstream = await cloudFetch("/api/google-forms");
-    if (!upstream.ok) {
-      const body = await upstream.json().catch(() => ({}));
-      return res.status(upstream.status).json({ error: body.error || "Failed to list Google Forms." });
-    }
-    res.json(await upstream.json());
-  } catch (err) {
-    res.status(502).json({ error: err.message });
-  }
-});
-
-// Two hops: the cloud server first converts the real Google Form into a form THIS app owns
-// (see cloud-server/google-forms/routes.js — it becomes an ordinary cloud-server form from that
-// point on), then it's pulled down here through the exact same path as any other cloud import.
-cloudRouter.post("/google-forms/:id/import", requireAuth, requireCloudAccount, async (req, res) => {
-  try {
-    // responses=false: the cloud copy is created from the form's structure only. The responses are
-    // fetched onto this device below and only saved to the cloud if the host says so.
-    const upstream = await cloudFetch(`/api/google-forms/${encodeURIComponent(req.params.id)}/import?responses=false`, {
-      method: "POST",
-    });
-    const created = await upstream.json().catch(() => ({}));
-    if (!upstream.ok) {
-      return res.status(upstream.status).json({ error: created.error || "Failed to import the Google Form.", skipped: created.skipped });
-    }
-
-    const imported = await importCentralFormLocally(created.id);
-    formsRepo.setGoogleFormId(imported.id, req.params.id);
-    // Responses the cloud copy already holds (an earlier import saved them) come down first, so the
-    // fetch below only adds what's genuinely new.
-    try {
-      await runSync();
-    } catch {
-      // Best-effort — arrives on the next sync even if this immediate attempt fails (e.g. offline).
-    }
-
-    let fetched = { inserted: 0, skipped: 0 };
-    let responseImportError = null;
-    try {
-      fetched = await pullGoogleResponsesLocally(formsRepo.getForm(imported.id));
-    } catch (err) {
-      responseImportError = err.message;
-    }
-
-    res.status(created.alreadyImported ? 200 : 201).json({
-      ...formsRepo.getForm(imported.id),
-      skipped: created.skipped || [],
-      importedResponseCount: fetched.inserted,
-      unsavedCount: responsesRepo.countLocalOnlyResponses(imported.id),
-      responseImportError,
-      alreadyImported: !!created.alreadyImported,
-    });
-  } catch (err) {
-    res.status(err.status || 502).json({ error: err.message });
-  }
-});
-
-// Read-only structural check against the live Google Form — see server/forms/questionDiff.js
-// diffQuestions. Never writes anything; the frontend only shows the sync decision dialog when
-// hasChanges is true, and otherwise proceeds straight to a response-only sync.
-// `:id` here is THIS DEVICE'S local form id, matching every other per-form Google route below.
-cloudRouter.get("/google-forms/:id/changes", requireAuth, requireCloudAccount, async (req, res) => {
-  const form = formsRepo.getForm(req.params.id);
-  if (!form) return res.status(404).json({ error: "Form not found." });
-  if (!form.remoteFormId || !form.googleFormId) {
-    return res.status(400).json({ error: "This form isn't linked to a Google Form." });
-  }
-
-  try {
-    const upstream = await cloudFetch(`/api/google-forms/${encodeURIComponent(form.remoteFormId)}/live`);
-    const body = await upstream.json().catch(() => ({}));
-    if (!upstream.ok) {
-      return res.status(upstream.status).json({ error: body.error || "Failed to check the Google Form for changes." });
-    }
-    res.json({ ...diffQuestions(form.questions, body.questions || []), skippedUnsupported: body.skipped || [] });
-  } catch (err) {
-    res.status(err.status || 502).json({ error: err.message });
-  }
-});
-
-// Applies the host's decision from the sync decision dialog ("Keep Local Version" vs "Sync From
-// Online" — see server/forms/questionDiff.js mergeQuestions for how a removed question is kept,
-// never deleted, so its historical answers stay labeled), then always pulls in new responses
-// regardless of that decision — response import is independent of question structure (dedup is
-// by Google's own response id, see cloud-server/google-forms/repository.js).
-cloudRouter.post("/google-forms/:id/apply-changes", requireAuth, requireCloudAccount, async (req, res) => {
-  const form = formsRepo.getForm(req.params.id);
-  if (!form) return res.status(404).json({ error: "Form not found." });
-  if (!form.remoteFormId || !form.googleFormId) {
-    return res.status(400).json({ error: "This form isn't linked to a Google Form." });
-  }
-  const decision = req.body?.decision;
-  if (decision !== "keep-local" && decision !== "sync-from-online") {
-    return res.status(400).json({ error: 'decision must be "keep-local" or "sync-from-online".' });
-  }
-
-  try {
-    if (decision === "sync-from-online") {
-      const liveUpstream = await cloudFetch(`/api/google-forms/${encodeURIComponent(form.remoteFormId)}/live`);
-      const liveBody = await liveUpstream.json().catch(() => ({}));
-      if (!liveUpstream.ok) {
-        return res.status(liveUpstream.status).json({ error: liveBody.error || "Failed to fetch the Google Form." });
-      }
-      formsRepo.updateForm(form.id, { questions: mergeQuestions(form.questions, liveBody.questions || []) });
-    }
-
-    // Keeps the cloud server's own copy of the form structure caught up (append-only), for any
-    // other device on the account too. responses=false: new responses are NOT written to the cloud
-    // here — they're fetched onto this device below, and the host decides whether to save them.
-    const refreshUpstream = await cloudFetch(`/api/google-forms/${encodeURIComponent(form.remoteFormId)}/refresh?responses=false`, {
-      method: "POST",
-    });
-    const refreshResult = await refreshUpstream.json().catch(() => ({}));
-    if (!refreshUpstream.ok) {
-      return res.status(refreshUpstream.status).json({ error: refreshResult.error || "Failed to sync responses from Google." });
-    }
-
-    const account = cloudRepo.getCloudAccount();
-    formsRepo.setRemoteInfo(form.id, {
-      remoteFormId: form.remoteFormId,
-      remoteVersion: refreshResult.version,
-      ownerUserId: account.userId,
-    });
-
-    try {
-      await runSync();
-    } catch {
-      // Best-effort — a later manual or automatic sync still picks up anything already on the cloud.
-    }
-
-    let fetched = { inserted: 0, skipped: 0 };
-    let responseImportError = null;
-    try {
-      fetched = await pullGoogleResponsesLocally(formsRepo.getForm(form.id));
-    } catch (err) {
-      responseImportError = err.message;
-    }
-
-    res.json({
-      decision,
-      checkedResponseCount: fetched.inserted + fetched.skipped,
-      newResponseCount: fetched.inserted,
-      unchangedResponseCount: fetched.skipped,
-      // Everything on this device the cloud doesn't have yet — new ones plus any left from earlier
-      // fetches the host didn't save.
-      unsavedCount: responsesRepo.countLocalOnlyResponses(form.id),
-      responseImportError,
-    });
-  } catch (err) {
-    res.status(err.status || 502).json({ error: err.message });
-  }
-});
-
-// The host answered "yes" to saving fetched Google responses to the cloud: queue them for upload and
-// run the upload now. The cloud's Google ledger records each one as it arrives, so a later refresh
-// won't fetch it again (cloud-server/sync/routes.js).
-cloudRouter.post("/google-forms/:id/save-to-cloud", requireAuth, requireCloudAccount, async (req, res) => {
-  const form = formsRepo.getForm(req.params.id);
-  if (!form) return res.status(404).json({ error: "Form not found." });
-  if (!form.remoteFormId) return res.status(400).json({ error: "This form isn't saved to a cloud account." });
-
-  const queued = responsesRepo.promoteLocalResponses(form.id);
-  try {
-    const result = await runSync();
-    res.json({ savedCount: queued, uploaded: result.uploaded, rejected: result.rejected.length });
-  } catch (err) {
-    // Still queued as pending — nothing is lost, the next sync retries.
-    res.status(502).json({ error: err.message, queuedCount: queued });
   }
 });

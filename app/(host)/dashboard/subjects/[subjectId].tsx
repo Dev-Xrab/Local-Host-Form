@@ -68,12 +68,12 @@ export default function FolderDetail() {
       ) : (
         <Surface padded={false}>
           {shown.map((f, i) => (
-            // Publishing and Google sync live on the Forms page; this view keeps the same row without duplicating that machinery.
+            // Saving to Drive lives on the Forms page; this view keeps the same row without duplicating that machinery.
             <FormRow
               key={f.id}
               form={f}
               last={i === shown.length - 1}
-              a={{ cloudConnected: false, exporting: exporter.exportingId === f.id, publishing: false, refreshing: false, onExport: exporter.request, onPublish: () => {}, onRefreshGoogle: () => {}, onDelete: setDeleteForm }}
+              a={{ cloudConnected: false, exporting: exporter.exportingId === f.id, publishing: false, onExport: exporter.request, onPublish: () => {}, onDelete: setDeleteForm }}
             />
           ))}
         </Surface>

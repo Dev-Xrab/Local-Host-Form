@@ -88,16 +88,16 @@ function CloudSection() {
     try { await fn(); } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   };
   return (
-    <Section split title="Cloud account" description="Connect Google to sync forms and responses.">
+    <Section split title="Cloud account" description="Connect Google to sync forms and responses through your own Google Drive.">
       <Surface padded={false}>
         {loading ? (
           <View style={{ padding: space[4] }}><Text tone="secondary">Checking cloud connection…</Text></View>
         ) : connected && account ? (
-          <SettingRow last label={account.name || account.email || "Signed in"} description={`Signed in as ${account.email}. Forms can be imported from and published to this account.`}>
+          <SettingRow last label={account.name || account.email || "Signed in"} description={`Signed in as ${account.email}. Forms and responses sync to a private folder in this Google Drive that only this app can see.`}>
             <Button label={busy ? "Signing out…" : "Sign out"} icon={LogOut} loading={busy} onPress={() => run(logout)} />
           </SettingRow>
         ) : (
-          <SettingRow last label="Not connected" description="Sign in with Google to import forms from your account and publish forms from this device.">
+          <SettingRow last label="Not connected" description="Sign in with Google to sync forms and responses between your devices. They are stored in a private folder in your own Google Drive, not on our servers.">
             <Button label={busy ? "Opening browser…" : "Sign in with Google"} icon={Cloud} variant="primary" loading={busy} onPress={() => run(login)} />
           </SettingRow>
         )}

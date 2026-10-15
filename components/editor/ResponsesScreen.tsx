@@ -1,20 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
-import { Download, FileText, RefreshCw } from "lucide-react-native";
+import { Download, FileText } from "lucide-react-native";
 import { formsApi } from "../../src/features/forms/services/formsApi";
-import { cloudApi } from "../../src/features/cloud/services/cloudApi";
-import { describeCloudError } from "../../src/features/cloud/utils/describeCloudError";
 import { aggregateQuestion, percentOf } from "../../src/features/forms/utils/responseAnalytics";
 import { Button, Dialog, EmptyState, ListRow, Notice, Page, PageHeader, SearchField, SegmentedControl, Select, Spinner, Surface, Text, space, useLayout, useTheme } from "../../ui";
 import { useSubjects } from "../../lib/data";
 import { canExportResponses, exportFormResponses } from "../../lib/exportFormResponses";
-import { SaveResponsesPrompt, GoogleSyncDialog, type GoogleDiff } from "../forms/CloudDialogs";
 import { RespondentDialog, type RespondentDetail } from "../sessions/RespondentDialog";
 
 interface Response extends RespondentDetail { id: string; sessionId: string; sessionName?: string; answers?: Record<string, unknown>; respondentName?: string }
-interface FormFull { id: string; subjectId: string | null; googleFormId?: string | null; unsavedResponseCount?: number; questions: Q[] }
+interface FormFull { id: string; subjectId: string | null; questions: Q[] }
 interface Q { id: string; type: string; title: string; removedAt?: string | null }
-interface SyncResult { checkedResponseCount: number; newResponseCount: number; unchangedResponseCount: number }
 
 // Bar length and label share one number (count / total), so a 40% option is a 40%-long bar, not
 // scaled against the biggest option (which made every top bar look full regardless of share).
@@ -97,15 +93,9 @@ export function ResponsesScreen({ formId }: { formId: string }) {
   const [query, setQuery] = useState("");
   const [sessionFilter, setSessionFilter] = useState("all");
   const [openId, setOpenId] = useState<string | null>(null);
-  const [syncing, setSyncing] = useState(false);
-  const [syncError, setSyncError] = useState<string | null>(null);
-  const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
-  const [diff, setDiff] = useState<GoogleDiff | null>(null);
-  const [applying, setApplying] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [exporting, setExporting] = useState<"excel" | "pdf" | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
-  const [dismissedPrompt, setDismissedPrompt] = useState(false);
 
   const load = useCallback(() => {
     setState("loading");
@@ -116,35 +106,6 @@ export function ResponsesScreen({ formId }: { formId: string }) {
   }, [formId]);
 
   useEffect(load, [load]);
-
-  // Check for structural changes first (read-only). Only show the decision dialog when something
-  // changed; otherwise go straight to a response-only sync.
-  const sync = async () => {
-    setSyncing(true);
-    setSyncError(null);
-    setSyncResult(null);
-    try {
-      const d = await cloudApi.checkGoogleFormChanges(formId);
-      if (d.hasChanges) setDiff(d);
-      else { setSyncResult(await cloudApi.applyGoogleFormChanges(formId, "keep-local")); load(); }
-    } catch (err) {
-      setSyncError(describeCloudError(err));
-    } finally {
-      setSyncing(false);
-    }
-  };
-  const apply = async (decision: "keep-local" | "sync-from-online") => {
-    setApplying(true);
-    try {
-      setSyncResult(await cloudApi.applyGoogleFormChanges(formId, decision));
-      setDiff(null);
-      load();
-    } catch (err) {
-      setSyncError(describeCloudError(err));
-    } finally {
-      setApplying(false);
-    }
-  };
 
   if (state === "loading" && !form) return <Spinner label="Loading responses" fill />;
   if (state === "error" || !form) return <Page><Notice tone="danger" actionLabel="Retry" onAction={load}>{`Couldn't load responses: ${error}`}</Notice></Page>;
@@ -180,15 +141,10 @@ export function ResponsesScreen({ formId }: { formId: string }) {
         subtitle={sessionFilter === "all" ? `${responses.length} response${responses.length === 1 ? "" : "s"} across every session for this form.` : `${inSession.length} response${inSession.length === 1 ? "" : "s"} from "${selectedName}".`}
         actions={
           <>
-            {form.googleFormId ? <Button label={syncing ? "Syncing…" : "Sync from Google"} icon={RefreshCw} loading={syncing} onPress={sync} /> : null}
             <Button label="Export" icon={Download} disabled={inSession.length === 0} onPress={() => setShowExport(true)} />
           </>
         }
       />
-
-      {syncError ? <Notice tone="danger">{syncError}</Notice> : null}
-      {syncResult ? <Notice tone="success" actionLabel="Dismiss" onAction={() => setSyncResult(null)}>{`${syncResult.checkedResponseCount} response${syncResult.checkedResponseCount === 1 ? "" : "s"} checked. ${syncResult.newResponseCount === 0 ? "No new responses found." : `${syncResult.newResponseCount} new imported, ${syncResult.unchangedResponseCount} existing unchanged.`}`}</Notice> : null}
-      {form.unsavedResponseCount && !dismissedPrompt ? <SaveResponsesPrompt count={form.unsavedResponseCount} onSave={async () => { await cloudApi.saveGoogleResponsesToCloud(formId); load(); }} onDismiss={() => setDismissedPrompt(true)} /> : null}
 
       <View style={{ flexDirection: isPhone ? "column" : "row", gap: space[3], alignItems: isPhone ? "stretch" : "center", justifyContent: "space-between" }}>
         <SegmentedControl value={view} onChange={setView} options={[{ value: "respondent", label: "By respondent" }, { value: "question", label: "By question" }]} />
@@ -238,7 +194,6 @@ export function ResponsesScreen({ formId }: { formId: string }) {
         onNext={openIndex >= 0 && openIndex < filtered.length - 1 ? () => setOpenId(filtered[openIndex + 1].id) : null}
         position={openIndex >= 0 ? { index: openIndex, total: filtered.length } : null}
       />
-      <GoogleSyncDialog diff={diff} busy={applying} onCancel={() => setDiff(null)} onKeepLocal={() => apply("keep-local")} onSyncFromOnline={() => apply("sync-from-online")} />
 
       <Dialog
         visible={showExport}

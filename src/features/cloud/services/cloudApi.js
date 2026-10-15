@@ -50,19 +50,6 @@ export const cloudApi = {
   deleteCloudForm: (id) => request(`/forms/cloud/${id}`, { method: "DELETE" }),
   syncStatus: () => request("/sync/status"),
   sync: () => request("/sync", { method: "POST" }),
-  // Real Google Forms (forms.google.com), distinct from listForms/importForm above which only
-  // ever deal with forms created in this app and published to the cloud server.
-  listGoogleForms: () => request("/google-forms"),
-  importGoogleForm: (id) => request(`/google-forms/${id}/import`, { method: "POST" }),
-  // Read-only structural diff against the live Google Form — `id` is the LOCAL form id (unlike
-  // importGoogleForm's Google Drive file id). Call this before applying anything.
-  checkGoogleFormChanges: (id) => request(`/google-forms/${id}/changes`),
-  // Applies the host's decision from the sync dialog and pulls in new responses either way.
-  applyGoogleFormChanges: (id, decision) =>
-    request(`/google-forms/${id}/apply-changes`, { method: "POST", body: JSON.stringify({ decision }) }),
-  // Queues the Google responses fetched onto this device (kept local until now) for upload and
-  // syncs them. `id` is the LOCAL form id.
-  saveGoogleResponsesToCloud: (id) => request(`/google-forms/${id}/save-to-cloud`, { method: "POST" }),
   listSyncIssues: () => request("/sync/issues"),
   retrySyncIssue: (id) => request(`/sync/issues/${id}/retry`, { method: "POST" }),
   discardSyncIssue: (id) => request(`/sync/issues/${id}/discard`, { method: "POST" }),

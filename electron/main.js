@@ -13,11 +13,6 @@ let splashWindow;
 const PORT = 5174;
 const APP_ICON = path.join(__dirname, "..", "build", "icon.ico");
 
-// The cloud server's URL is not a secret (unlike its Google OAuth client secret, which never
-// leaves that service) — it's fine to bake a default in here for a built release. CLOUD_SERVER_URL
-// in the environment still overrides it, which is how local development points at a dev instance.
-const DEFAULT_CLOUD_SERVER_URL = "https://local-host-form-final.onrender.com";
-
 function startServer() {
   const serverPath = path.join(
   __dirname,
@@ -32,7 +27,6 @@ function startServer() {
       ELECTRON_RUN_AS_NODE: "1",
       PORT: String(PORT),
       DATA_DIR: path.join(app.getPath("userData"), "data"),
-      CLOUD_SERVER_URL: process.env.CLOUD_SERVER_URL || DEFAULT_CLOUD_SERVER_URL,
     },
     stdio: "pipe",
     // The server can itself spawn a Cloudflare tunnel child process (Remote Access). Killing just

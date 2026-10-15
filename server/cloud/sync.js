@@ -174,7 +174,7 @@ export async function runSync() {
 }
 
 async function doRunSync() {
-  if (!isCloudConfigured()) throw new Error("This install has no CLOUD_SERVER_URL configured.");
+  if (!isCloudConfigured()) throw new Error("Google Drive sync is not set up in this build (no Google OAuth client id).");
   if (!cloudRepo.getCloudAccount()) throw new Error("Not signed in to a cloud account.");
 
   const totals = {
@@ -241,19 +241,19 @@ export async function downloadResponsesForForm(remoteFormId) {
   return applied;
 }
 
-// Cheap connectivity probe used by the sync status indicator — distinguishes "no network" /
-// "server unreachable" from an auth problem, since those need different messaging (see
-// server/cloud/routes.js GET /sync/status).
+// Cheap connectivity probe used by the sync status indicator. It only checks that Google is
+// reachable (so "offline" can be told apart from an auth problem, which needs different messaging);
+// see server/cloud/routes.js GET /sync/status.
 export async function pingCloudServer(timeoutMs = 4000) {
   if (!isCloudConfigured()) return false;
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
-    const res = await fetch(`${process.env.CLOUD_SERVER_URL.replace(/\/+$/, "")}/health`, {
+    const res = await fetch(process.env.CLOUD_PING_URL || "https://www.google.com/generate_204", {
       signal: controller.signal,
     });
     clearTimeout(timer);
-    return res.ok;
+    return res.status === 204 || res.ok;
   } catch {
     return false;
   }
