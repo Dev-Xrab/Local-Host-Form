@@ -23,7 +23,7 @@ const CARDS = [
     icon: "devices",
     title: "Android",
     badge: "Experimental",
-    meta: "APK · 64 MB",
+    meta: "APK · 68 MB",
     href: ANDROID_DOWNLOAD_URL,
     cta: "Download the APK",
     points: [
