@@ -4,14 +4,14 @@ import { NAV_LINKS } from "../content";
 import { ANDROID_DOWNLOAD_URL, WINDOWS_DOWNLOAD_URL } from "../constants";
 import SupportModal from "./Support/SupportModal";
 
-export default function Footer() {
+export default function Footer({ base = "" }) {
   const [supportOpen, setSupportOpen] = useState(false);
 
   return (
     <footer className="footer">
       <div className="container footer-inner">
         <div className="footer-brand">
-          <a href="#top" className="brand">
+          <a href={`${base}#top`} className="brand">
             <span className="brand-logo">
               <img src="/logo.png" alt="" width="18" height="18" />
             </span>
@@ -29,7 +29,7 @@ export default function Footer() {
             <ul>
               {NAV_LINKS.map((l) => (
                 <li key={l.id}>
-                  <a href={`#${l.id}`}>{l.label}</a>
+                  <a href={`${base}#${l.id}`}>{l.label}</a>
                 </li>
               ))}
             </ul>
@@ -46,6 +46,17 @@ export default function Footer() {
                 <a href={ANDROID_DOWNLOAD_URL} download>
                   Download for Android
                 </a>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <p className="footer-h">Legal</p>
+            <ul>
+              <li>
+                <a href="/privacy">Privacy Policy</a>
+              </li>
+              <li>
+                <a href="/terms">Terms of Service</a>
               </li>
             </ul>
           </div>

@@ -28,7 +28,7 @@ function useScrollSpy(ids) {
   return active;
 }
 
-export default function Nav() {
+export default function Nav({ base = "" }) {
   const [open, setOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -68,7 +68,7 @@ export default function Nav() {
       <header className={`nav ${scrolled ? "is-scrolled" : ""}`}>
         <motion.div className="nav-progress" style={{ scaleX: progress }} aria-hidden="true" />
         <div className="container nav-inner">
-          <a href="#top" className="brand" onClick={close}>
+          <a href={`${base}#top`} className="brand" onClick={close}>
             <span className="brand-logo">
               <img src="/logo.png" alt="" width="18" height="18" />
             </span>
@@ -79,7 +79,7 @@ export default function Nav() {
             {NAV_LINKS.map((l) => (
               <a
                 key={l.id}
-                href={`#${l.id}`}
+                href={`${base}#${l.id}`}
                 className={active === l.id ? "is-active" : ""}
                 aria-current={active === l.id ? "location" : undefined}
               >
@@ -99,7 +99,7 @@ export default function Nav() {
             <button type="button" className="btn btn-ghost" onClick={openSupport}>
               Support
             </button>
-            <a href="#download" className="btn btn-primary">
+            <a href={`${base}#download`} className="btn btn-primary">
               <Icons.download className="btn-icon" /> Download
             </a>
           </div>
@@ -131,7 +131,7 @@ export default function Nav() {
               {NAV_LINKS.map((l, i) => (
                 <motion.a
                   key={l.id}
-                  href={`#${l.id}`}
+                  href={`${base}#${l.id}`}
                   onClick={close}
                   initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -152,7 +152,7 @@ export default function Nav() {
                 <Icons.arrowRight />
               </motion.button>
             </nav>
-            <a href="#download" className="btn btn-primary btn-lg btn-block" onClick={close}>
+            <a href={`${base}#download`} className="btn btn-primary btn-lg btn-block" onClick={close}>
               <Icons.download className="btn-icon" /> Download
             </a>
           </motion.div>
