@@ -4,6 +4,7 @@ import { Button, Dialog, Text } from "../../ui";
 import { buildFormExport } from "../../lib/formExport";
 import { saveTextFile } from "../../lib/saveFile";
 import type { FormSummary } from "../../lib/domain";
+import { oneLine } from "../../lib/text";
 
 /**
  * "Form only" vs "include responses" export, asked every time since a shareable template and a
@@ -35,7 +36,7 @@ export function useFormExport(onError: (message: string) => void) {
       onClose={() => setTarget(null)}
       footer={<><Button label="Form only" variant="ghost" onPress={() => run(false)} /><Button label="Include responses" variant="primary" onPress={() => run(true)} /></>}
     >
-      <Text tone="secondary">{`Include the responses collected for "${target?.title || "Untitled form"}" in the file? Importing it later will bring them back along with the form.`}</Text>
+      <Text tone="secondary">{`Include the responses collected for "${oneLine(target?.title, "Untitled form")}" in the file? Importing it later will bring them back along with the form.`}</Text>
     </Dialog>
   );
 

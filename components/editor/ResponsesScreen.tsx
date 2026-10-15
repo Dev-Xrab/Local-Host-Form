@@ -7,6 +7,7 @@ import { Button, Dialog, EmptyState, ListRow, Notice, Page, PageHeader, SearchFi
 import { useSubjects } from "../../lib/data";
 import { canExportResponses, exportFormResponses } from "../../lib/exportFormResponses";
 import { RespondentDialog, type RespondentDetail } from "../sessions/RespondentDialog";
+import { oneLine } from "../../lib/text";
 
 interface Response extends RespondentDetail { id: string; sessionId: string; sessionName?: string; answers?: Record<string, unknown>; respondentName?: string }
 interface FormFull { id: string; subjectId: string | null; questions: Q[] }
@@ -118,7 +119,7 @@ export function ResponsesScreen({ formId }: { formId: string }) {
   const answerable = form.questions.filter((q) => q.type !== "section");
   const live = answerable.filter((q) => !q.removedAt);
   const removed = answerable.filter((q) => q.removedAt);
-  const selectedName = sessions.find((s) => s.id === sessionFilter)?.name;
+  const selectedName = oneLine(sessions.find((s) => s.id === sessionFilter)?.name);
   const subjectName = subjects.find((s) => s.id === form.subjectId)?.name;
 
   const runExport = async (format: "excel" | "pdf") => {

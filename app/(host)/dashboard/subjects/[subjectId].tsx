@@ -11,6 +11,7 @@ import { CreateFormDialog } from "../../../../components/forms/CreateFormDialog"
 import { useFormExport } from "../../../../components/forms/useFormExport";
 import { DeleteSubjectDialog, SubjectFormDialog } from "../../../../components/subjects/SubjectDialogs";
 import { subjectsPath } from "../../../../components/shell/paths";
+import { oneLine } from "../../../../lib/text";
 
 export default function FolderDetail() {
   const { subjectId } = useLocalSearchParams<{ subjectId: string }>();
@@ -114,7 +115,7 @@ export default function FolderDetail() {
         visible={!!deleteForm}
         title="Delete form"
         confirmLabel="Delete form"
-        message={`Delete "${deleteForm?.title || "Untitled form"}"? This permanently deletes it along with every session and response under it.`}
+        message={`Delete "${oneLine(deleteForm?.title, "Untitled form")}"? This permanently deletes it along with every session and response under it.`}
         onCancel={() => setDeleteForm(null)}
         onConfirm={async () => {
           await formsApi.remove(deleteForm!.id);

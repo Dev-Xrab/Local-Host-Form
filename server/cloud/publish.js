@@ -39,11 +39,11 @@ export async function publishFormToCloud(formId, { coalesce = false } = {}) {
 
   const published = await upstream.json();
   const account = cloudRepo.getCloudAccount();
-  const updated = formsRepo.setRemoteInfo(form.id, {
-    remoteFormId: published.id,
-    remoteVersion: published.version,
-    ownerUserId: account.userId,
-  });
+  const updated = formsRepo.setRemoteInfo(
+    form.id,
+    { remoteFormId: published.id, remoteVersion: published.version, ownerUserId: account.userId },
+    { publishedAt: form.updatedAt }
+  );
 
   // Saving a form carries the responses collected under it: they became eligible for upload the
   // moment remote_form_id was set. That can take a while and has nothing to do with whether the FORM

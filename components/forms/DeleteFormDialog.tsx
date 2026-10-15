@@ -4,6 +4,7 @@ import { formsApi } from "../../src/features/forms/services/formsApi";
 import { formatDateTime } from "../../src/features/sessions/utils/time";
 import { Badge, Button, Dialog, Notice, Spinner, Surface, Text, TextField, radius, space, useTheme } from "../../ui";
 import { ScrollView } from "react-native";
+import { oneLine } from "../../lib/text";
 
 interface ResponseRow { id: string; respondentName?: string; sessionName?: string; status?: string; submittedAt?: string | null }
 
@@ -68,7 +69,7 @@ export function DeleteFormDialog({ form, onCancel, onConfirm }: { form: { id: st
         </>
       }
     >
-      <Text tone="secondary">{`Delete "${form.title || "Untitled form"}"? This permanently deletes it along with every session and response under it. This can't be undone.`}</Text>
+      <Text tone="secondary">{`Delete "${oneLine(form.title, "Untitled form")}"? This permanently deletes it along with every session and response under it. This can't be undone.`}</Text>
 
       {loading ? <Spinner label="Checking responses" /> : null}
       {loadError ? <Notice tone="warning">{`Couldn't check this form's responses (${loadError}). Type the form ID to delete it anyway.`}</Notice> : null}

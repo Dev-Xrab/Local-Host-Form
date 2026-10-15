@@ -295,7 +295,20 @@ const setRemoteInfoStmt = db.prepare(
 // Stamps a local form with where it now lives on the cloud server, after a publish (see
 // server/cloud/routes.js POST /forms/:id/publish). Never touches title/description/questions —
 // those are the source of truth locally; this only records the remote pointer.
-export function setRemoteInfo(id, { remoteFormId, remoteVersion, ownerUserId }) {
+//
+// `publishedAt` is the form's updated_at as it was when the uploaded copy was read. If the form was
+// edited again while the upload was in flight, stamping "saved now" would hide that edit (it would
+// look older than the save), so it is left marked as unsaved instead.
+const setRemoteInfoKeepingEditsStmt = db.prepare(
+  "UPDATE forms SET remote_form_id = ?, remote_version = ?, owner_user_id = ?, remote_saved_at = ? WHERE id = ?"
+);
+
+export function setRemoteInfo(id, { remoteFormId, remoteVersion, ownerUserId }, { publishedAt } = {}) {
+  const current = selectFormStmt.get(id);
+  if (publishedAt && current && current.updated_at > publishedAt) {
+    setRemoteInfoKeepingEditsStmt.run(remoteFormId, remoteVersion, ownerUserId, publishedAt, id);
+    return getForm(id);
+  }
   // Same instant for both, so a form that was just published/imported reads as in step with the
   // cloud (updated_at is not later than remote_saved_at).
   const timestamp = now();

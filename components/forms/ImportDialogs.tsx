@@ -4,10 +4,11 @@ import { FileText, Trash2 } from "lucide-react-native";
 import { cloudApi } from "../../src/features/cloud/services/cloudApi";
 import { Button, ConfirmDialog, Dialog, EmptyState, IconButton, ListRow, Notice, SearchField, Spinner, Text, space } from "../../ui";
 import type { FormSummary } from "../../lib/domain";
+import { oneLine } from "../../lib/text";
 
 interface RemoteForm { id: string; title: string; questionCount: number; version: number }
 
-const untitled = (t?: string) => t || "Untitled form";
+const untitled = (t?: string) => oneLine(t, "Untitled form");
 
 /** Import from (or update/save/delete on) the user's own Google Drive. */
 export function CloudImportDialog({ visible, forms, onClose, onOpenForm, onChanged }: {

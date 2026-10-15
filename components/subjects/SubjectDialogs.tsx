@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button, Dialog, Notice, Radio, Text, TextField } from "../../ui";
 import type { Subject } from "../../lib/domain";
+import { oneLine } from "../../lib/text";
 
 const COUNTDOWN_SECONDS = 5;
 
@@ -90,7 +91,7 @@ export function DeleteSubjectDialog({ subject, onCancel, onConfirm }: { subject:
       onClose={onCancel}
       footer={<><Button label="Cancel" variant="ghost" onPress={onCancel} /><Button label={left > 0 ? `Delete folder (${left})` : "Delete folder"} variant="danger" disabled={left > 0} loading={busy} onPress={confirm} /></>}
     >
-      <Text>{`Delete the "${subject?.name}" folder${n > 0 ? ` and its ${n} form${n === 1 ? "" : "s"}` : ""}?`}</Text>
+      <Text>{`Delete the "${oneLine(subject?.name)}" folder${n > 0 ? ` and its ${n} form${n === 1 ? "" : "s"}` : ""}?`}</Text>
       {n > 0 ? (
         <>
           <Radio label="Move forms to General" description="The forms stay; they just leave this folder." checked={action === "move"} onChange={() => setAction("move")} />
