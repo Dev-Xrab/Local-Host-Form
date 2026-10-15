@@ -15,4 +15,4 @@ export const WINDOWS_DOWNLOAD_URL =
 export const ANDROID_DOWNLOAD_URL =
   "https://github.com/Dev-Xrab/Local-Host-Form/releases/latest/download/Self-Host-Form.apk";
 
-export const RELEASE_VERSION = "v1.1.1";
+export const RELEASE_VERSION = "v1.2.0";

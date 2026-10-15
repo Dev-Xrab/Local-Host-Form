@@ -23,13 +23,13 @@ const CARDS = [
     icon: "devices",
     title: "Android",
     badge: "Experimental",
-    meta: "APK · 51 MB",
+    meta: "APK · 64 MB",
     href: ANDROID_DOWNLOAD_URL,
     cta: "Download the APK",
     points: [
       "Hosts a session from your phone to respondents on the same Wi-Fi.",
       "Open the file on your phone and allow installs from this source. It isn't on Google Play.",
-      "No public link, and the app must stay open during a session.",
+      "For ARM phones and tablets. No public link, and the app must stay open during a session.",
     ],
   },
 ];
