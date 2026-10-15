@@ -130,6 +130,11 @@ export function RespondScreen({ code }: { code: string }) {
     const has = Object.keys(draft.answers).length > 0;
     setAnswers(has ? draft.answers : p.answers || {});
     setPageIndex(has ? draft.pageIndex : 0);
+    // A response reopened for editing starts clean. Without this, the "submitting" state left over
+    // from the earlier submit kept the Submit button spinning and disabled.
+    setSubmitState("idle");
+    setSubmitError(null);
+    setFieldErrors({});
     setStatus("answering");
   }, []);
 
@@ -203,6 +208,7 @@ export function RespondScreen({ code }: { code: string }) {
       clearDraft(responseId!);
       setResult(res);
       setAutoSubmitted(timedOut);
+      setSubmitState("idle");
       setStatus("done");
       fullscreen.exit();
     } catch (e) {
