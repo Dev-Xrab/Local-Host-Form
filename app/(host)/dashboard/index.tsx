@@ -5,6 +5,7 @@ import { ClipboardList, FileText, Folder } from "lucide-react-native";
 import { Button, EmptyState, ListRow, Notice, Page, PageHeader, Section, Surface, Text, space, useLayout, useTheme } from "../../../ui";
 import { useForms, useSessions, useSubjects } from "../../../lib/data";
 import { ServerPanel } from "../../../components/ServerPanel";
+import { sessionCodeLabel } from "../../../lib/text";
 
 // Fixed height so a long list scrolls inside its card instead of pushing the page down.
 const LIST_HEIGHT = 300;
@@ -64,7 +65,7 @@ export default function DashboardHome() {
                     last={i === active.length - 1}
                     icon={ClipboardList}
                     title={s.name || "Untitled session"}
-                    subtitle={`${s.code} · ${s.durationMinutes ? `${s.durationMinutes} min limit` : "No time limit"}`}
+                    subtitle={`${sessionCodeLabel(s)} · ${s.durationMinutes ? `${s.durationMinutes} min limit` : "No time limit"}`}
                     meta={`${s.submittedCount + s.inProgressCount} joined`}
                     onPress={() => go(`/dashboard/sessions/${s.id}`)}
                   />

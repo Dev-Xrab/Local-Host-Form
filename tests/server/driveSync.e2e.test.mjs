@@ -130,6 +130,32 @@ test("publishing again adds a version, and the other device can pull it", async 
   assert.equal(pulled.data.title, "Math quiz (edited)");
 });
 
+test("responses synced from another device sit in a placeholder session that cannot be joined", async () => {
+  const sessions = (await B().api("GET", "/api/sessions")).data;
+  const synced = sessions.find((s) => /^SYNCED-/.test(s.code));
+  assert.ok(synced, "device B should have a placeholder session for device A's responses");
+  assert.equal(synced.joinable, false);
+  assert.ok(synced.code.length > 8, "this is why the 8-character join-code box could never hold it");
+
+  // someone types the placeholder label as if it were a join code
+  const info = await fetch(`${B().origin}/api/public/sessions/${synced.code}`);
+  assert.equal(info.status, 400);
+  assert.match((await info.json()).error, /synced from another device/i);
+  const join = await B().api("POST", `/api/public/sessions/${synced.code}/join`, { name: "Someone", deviceId: "device-placeholder-001" });
+  assert.equal(join.status, 400);
+  assert.match(join.data.error, /synced from another device/i);
+
+  // an ordinary session is still joinable, and an unknown code is still just invalid
+  const formId = (await B().api("GET", "/api/forms")).data[0].id;
+  const live = (await B().api("POST", "/api/sessions", { name: "Live", formId })).data;
+  await B().api("POST", `/api/sessions/${live.id}/start`);
+  const liveFull = (await B().api("GET", `/api/sessions/${live.id}`)).data;
+  assert.equal(liveFull.joinable, true);
+  assert.ok(liveFull.code.length <= 8, "real join codes fit the box");
+  assert.equal((await fetch(`${B().origin}/api/public/sessions/${liveFull.code}`)).status, 200);
+  assert.equal((await fetch(`${B().origin}/api/public/sessions/ZZZZZZ`)).status, 404);
+});
+
 test("signing out revokes the token; the other device is then signed out cleanly instead of looping", async () => {
   const out = await A().api("POST", "/api/cloud/auth/logout");
   assert.equal(out.status, 204);

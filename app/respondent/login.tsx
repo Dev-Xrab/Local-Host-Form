@@ -64,7 +64,7 @@ export default function RespondentLogin() {
           placeholder="e.g. AB12CD"
           autoCapitalize="characters"
           autoComplete="off"
-          maxLength={8}
+          maxLength={32}
           error={errors.code}
           onSubmitEditing={submit}
         />

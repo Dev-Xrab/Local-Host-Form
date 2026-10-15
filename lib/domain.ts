@@ -33,6 +33,8 @@ export interface SessionSummary {
   formId: string;
   formTitle: string;
   code: string;
+  /** False for placeholder sessions (synced, imported or from Google): their code is a label, not a join code. */
+  joinable?: boolean;
   status: "draft" | "active" | "ended";
   submittedCount: number;
   inProgressCount: number;

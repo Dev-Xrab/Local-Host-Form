@@ -10,8 +10,14 @@ const now = () => new Date().toISOString();
 // A session's status only ever changes via an explicit host action (start/end) — the
 // time limit is per-respondent now (each response gets its own deadline_at at join
 // time), so the session itself no longer auto-expires on a clock.
+// Some sessions are only a home for responses that were not collected live on this device: ones
+// downloaded from another device (SYNCED-…), imported with a form file (IMPORT-…) or fetched from
+// Google (GOOGLE-…). Their "code" is a label, not something a respondent can join with.
+export const isPlaceholderCode = (code) => /^(SYNCED|IMPORT|GOOGLE)-/i.test(code || "");
+
 function rowToSession(row) {
   return {
+    joinable: !isPlaceholderCode(row.code),
     id: row.id,
     formId: row.form_id,
     name: row.name,

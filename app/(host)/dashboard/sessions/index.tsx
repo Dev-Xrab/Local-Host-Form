@@ -8,6 +8,7 @@ import { useForms, useSessions } from "../../../../lib/data";
 import type { SessionSummary } from "../../../../lib/domain";
 import { CreateSessionDialog } from "../../../../components/sessions/CreateSessionDialog";
 import { useFocusRing } from "../../../../ui/interactive";
+import { sessionCodeLabel } from "../../../../lib/text";
 
 type Filter = "all" | "draft" | "active" | "ended";
 const TONE = { draft: "neutral", active: "success", ended: "warning" } as const;
@@ -21,7 +22,7 @@ function DesktopRow({ s, last, onOpen }: { s: SessionSummary; last: boolean; onO
       <Icon icon={ClipboardList} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text variant="bodyStrong" numberOfLines={1}>{s.name || "Untitled session"}</Text>
-        <Text variant="small" tone="secondary" numberOfLines={1}>{s.formTitle} · {s.code}</Text>
+        <Text variant="small" tone="secondary" numberOfLines={1}>{s.formTitle} · {sessionCodeLabel(s)}</Text>
       </View>
       <View style={{ width: 90 }}><Badge label={STATUS_LABEL[s.status]} tone={TONE[s.status]} /></View>
       <View style={{ width: 190 }}><Text variant="small" tone="secondary">{s.submittedCount + s.inProgressCount} joined{s.status !== "draft" ? ` · ${s.submittedCount} submitted` : ""}</Text></View>
@@ -70,7 +71,7 @@ export default function SessionsPage() {
           <TableHeader right={space[4]} columns={[{ label: "", width: 18 }, { label: "Session" }, { label: "Status", width: 90 }, { label: "Participants", width: 190 }, { label: "Time limit", width: 90 }]} />
           {shown.map((s, i) =>
             isPhone ? (
-              <ListRow key={s.id} last={i === shown.length - 1} icon={ClipboardList} title={s.name || "Untitled session"} subtitle={`${s.formTitle} · ${s.code} · ${STATUS_LABEL[s.status]}`} meta={`${s.submittedCount + s.inProgressCount}`} onPress={() => open(s.id)} />
+              <ListRow key={s.id} last={i === shown.length - 1} icon={ClipboardList} title={s.name || "Untitled session"} subtitle={`${s.formTitle} · ${sessionCodeLabel(s)} · ${STATUS_LABEL[s.status]}`} meta={`${s.submittedCount + s.inProgressCount}`} onPress={() => open(s.id)} />
             ) : (
               <DesktopRow key={s.id} s={s} last={i === shown.length - 1} onOpen={() => open(s.id)} />
             )

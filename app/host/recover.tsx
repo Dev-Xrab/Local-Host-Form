@@ -7,6 +7,9 @@ import { Button, Spinner, Text, TextField, space } from "../../ui";
 
 type Status = "loading" | "ready" | "unavailable" | "local-only";
 
+// The port this page was opened on, so the hint names an address that actually works on the host.
+const localPort = (typeof window !== "undefined" && window.location?.port) || "5174";
+
 export default function HostRecovery() {
   const router = useRouter();
   const [status, setStatus] = useState<Status>("loading");
@@ -49,7 +52,7 @@ export default function HostRecovery() {
 
   if (status === "loading") return <Spinner fill />;
   if (status === "local-only")
-    return <AuthCard title="Password recovery" subtitle="For security, recovery only works on the computer running Self Host Form. Open the app there to reset your password." footer={back}><View /></AuthCard>;
+    return <AuthCard title="Password recovery" subtitle={`For security, recovery only works on the computer running Self Host Form. Open the app on that computer (or go to http://localhost:${localPort} there) to reset your password.`} footer={back}><View /></AuthCard>;
   if (status === "unavailable")
     return <AuthCard title="Password recovery" subtitle="No recovery question has been set up on this server, so it can't verify who you are. Ask whoever administers this server to reset it, or set one up under Settings once you're logged in." footer={back}><View /></AuthCard>;
   if (done)

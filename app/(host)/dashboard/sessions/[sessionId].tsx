@@ -16,6 +16,7 @@ import { ExportDialog } from "../../../../components/sessions/ExportDialog";
 import { RespondentDialog, type RespondentDetail } from "../../../../components/sessions/RespondentDialog";
 import type { SyncState } from "../../../../components/shell/SyncStatus";
 import { useFocusRing } from "../../../../ui/interactive";
+import { sessionCodeLabel } from "../../../../lib/text";
 
 interface Session {
   id: string; name: string; code: string; status: "draft" | "active" | "ended"; formId: string; formTitle: string; durationMinutes: number | null;
@@ -309,7 +310,7 @@ export default function SessionDetail() {
       <View style={{ gap: space[2] }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: space[2] }}>
           <Badge label={STATUS_LABEL[session.status]} tone={STATUS_TONE[session.status]} />
-          <Text variant="small" tone="secondary" selectable>{session.code}</Text>
+          <Text variant="small" tone="secondary" selectable>{sessionCodeLabel(session)}</Text>
         </View>
         <PageHeader
           title={session.name || "Untitled session"}

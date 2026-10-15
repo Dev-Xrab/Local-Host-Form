@@ -1,6 +1,7 @@
 import { Router } from "express";
 import * as formsRepo from "../forms/repository.js";
 import * as sessionsRepo from "../sessions/repository.js";
+import { isPlaceholderCode } from "../sessions/repository.js";
 import * as responsesRepo from "../responses/repository.js";
 import {
   findMissingRequiredQuestions,
@@ -35,6 +36,9 @@ const isValidDeviceId = (value) => typeof value === "string" && DEVICE_ID_PATTER
 function ownsResponse(response, deviceId) {
   return !!response.deviceId && isValidDeviceId(deviceId) && response.deviceId === deviceId;
 }
+
+const NOT_JOINABLE_MESSAGE =
+  "That code belongs to responses synced from another device, so it can't be joined. Ask the host to start a new session for this form and use its code.";
 
 function sessionCodeParam(req) {
   const code = String(req.params.code || "").trim().toUpperCase();
@@ -145,6 +149,7 @@ publicRouter.get("/sessions/:code", (req, res) => {
   const code = sessionCodeParam(req);
   const session = code && sessionsRepo.getSessionByCode(code);
   if (!session) return res.status(404).json({ error: "That code isn't valid." });
+  if (isPlaceholderCode(session.code)) return res.status(400).json({ error: NOT_JOINABLE_MESSAGE });
 
   const form = formsRepo.getForm(session.formId);
   res.json({
@@ -168,6 +173,7 @@ publicRouter.post("/sessions/:code/join", joinLimiter, limitEditCodeAttempts, (r
   const code = sessionCodeParam(req);
   const session = code && sessionsRepo.getSessionByCode(code);
   if (!session) return res.status(404).json({ error: "That code isn't valid." });
+  if (isPlaceholderCode(session.code)) return res.status(400).json({ error: NOT_JOINABLE_MESSAGE });
 
   const form = formsRepo.getForm(session.formId);
   const { name, deviceId, editCode } = req.body || {};

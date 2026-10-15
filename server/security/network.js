@@ -1,9 +1,22 @@
+import { networkInterfaces } from "node:os";
 import { ipKeyGenerator } from "express-rate-limit";
 
 const LOOPBACK_ADDRESSES = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
 
 function isLoopbackSocket(req) {
   return LOOPBACK_ADDRESSES.has(req.socket?.remoteAddress);
+}
+
+// A request that arrives on one of this machine's own network addresses (the 192.168.x.x address the
+// dashboard tells people to share, opened on the host itself) comes from the host just as much as one
+// from localhost: another device cannot send a packet whose source is this machine's own address, so
+// matching it is as safe as matching loopback.
+const stripAddress = (address) => String(address || "").replace(/^::ffff:/i, "").replace(/%.*$/, "").toLowerCase();
+
+function isOwnAddressSocket(req) {
+  const remote = stripAddress(req.socket?.remoteAddress);
+  if (!remote) return false;
+  return Object.values(networkInterfaces()).some((list) => (list || []).some((i) => stripAddress(i.address) === remote));
 }
 
 // Remote Access (server/tunnel) runs cloudflared on this machine and points it at localhost, so
@@ -17,7 +30,7 @@ export function isTunnelRequest(req) {
 
 // The machine the server runs on — the Electron window or a browser on the host itself.
 export function isLocalConsole(req) {
-  return isLoopbackSocket(req) && !isTunnelRequest(req);
+  return (isLoopbackSocket(req) || isOwnAddressSocket(req)) && !isTunnelRequest(req);
 }
 
 // Used by rate limiters. For tunnelled traffic the socket address is always 127.0.0.1, so the

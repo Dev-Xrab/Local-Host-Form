@@ -3,7 +3,7 @@
     "name": "Self Host Form",
     "slug": "self-host-form",
     "scheme": "selfhostform",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "orientation": "default",
     "userInterfaceStyle": "dark",
     "plugins": [
