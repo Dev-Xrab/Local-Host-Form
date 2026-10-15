@@ -16,11 +16,13 @@ function Step({ step, active, onEnter }) {
 
   return (
     <article ref={ref} className={`story-step ${active ? "is-active" : ""}`}>
-      <span className="story-number">{step.number}</span>
-      <h3>{step.title}</h3>
-      <p>{step.text}</p>
-      <div className="story-inline">
-        <Frame src={step.image} alt={step.alt} label={step.label} />
+      <div className="story-card">
+        <span className="story-number">{step.number}</span>
+        <h3>{step.title}</h3>
+        <p>{step.text}</p>
+        <div className="story-inline">
+          <Frame src={step.image} alt={step.alt} label={step.label} />
+        </div>
       </div>
     </article>
   );
@@ -33,6 +35,18 @@ export default function Story() {
 
   return (
     <section id="how-it-works" className="section story">
+      <div className="story-orbs" aria-hidden="true">
+        <motion.span
+          className="orb orb-a"
+          animate={{ x: [0, 60, -20, 0], y: [0, 40, 80, 0] }}
+          transition={{ duration: 28, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.span
+          className="orb orb-b"
+          animate={{ x: [0, -70, 30, 0], y: [0, -50, 20, 0] }}
+          transition={{ duration: 34, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </div>
       <div className="container">
         <SectionHead eyebrow="How it works" title="From blank form to graded results in four steps">
           Students never need an account. All they need is a link, a code or a scanned QR.
