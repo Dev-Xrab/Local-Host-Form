@@ -12,3 +12,11 @@ export const APP_REPO_URL = "https://github.com/Dev-Xrab/self-host-form-app";
 // installer is well past that.)
 export const WINDOWS_DOWNLOAD_URL =
   "https://github.com/Dev-Xrab/Local-Host-Form/releases/latest/download/Self-Host-Form-Setup.exe";
+
+// Same pattern for the Android build: upload the APK to the latest release as
+// Self-Host-Form.apk and this link follows it.
+export const ANDROID_DOWNLOAD_URL =
+  "https://github.com/Dev-Xrab/Local-Host-Form/releases/latest/download/Self-Host-Form.apk";
+
+export const RELEASE_URL = "https://github.com/Dev-Xrab/Local-Host-Form/releases/latest";
+export const RELEASE_VERSION = "v1.1.1";

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useInView, useScroll, useTransform } from "motion/react";
 import { Icons } from "./icons";
 import { SHOWCASE } from "../content";
-import { WINDOWS_DOWNLOAD_URL } from "../constants";
+import { ANDROID_DOWNLOAD_URL, WINDOWS_DOWNLOAD_URL } from "../constants";
 import { ease } from "./ui/Section";
 import Lightbox from "./ui/Lightbox";
 
@@ -125,7 +125,10 @@ export default function Hero() {
             </a>
           </motion.div>
           <motion.p variants={item} className="hero-note">
-            Windows installer · Free for personal and school use
+            Windows installer · Free for personal and school use ·{" "}
+            <a className="link" href={ANDROID_DOWNLOAD_URL} download>
+              Android APK (experimental)
+            </a>
           </motion.p>
         </motion.div>
 

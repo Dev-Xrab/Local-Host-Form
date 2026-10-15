@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useScroll, useSpring } from "motion/react";
 import { Icons } from "./icons";
 import { NAV_LINKS } from "../content";
-import { WINDOWS_DOWNLOAD_URL } from "../constants";
 import SupportModal from "./Support/SupportModal";
 import { ease } from "./ui/Section";
 
@@ -100,7 +99,7 @@ export default function Nav() {
             <button type="button" className="btn btn-ghost" onClick={openSupport}>
               Support
             </button>
-            <a href={WINDOWS_DOWNLOAD_URL} className="btn btn-primary" download>
+            <a href="#download" className="btn btn-primary">
               <Icons.download className="btn-icon" /> Download
             </a>
           </div>
@@ -153,8 +152,8 @@ export default function Nav() {
                 <Icons.arrowRight />
               </motion.button>
             </nav>
-            <a href={WINDOWS_DOWNLOAD_URL} className="btn btn-primary btn-lg btn-block" download onClick={close}>
-              <Icons.download className="btn-icon" /> Download for Windows
+            <a href="#download" className="btn btn-primary btn-lg btn-block" onClick={close}>
+              <Icons.download className="btn-icon" /> Download
             </a>
           </motion.div>
         )}

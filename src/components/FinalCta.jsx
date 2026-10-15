@@ -1,5 +1,5 @@
 import { Icons } from "./icons";
-import { WINDOWS_DOWNLOAD_URL } from "../constants";
+import { ANDROID_DOWNLOAD_URL, WINDOWS_DOWNLOAD_URL } from "../constants";
 import { Rise } from "./ui/Section";
 
 export default function FinalCta() {
@@ -16,11 +16,11 @@ export default function FinalCta() {
           <a href={WINDOWS_DOWNLOAD_URL} className="btn btn-light btn-lg" download>
             <Icons.download className="btn-icon" /> Download for Windows
           </a>
-          <a href="#how-it-works" className="btn btn-outline-light btn-lg">
-            Review the steps
+          <a href={ANDROID_DOWNLOAD_URL} className="btn btn-outline-light btn-lg" download>
+            Android APK
           </a>
         </div>
-        <p className="cta-note">Windows installer</p>
+        <p className="cta-note">Windows installer · Android APK (experimental)</p>
       </Rise>
     </section>
   );
