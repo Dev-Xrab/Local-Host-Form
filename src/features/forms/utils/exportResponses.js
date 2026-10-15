@@ -123,8 +123,9 @@ export async function exportFormResponsesToWorkbook(form, responses, subjectName
   const filename = `${(form.title || "responses").toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 60)}-responses-${new Date()
     .toISOString()
     .slice(0, 10)}.xlsx`;
-  triggerDownload(
-    new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
-    filename
+  await triggerDownload(
+    buffer,
+    filename,
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
   );
 }

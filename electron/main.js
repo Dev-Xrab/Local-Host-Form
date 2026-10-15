@@ -81,7 +81,7 @@ function createSplashWindow() {
     resizable: false,
     movable: false,
     show: false,
-    backgroundColor: "#000000",
+    backgroundColor: "#0D0E10",
     icon: APP_ICON,
     webPreferences: {
       contextIsolation: true,

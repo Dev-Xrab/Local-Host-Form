@@ -1,0 +1,33 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    }
+  },
+  "include": [
+    "app",
+    "ui",
+    "components",
+    "lib",
+    "src",
+    "store",
+    "modules",
+    "*.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "cloud-server",
+    "server",
+    "electron",
+    "dist",
+    "dist-rn",
+    "release"
+  ]
+}

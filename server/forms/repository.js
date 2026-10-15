@@ -24,6 +24,9 @@ const DEFAULT_SETTINGS = {
   // Respondent page blocks right-click, copy/cut/select-all, dragging and printing, and clears the
   // clipboard on Print Screen (see features/responses/hooks/useCopyProtection.js). Deterrent only.
   restrictCopying: false,
+  // Each respondent sees the questions inside every section in their own random order (see
+  // features/responses/utils/shuffle.js). Order only: scoring and answers are untouched.
+  shuffleQuestions: false,
 };
 
 const now = () => new Date().toISOString();

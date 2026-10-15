@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { randomBytes, randomUUID, createHash } from "node:crypto";
+import os from "node:os";
 import * as cloudRepo from "./repository.js";
 import { cloudFetch, isCloudConfigured } from "./client.js";
 import * as formsRepo from "../forms/repository.js";
@@ -67,6 +68,20 @@ cloudRouter.post("/auth/launch", requireAuth, (req, res) => {
   res.json({ url: url.toString() });
 });
 
+
+// The cloud server only accepts a loopback callback (http://localhost:PORT/...), but the host may
+// have opened this app through its LAN address (http://192.168.x.x:PORT). When the browser is on
+// the same machine as this server, localhost reaches the very same process, so the callback is
+// pointed there. A request from another device can't complete the sign-in (the callback would land
+// on that device), so it is told to sign in from the host computer instead.
+function isSameMachine(req) {
+  const addr = String(req.socket.remoteAddress || "").replace(/^::ffff:/, "");
+  if (addr === "::1" || addr.startsWith("127.")) return true;
+  return Object.values(os.networkInterfaces()).flat().some((i) => i && i.address === addr);
+}
+
+const isLoopbackHost = (host) => /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host || "");
+
 cloudRouter.get("/auth/start", (req, res) => {
   sweepExpired(pendingAttempts, PENDING_TTL_MS, (attempt) => attempt.createdAt);
 
@@ -82,7 +97,15 @@ cloudRouter.get("/auth/start", (req, res) => {
   const codeChallenge = createHash("sha256").update(codeVerifier).digest("base64url");
   pendingAttempts.set(state, { codeVerifier, createdAt: Date.now() });
 
-  const redirectUri = `${req.protocol}://${req.get("host")}/api/cloud/auth/callback`;
+  let callbackHost = req.get("host");
+  if (!isLoopbackHost(callbackHost)) {
+    if (!isSameMachine(req)) {
+      pendingAttempts.delete(state);
+      return res.status(403).send("<p>Google sign-in has to be done on the computer that runs Self Host Form, using http://localhost:" + req.socket.localPort + ". Open it there and try again.</p>");
+    }
+    callbackHost = `localhost:${req.socket.localPort}`;
+  }
+  const redirectUri = `http://${callbackHost}/api/cloud/auth/callback`;
   const startUrl = new URL(`${process.env.CLOUD_SERVER_URL.replace(/\/+$/, "")}/auth/google/start`);
   startUrl.searchParams.set("state", state);
   startUrl.searchParams.set("code_challenge", codeChallenge);

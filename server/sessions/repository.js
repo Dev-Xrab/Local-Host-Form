@@ -105,7 +105,6 @@ export function createSession({
 export function updateSession(id, { name, durationMinutes }) {
   const existing = selectOneStmt.get(id);
   if (!existing) return null;
-  if (existing.status !== "draft") return "not_draft";
 
   db.prepare("UPDATE sessions SET name = ?, duration_minutes = ? WHERE id = ?").run(
     name ?? existing.name,

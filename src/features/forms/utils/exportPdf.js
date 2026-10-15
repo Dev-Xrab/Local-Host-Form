@@ -1,5 +1,6 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { downloadBytes } from "../../../../lib/downloadBytes";
 import { aggregateQuestion, formatPercent } from "./responseAnalytics";
 
 const MARGIN = 40;
@@ -117,7 +118,7 @@ function addQuestionSection(doc, question, responses, y) {
 // per-respondent table, each on its own logical section with proper margins and automatic page
 // breaks (autoTable repeats its header row across a page split, so a long question list or
 // response table never overflows unreadably onto one page).
-export function exportFormResponsesToPdf(form, responses, subjectName) {
+export async function exportFormResponsesToPdf(form, responses, subjectName) {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   let y = addHeader(doc, form, subjectName, responses.length);
 
@@ -180,5 +181,5 @@ export function exportFormResponsesToPdf(form, responses, subjectName) {
   const filename = `${(form.title || "responses").toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 60)}-responses-${new Date()
     .toISOString()
     .slice(0, 10)}.pdf`;
-  doc.save(filename);
+  await downloadBytes(new Uint8Array(doc.output("arraybuffer")), filename, "application/pdf");
 }

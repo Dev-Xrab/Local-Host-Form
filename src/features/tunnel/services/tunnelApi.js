@@ -1,7 +1,8 @@
+import { apiFetch } from "../../../../lib/http";
 const BASE = "/api/tunnel";
 
 async function request(path, options) {
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await apiFetch(`${BASE}${path}`, {
     headers: { "Content-Type": "application/json" },
     ...options,
   });

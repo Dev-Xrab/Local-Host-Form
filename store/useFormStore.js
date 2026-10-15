@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { formsApi } from '../src/features/forms/services/formsApi';
-import { getQuestionType, createQuestionDefaults } from '../src/lib/questionRegistry';
+import { getQuestionType, createQuestionDefaults } from '../src/lib/questionTypes';
 import { createMatrixRow, createMatrixColumn, buildPresetColumns, DEFAULT_MATRIX_SETTINGS } from '../src/lib/matrixQuestions';
 
 let fallbackId = 0;
@@ -40,6 +40,7 @@ const DEFAULT_FORM_SETTINGS = {
   revealCorrectAnswers: false,
   blurOnDisconnect: false,
   restrictCopying: false,
+  shuffleQuestions: false,
 };
 
 const useFormStore = create((set, get) => ({

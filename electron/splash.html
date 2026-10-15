@@ -2,45 +2,88 @@
 <html>
   <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src file: data:; style-src 'unsafe-inline'" />
     <style>
+      /* Matches the app: near-black canvas (ui/tokens.ts palette.dark), white mark, one blue accent. */
       html,
       body {
         margin: 0;
         height: 100%;
-        background: white;
+        background: #0d0e10;
+        overflow: hidden;
+        -webkit-app-region: drag;
       }
 
       body {
         display: flex;
         align-items: center;
         justify-content: center;
+        border: 1px solid #25272b;
+        box-sizing: border-box;
       }
 
       .splash {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 20px;
+        gap: 18px;
       }
 
+      /* The logo is already white on transparent; no filter needed. */
       .logo {
-        width: 120px;
-        height: 120px;
-        filter: invert(1);
+        width: 84px;
+        height: 84px;
       }
 
       .title {
-        font-family: "Segoe UI", -apple-system, sans-serif;
-        color: black;
-        font-size: 26px;
-        letter-spacing: 1px;
+        font-family: Inter, "Segoe UI Variable", "Segoe UI", -apple-system, system-ui, sans-serif;
+        color: #e9eaec;
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+      }
+
+      .status {
+        font-family: Inter, "Segoe UI Variable", "Segoe UI", -apple-system, system-ui, sans-serif;
+        color: #6b6e75;
+        font-size: 12px;
+        margin-top: -10px;
+      }
+
+      .bar {
+        width: 140px;
+        height: 3px;
+        border-radius: 2px;
+        background: #25272b;
+        overflow: hidden;
+      }
+
+      .bar::after {
+        content: "";
+        display: block;
+        width: 40%;
+        height: 100%;
+        border-radius: 2px;
+        background: #3b6bf6;
+        animation: slide 1.2s ease-in-out infinite;
+      }
+
+      @keyframes slide {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(350%); }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .bar::after { animation: none; width: 100%; opacity: 0.6; }
       }
     </style>
   </head>
   <body>
-    <div class="splash">
+    <div class="splash" role="status" aria-live="polite">
       <img class="logo" src="./logo.png" alt="" />
       <div class="title">Self Host Form</div>
+      <div class="status">Starting local server…</div>
+      <div class="bar" aria-hidden="true"></div>
     </div>
   </body>
 </html>

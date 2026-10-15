@@ -1,6 +1,6 @@
 import { Router } from "express";
 import * as authRepo from "./repository.js";
-import { readSessionToken, setSessionCookie, clearSessionCookie } from "./cookies.js";
+import { readSessionToken, setSessionCookie, clearSessionCookie, wantsBearer } from "./cookies.js";
 import { requireAuth } from "./middleware.js";
 import { blockTunnel, requireLocalConsole } from "../security/network.js";
 import {
@@ -35,7 +35,7 @@ authRouter.post("/setup", requireLocalConsole, (req, res) => {
 
   const { token, expiresAt } = authRepo.createAuthSession();
   setSessionCookie(res, token, expiresAt);
-  res.json({ ok: true, hasRecoveryQuestion: false });
+  res.json({ ok: true, hasRecoveryQuestion: false, ...(wantsBearer(req) && { token }) });
 });
 
 // Reachable from phones/tablets on the LAN (hosts manage sessions from them), so this is the
@@ -55,6 +55,7 @@ authRouter.post("/login", blockTunnel, loginLimiter, globalLoginLimiter, (req, r
   res.json({
     ok: true,
     hasRecoveryQuestion: authRepo.hasRecoveryQuestion(),
+    ...(wantsBearer(req) && { token }),
   });
 });
 

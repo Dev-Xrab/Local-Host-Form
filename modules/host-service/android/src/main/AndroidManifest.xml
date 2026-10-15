@@ -1,0 +1,19 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+  <application>
+    <!-- Keeps the app's process alive, with a visible notification, while this phone is hosting a
+         session. Without it Android freezes background apps and students would lose the connection
+         the moment the teacher switched to another app. -->
+    <service
+      android:name="expo.modules.hostservice.HostForegroundService"
+      android:exported="false"
+      android:foregroundServiceType="specialUse">
+      <property
+        android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+        android:value="Serves classroom forms to other devices on the local Wi-Fi network" />
+    </service>
+  </application>
+</manifest>

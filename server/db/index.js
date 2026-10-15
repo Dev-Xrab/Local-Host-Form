@@ -1,14 +1,8 @@
 import { DatabaseSync } from "node:sqlite";
-import { existsSync, mkdirSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { dataDir } from "./dataDir.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// Exported so other modules that need a writable, per-install directory (e.g. server/tunnel's
-// cached cloudflared binary) land next to the sqlite file instead of computing their own copy of
-// this same DATA_DIR-or-fallback logic.
-export const dataDir = process.env.DATA_DIR || path.join(__dirname, "..", "data");
-if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true });
+export { dataDir };
 
 const dbPath = path.join(dataDir, "stonearch.sqlite");
 export const db = new DatabaseSync(dbPath);

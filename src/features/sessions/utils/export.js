@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
 import JSZip from "jszip";
 import { safeExtensionForDataUri } from "../../../lib/fileTypes";
+import { downloadBytes } from "../../../../lib/downloadBytes";
 
 const sanitizeSheetName = (name) => name.replace(/[:\\/?*[\]]/g, "").trim().slice(0, 31) || "Sheet";
 const slug = (name) => (name || "").trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") || "x";
@@ -160,15 +161,9 @@ function buildAnswersGrid(sheetFolder, respondents, fileEntries) {
   return { grid: [header, ...metaRows, ...rows], metaRowCount: metaRows.length };
 }
 
-export function triggerDownload(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+// Browser/Electron: a normal download. Phone: written to cache and handed to the share sheet.
+export function triggerDownload(data, filename, mime) {
+  return downloadBytes(data, filename, mime);
 }
 
 // Reuses the same client-side XLSX generation approach as the rest of the app (no server-side
@@ -275,10 +270,7 @@ export async function exportSessionsToWorkbook(sessionExports, { matrix } = {}) 
   const xlsxBuffer = await wb.xlsx.writeBuffer();
 
   if (fileEntries.length === 0) {
-    triggerDownload(
-      new Blob([xlsxBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
-      `${baseFilename}.xlsx`
-    );
+    await triggerDownload(xlsxBuffer, `${baseFilename}.xlsx`, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     return;
   }
 
@@ -286,6 +278,6 @@ export async function exportSessionsToWorkbook(sessionExports, { matrix } = {}) 
   zip.file(`${baseFilename}.xlsx`, xlsxBuffer);
   fileEntries.forEach(({ path, bytes }) => zip.file(path, bytes));
 
-  const blob = await zip.generateAsync({ type: "blob" });
-  triggerDownload(blob, `${baseFilename}.zip`);
+  const zipBytes = await zip.generateAsync({ type: "uint8array" });
+  await triggerDownload(zipBytes, `${baseFilename}.zip`, "application/zip");
 }

@@ -1,7 +1,9 @@
+import { openExternal } from "../../../../lib/openExternal";
+import { apiFetch } from "../../../../lib/http";
 const BASE = "/api/cloud";
 
 async function request(path, options) {
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await apiFetch(`${BASE}${path}`, {
     headers: { "Content-Type": "application/json" },
     ...options,
   });
@@ -35,7 +37,7 @@ export const cloudApi = {
   // browser, which is where Google's consent screen actually has to render.
   startLogin: async () => {
     const { url } = await request("/auth/launch", { method: "POST" });
-    window.open(url, "_blank", "noopener,noreferrer");
+    await openExternal(url);
   },
   listForms: () => request("/forms"),
   // Always brings in the cloud copy's latest. `overwrite` is only needed when this device's copy

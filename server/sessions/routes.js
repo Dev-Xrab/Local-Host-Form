@@ -106,9 +106,6 @@ sessionsRouter.put("/:id", (req, res) => {
   if (fieldError) return res.status(400).json({ error: fieldError });
   const result = sessionsRepo.updateSession(req.params.id, { name, durationMinutes });
   if (!result) return res.status(404).json({ error: "Session not found" });
-  if (result === "not_draft") {
-    return res.status(400).json({ error: "Only a session that hasn't started yet can be edited." });
-  }
   res.json(withFormTitle(result));
 });
 

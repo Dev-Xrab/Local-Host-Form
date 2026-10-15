@@ -1,5 +1,6 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { downloadBytes } from "../../../../lib/downloadBytes";
 
 // PDF counterpart of exportSessionsToWorkbook (export.js): the same session data as a print-ready
 // report — a cover with headline numbers, a per-session results table, an optional "who responded"
@@ -75,7 +76,7 @@ function scoreStats(respondents) {
 
 // `sessionExports` is what GET /api/sessions/:id/export returns, one per session. `matrix`
 // ({ sessions, rows }, from respondentMatrix.js) adds the "who responded" table.
-export function exportSessionsToPdf(sessionExports, { matrix, includeAnswers = true } = {}) {
+export async function exportSessionsToPdf(sessionExports, { matrix, includeAnswers = true } = {}) {
   const wide = (matrix?.sessions.length ?? 0) > 4;
   const doc = new jsPDF({ unit: "pt", format: "a4", orientation: wide ? "landscape" : "portrait" });
   const pageW = doc.internal.pageSize.width;
@@ -225,5 +226,5 @@ export function exportSessionsToPdf(sessionExports, { matrix, includeAnswers = t
 
   addFooters(doc, title);
   const base = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "sessions";
-  doc.save(`${base}-${new Date().toISOString().slice(0, 10)}.pdf`);
+  await downloadBytes(new Uint8Array(doc.output("arraybuffer")), `${base}-${new Date().toISOString().slice(0, 10)}.pdf`, "application/pdf");
 }

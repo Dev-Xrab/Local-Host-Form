@@ -1,7 +1,8 @@
+import { apiFetch } from "../../../../lib/http";
 const BASE = "/api/sessions";
 
 async function request(path, options) {
-  const res = await fetch(path, {
+  const res = await apiFetch(path, {
     headers: { "Content-Type": "application/json" },
     ...options,
   });

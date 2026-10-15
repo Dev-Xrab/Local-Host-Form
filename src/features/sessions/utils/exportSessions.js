@@ -5,7 +5,7 @@ import { exportSessionsToPdf } from "./exportSessionsPdf";
 // two formats and never drift: `format` is "excel" (editable workbook) or "pdf" (print-ready report).
 export async function exportSessions(format, sessionExports, { matrix, includeAnswers = true } = {}) {
   if (format === "pdf") {
-    exportSessionsToPdf(sessionExports, { matrix, includeAnswers });
+    await exportSessionsToPdf(sessionExports, { matrix, includeAnswers });
     return;
   }
   await exportSessionsToWorkbook(sessionExports, { matrix });
