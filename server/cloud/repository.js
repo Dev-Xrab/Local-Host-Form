@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { db } from "../db/index.js";
+import { decryptToken, encryptToken, isEncrypted } from "../oauth/tokenVault.js";
 
 const now = () => new Date().toISOString();
 
@@ -29,9 +30,9 @@ function rowToAccount(row) {
     email: row.email,
     name: row.name,
     avatarUrl: row.avatar_url,
-    accessToken: row.access_token,
+    accessToken: decryptToken(row.access_token),
     accessTokenExpiresAt: row.access_token_expires_at,
-    refreshToken: row.refresh_token,
+    refreshToken: decryptToken(row.refresh_token),
   };
 }
 
@@ -59,7 +60,7 @@ const upsertAccountStmt = db.prepare(`
 
 export function saveCloudAccount({ userId, email, name, avatarUrl, accessToken, accessTokenExpiresAt, refreshToken }) {
   const timestamp = now();
-  upsertAccountStmt.run(userId, email, name || "", avatarUrl || null, accessToken, accessTokenExpiresAt, refreshToken, timestamp, timestamp);
+  upsertAccountStmt.run(userId, email, name || "", avatarUrl || null, encryptToken(accessToken), accessTokenExpiresAt, encryptToken(refreshToken), timestamp, timestamp);
 }
 
 const updateTokensStmt = db.prepare(`
@@ -67,7 +68,14 @@ const updateTokensStmt = db.prepare(`
 `);
 
 export function updateCloudTokens({ accessToken, accessTokenExpiresAt, refreshToken }) {
-  updateTokensStmt.run(accessToken, accessTokenExpiresAt, refreshToken, now());
+  updateTokensStmt.run(encryptToken(accessToken), accessTokenExpiresAt, encryptToken(refreshToken), now());
+}
+
+// Tokens saved by earlier versions are plaintext; encrypt them in place on first run.
+export function encryptLegacyTokens() {
+  const row = selectAccountStmt.get();
+  if (!row || (isEncrypted(row.access_token) && isEncrypted(row.refresh_token))) return;
+  updateTokensStmt.run(encryptToken(decryptToken(row.access_token)), row.access_token_expires_at, encryptToken(decryptToken(row.refresh_token)), now());
 }
 
 export function clearCloudAccount() {

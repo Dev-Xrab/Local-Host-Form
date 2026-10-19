@@ -13,7 +13,7 @@ import { requireAuth } from "./auth/middleware.js";
 import { ensureDefaultSubject } from "./subjects/repository.js";
 import { backfillFormsWithoutSubject } from "./forms/repository.js";
 import { cloudRouter } from "./cloud/routes.js";
-import { ensureDeviceId } from "./cloud/repository.js";
+import { encryptLegacyTokens, ensureDeviceId } from "./cloud/repository.js";
 import { tunnelRouter } from "./tunnel/routes.js";
 import { requireSameOrigin } from "./security/network.js";
 import { apiLimiter, importLimiter, submitLimiter } from "./security/rateLimits.js";
@@ -35,6 +35,7 @@ export function createApp({ port, mountWebUi } = {}) {
   ensureDefaultSubject();
   backfillFormsWithoutSubject();
   ensureDeviceId();
+  encryptLegacyTokens();
 
   const app = express();
 
