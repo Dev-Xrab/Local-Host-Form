@@ -2,8 +2,11 @@ import { openExternal } from "../../../../lib/openExternal";
 import { apiFetch } from "../../../../lib/http";
 const BASE = "/api/cloud";
 
-async function request(path, options) {
-  const res = await apiFetch(`${BASE}${path}`, {
+const GOOGLE_FORMS_BASE = "/api/google-forms";
+const googleRequest = (path, options) => request(path, options, GOOGLE_FORMS_BASE);
+
+async function request(path, options, base = BASE) {
+  const res = await apiFetch(`${base}${path}`, {
     headers: { "Content-Type": "application/json" },
     ...options,
   });
@@ -56,4 +59,17 @@ export const cloudApi = {
   listSyncIssues: () => request("/sync/issues"),
   retrySyncIssue: (id) => request(`/sync/issues/${id}/retry`, { method: "POST" }),
   discardSyncIssue: (id) => request(`/sync/issues/${id}/discard`, { method: "POST" }),
+};
+
+// Google Forms: browse the user's forms, import one with its responses, and keep it in sync.
+// `googleId` is the Google Drive file id; `formId` is this device's own form id.
+export const googleFormsApi = {
+  list: () => googleRequest("/"),
+  import: (googleId, { responses = true } = {}) =>
+    googleRequest(`/import/${googleId}${responses ? "" : "?responses=false"}`, { method: "POST" }),
+  syncAll: () => googleRequest("/sync", { method: "POST" }),
+  status: (formId) => googleRequest(`/${formId}/status`),
+  sync: (formId) => googleRequest(`/${formId}/sync`, { method: "POST" }),
+  changes: (formId) => googleRequest(`/${formId}/changes`),
+  applyChanges: (formId) => googleRequest(`/${formId}/apply-changes`, { method: "POST" }),
 };

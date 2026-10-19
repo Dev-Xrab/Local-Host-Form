@@ -5,7 +5,15 @@
 // can see (it cannot list or read any other Drive file); the rest identify the connected account.
 export const DRIVE_APPDATA_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
 
-export const GOOGLE_SCOPES = ["openid", "email", "profile", DRIVE_APPDATA_SCOPE];
+// Read-only access for importing Google Forms and their responses. These are optional at consent time:
+// sync to Drive works without them, and the Google Forms routes report what is missing.
+export const FORMS_BODY_SCOPE = "https://www.googleapis.com/auth/forms.body.readonly";
+export const FORMS_RESPONSES_SCOPE = "https://www.googleapis.com/auth/forms.responses.readonly";
+// Lets the app list the user's Google Forms by name (file metadata only, never file content).
+export const DRIVE_METADATA_SCOPE = "https://www.googleapis.com/auth/drive.metadata.readonly";
+export const GOOGLE_FORMS_SCOPES = [FORMS_BODY_SCOPE, FORMS_RESPONSES_SCOPE, DRIVE_METADATA_SCOPE];
+
+export const GOOGLE_SCOPES = ["openid", "email", "profile", DRIVE_APPDATA_SCOPE, ...GOOGLE_FORMS_SCOPES];
 
 export const authUrl = () => process.env.GOOGLE_AUTH_URL || "https://accounts.google.com/o/oauth2/v2/auth";
 export const tokenUrl = () => process.env.GOOGLE_TOKEN_URL || "https://oauth2.googleapis.com/token";
@@ -23,6 +31,8 @@ export const clientId = () => process.env.GOOGLE_CLIENT_ID || DEFAULT_CLIENT_ID;
 export const clientSecret = () => process.env.GOOGLE_CLIENT_SECRET || DEFAULT_CLIENT_SECRET;
 export const isConfigured = () => !!clientId();
 
+export const formsApiBase = () => process.env.FORMS_API_BASE || "https://forms.googleapis.com/v1";
+
 export const CALLBACK_PATH = "/api/cloud/auth/callback";
 
 // Network timeout for every call to Google, so a stalled connection cannot hang a request forever.
@@ -30,3 +40,7 @@ export const HTTP_TIMEOUT_MS = 15_000;
 
 // Refresh this long before the access token actually expires to absorb clock skew and latency.
 export const EXPIRY_SKEW_MS = 60_000;
+
+// `account` is the object from cloud/repository.js getCloudAccount (or null when signed out).
+export const hasGoogleFormsAccess = (account) =>
+  !!account && GOOGLE_FORMS_SCOPES.every((scope) => account.scopes?.includes(scope));

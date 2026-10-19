@@ -15,7 +15,7 @@ export class Device {
     this.dir = mkdtempSync(join(tmpdir(), "shf-e2e-"));
     this.cookie = "";
     this.proc = spawn(process.execPath, [SERVER], {
-      env: { ...process.env, PORT: String(port), DATA_DIR: this.dir, GOOGLE_CLIENT_ID: "test-client", NODE_ENV: "test", AUTO_SAVE_DRIVE: "0", ...extraEnv },
+      env: { ...process.env, PORT: String(port), DATA_DIR: this.dir, GOOGLE_CLIENT_ID: "test-client", NODE_ENV: "test", AUTO_SAVE_DRIVE: "0", GOOGLE_FORMS_POLL_MS: "0", ...extraEnv },
       stdio: ["ignore", "ignore", "pipe"],
     });
     this.stderr = "";

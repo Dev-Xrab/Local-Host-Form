@@ -33,6 +33,7 @@ function rowToAccount(row) {
     accessToken: decryptToken(row.access_token),
     accessTokenExpiresAt: row.access_token_expires_at,
     refreshToken: decryptToken(row.refresh_token),
+    scopes: String(row.scopes || "").split(" ").filter(Boolean),
   };
 }
 
@@ -45,8 +46,8 @@ export function getCloudAccount() {
 }
 
 const upsertAccountStmt = db.prepare(`
-  INSERT INTO cloud_account (id, user_id, email, name, avatar_url, access_token, access_token_expires_at, refresh_token, created_at, updated_at)
-  VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  INSERT INTO cloud_account (id, user_id, email, name, avatar_url, access_token, access_token_expires_at, refresh_token, scopes, created_at, updated_at)
+  VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   ON CONFLICT(id) DO UPDATE SET
     user_id = excluded.user_id,
     email = excluded.email,
@@ -55,27 +56,29 @@ const upsertAccountStmt = db.prepare(`
     access_token = excluded.access_token,
     access_token_expires_at = excluded.access_token_expires_at,
     refresh_token = excluded.refresh_token,
+    scopes = excluded.scopes,
     updated_at = excluded.updated_at
 `);
 
-export function saveCloudAccount({ userId, email, name, avatarUrl, accessToken, accessTokenExpiresAt, refreshToken }) {
+export function saveCloudAccount({ userId, email, name, avatarUrl, accessToken, accessTokenExpiresAt, refreshToken, scopes = [] }) {
   const timestamp = now();
-  upsertAccountStmt.run(userId, email, name || "", avatarUrl || null, encryptToken(accessToken), accessTokenExpiresAt, encryptToken(refreshToken), timestamp, timestamp);
+  upsertAccountStmt.run(userId, email, name || "", avatarUrl || null, encryptToken(accessToken), accessTokenExpiresAt, encryptToken(refreshToken), scopes.join(" "), timestamp, timestamp);
 }
 
 const updateTokensStmt = db.prepare(`
-  UPDATE cloud_account SET access_token = ?, access_token_expires_at = ?, refresh_token = ?, updated_at = ? WHERE id = 1
+  UPDATE cloud_account SET access_token = ?, access_token_expires_at = ?, refresh_token = ?, scopes = COALESCE(?, scopes), updated_at = ? WHERE id = 1
 `);
 
-export function updateCloudTokens({ accessToken, accessTokenExpiresAt, refreshToken }) {
-  updateTokensStmt.run(encryptToken(accessToken), accessTokenExpiresAt, encryptToken(refreshToken), now());
+// `scopes` is only passed through when Google reported them; a refresh response often omits them.
+export function updateCloudTokens({ accessToken, accessTokenExpiresAt, refreshToken, scopes }) {
+  updateTokensStmt.run(encryptToken(accessToken), accessTokenExpiresAt, encryptToken(refreshToken), scopes?.length ? scopes.join(" ") : null, now());
 }
 
 // Tokens saved by earlier versions are plaintext; encrypt them in place on first run.
 export function encryptLegacyTokens() {
   const row = selectAccountStmt.get();
   if (!row || (isEncrypted(row.access_token) && isEncrypted(row.refresh_token))) return;
-  updateTokensStmt.run(encryptToken(decryptToken(row.access_token)), row.access_token_expires_at, encryptToken(decryptToken(row.refresh_token)), now());
+  updateTokensStmt.run(encryptToken(decryptToken(row.access_token)), row.access_token_expires_at, encryptToken(decryptToken(row.refresh_token)), null, now());
 }
 
 export function clearCloudAccount() {

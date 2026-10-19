@@ -33,14 +33,22 @@ test("sign-in sends the browser to Google with PKCE and only the app-data Drive 
   assert.equal(googleUrl.searchParams.get("code_challenge_method"), "S256");
   assert.equal(googleUrl.searchParams.get("access_type"), "offline");
   const scopes = googleUrl.searchParams.get("scope").split(" ");
-  assert.deepEqual(scopes.sort(), ["email", "https://www.googleapis.com/auth/drive.appdata", "openid", "profile"]);
+  assert.deepEqual(scopes.sort(), [
+    "email",
+    "https://www.googleapis.com/auth/drive.appdata",
+    "https://www.googleapis.com/auth/drive.metadata.readonly",
+    "https://www.googleapis.com/auth/forms.body.readonly",
+    "https://www.googleapis.com/auth/forms.responses.readonly",
+    "openid",
+    "profile",
+  ]);
   assert.match(googleUrl.searchParams.get("redirect_uri"), /\/api\/cloud\/auth\/callback$/);
   // the verifier was sent to Google's token endpoint, never to the browser
   assert.ok(google.stats.verifiers.at(-1) && google.stats.verifiers.at(-1).length >= 43);
   assert.ok(!googleUrl.toString().includes(google.stats.verifiers.at(-1)));
 
   const status = await A().api("GET", "/api/cloud/auth/status");
-  assert.deepEqual(status.data, { connected: true, email: "teacher@example.com", name: "Test Teacher", avatarUrl: null });
+  assert.deepEqual(status.data, { connected: true, email: "teacher@example.com", name: "Test Teacher", avatarUrl: null, googleFormsAccess: true });
   assert.ok(!JSON.stringify(status.data).includes("refresh"), "tokens must never reach the UI");
 });
 

@@ -220,6 +220,8 @@ db.exec(
 // POST /google-forms/:id/import) — lets "Update from Google" (POST /google-forms/:id/refresh)
 // find its way back to the source Drive file id later. Null for every other form.
 ensureColumn("forms", "google_form_id", "TEXT");
+// Space-separated OAuth scopes the user actually granted; tells us whether Google Forms access exists.
+ensureColumn("cloud_account", "scopes", "TEXT NOT NULL DEFAULT ''");
 
 // An optional decorative image shown across the top of the form, both in the builder and on the
 // respondent page — a data: URI, the same inline-base64 approach question images already use

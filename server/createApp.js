@@ -13,6 +13,8 @@ import { requireAuth } from "./auth/middleware.js";
 import { ensureDefaultSubject } from "./subjects/repository.js";
 import { backfillFormsWithoutSubject } from "./forms/repository.js";
 import { cloudRouter } from "./cloud/routes.js";
+import { googleFormsRouter } from "./googleForms/routes.js";
+import { startGoogleFormsPolling } from "./googleForms/poller.js";
 import { encryptLegacyTokens, ensureDeviceId } from "./cloud/repository.js";
 import { tunnelRouter } from "./tunnel/routes.js";
 import { requireSameOrigin } from "./security/network.js";
@@ -145,6 +147,7 @@ export function createApp({ port, mountWebUi } = {}) {
   // OS's default browser mid-OAuth-flow, which carries no session cookie for this origin. Every
   // other route inside cloudRouter applies requireAuth itself — see server/cloud/routes.js.
   app.use("/api/cloud", cloudRouter);
+  app.use("/api/google-forms", requireAuth, googleFormsRouter);
   app.use("/api/tunnel", requireAuth, tunnelRouter);
 
 
@@ -168,6 +171,8 @@ export function createApp({ port, mountWebUi } = {}) {
 
   // Background saving of forms and responses to Google Drive (a no-op until the user signs in).
   startAutoSave();
+  // Periodically pulls new responses for forms imported from Google Forms.
+  startGoogleFormsPolling();
 
   return app;
 }

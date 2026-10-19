@@ -6,6 +6,8 @@ import { randomUUID } from "node:crypto";
 export const TOKEN = "test-token";
 
 export function startFakeDrive({ port = 0 } = {}) {
+  const forms = new Map(); // google form id -> Form resource (seeded by tests)
+  const formResponses = new Map(); // google form id -> [FormResponse]
   const files = new Map(); // id -> { id, name, content, modifiedTime }
   const pendingUploads = new Map(); // upload id -> { method, id?, metadata }
   let clock = Date.UTC(2026, 0, 1, 0, 0, 0);
@@ -67,7 +69,8 @@ export function startFakeDrive({ port = 0 } = {}) {
         stats.exchanges++;
         stats.verifiers.push(form.get("code_verifier"));
         if (form.get("code") === "good-code" || form.get("code") === "no-drive-code") {
-          const scope = "openid email profile" + (form.get("code") === "good-code" ? " https://www.googleapis.com/auth/drive.appdata" : "");
+          const formsScopes = " https://www.googleapis.com/auth/forms.body.readonly https://www.googleapis.com/auth/forms.responses.readonly https://www.googleapis.com/auth/drive.metadata.readonly";
+          const scope = "openid email profile" + (form.get("code") === "good-code" ? " https://www.googleapis.com/auth/drive.appdata" + formsScopes : "");
           // expires_in is tiny so the next sync has to take the refresh path.
           return json(res, 200, { access_token: TOKEN, refresh_token: "refresh-1", expires_in: 1, scope, token_type: "Bearer" });
         }
@@ -94,7 +97,27 @@ export function startFakeDrive({ port = 0 } = {}) {
       return json(res, 401, { error: { code: 401, message: "Invalid Credentials" } });
     }
 
+    // Google Forms API: forms.get and forms.responses.list (with the timestamp filter).
+    const formMatch = /^\/forms\/v1\/forms\/([^/]+)(\/responses)?$/.exec(url.pathname);
+    if (req.method === "GET" && formMatch) {
+      const id = decodeURIComponent(formMatch[1]);
+      if (!forms.has(id)) return json(res, 404, { error: { code: 404, message: "Requested entity was not found." } });
+      if (!formMatch[2]) return json(res, 200, forms.get(id));
+      stats.formResponseLists = (stats.formResponseLists || 0) + 1;
+      let list = formResponses.get(id) || [];
+      const filter = /^timestamp >= (.+)$/.exec(url.searchParams.get("filter") || "");
+      if (filter) list = list.filter((r) => r.lastSubmittedTime >= filter[1]);
+      stats.lastFormFilter = url.searchParams.get("filter");
+      // Two per page, so pagination is exercised.
+      const start = Number(url.searchParams.get("pageToken") || 0);
+      const page = list.slice(start, start + 2);
+      return json(res, 200, { responses: page, ...(start + 2 < list.length ? { nextPageToken: String(start + 2) } : {}) });
+    }
+
     // files.list
+    if (req.method === "GET" && url.pathname === "/drive/v3/files" && url.searchParams.get("spaces") !== "appDataFolder" && /google-apps\.form/.test(url.searchParams.get("q") || "")) {
+      return json(res, 200, { files: [...forms.entries()].map(([id, f]) => ({ id, name: f.info.title, modifiedTime: "2026-01-01T00:00:00Z" })) });
+    }
     if (req.method === "GET" && url.pathname === "/drive/v3/files") {
       stats.lists++;
       if (url.searchParams.get("spaces") !== "appDataFolder") return json(res, 400, { error: { message: "spaces must be appDataFolder" } });
@@ -184,8 +207,9 @@ export function startFakeDrive({ port = 0 } = {}) {
       process.env.GOOGLE_AUTH_URL = `${base}/auth`;
       process.env.GOOGLE_TOKEN_URL = `${base}/token`;
       process.env.GOOGLE_REVOKE_URL = `${base}/revoke`;
+      process.env.FORMS_API_BASE = `${base}/forms/v1`;
       process.env.GOOGLE_USERINFO_URL = `${base}/userinfo`;
-      resolve({ base, files, stats, close: () => new Promise((r) => server.close(r)) });
+      resolve({ base, files, forms, formResponses, stats, close: () => new Promise((r) => server.close(r)) });
     });
   });
 }
