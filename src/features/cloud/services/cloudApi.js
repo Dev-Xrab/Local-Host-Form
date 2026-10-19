@@ -65,8 +65,10 @@ export const cloudApi = {
 // `googleId` is the Google Drive file id; `formId` is this device's own form id.
 export const googleFormsApi = {
   list: () => googleRequest("/"),
-  import: (googleId, { responses = true } = {}) =>
-    googleRequest(`/import/${googleId}${responses ? "" : "?responses=false"}`, { method: "POST" }),
+  // Either of these also pulls the form's existing responses; re-importing just syncs them.
+  importId: (googleId) => googleRequest(`/import/${googleId}`, { method: "POST" }),
+  // `link` is an editor link or a bare form id; the server explains anything it can't read.
+  importLink: (link) => googleRequest("/import", { method: "POST", body: JSON.stringify({ link }) }),
   syncAll: () => googleRequest("/sync", { method: "POST" }),
   status: (formId) => googleRequest(`/${formId}/status`),
   sync: (formId) => googleRequest(`/${formId}/sync`, { method: "POST" }),

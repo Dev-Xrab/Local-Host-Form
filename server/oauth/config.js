@@ -42,5 +42,9 @@ export const HTTP_TIMEOUT_MS = 15_000;
 export const EXPIRY_SKEW_MS = 60_000;
 
 // `account` is the object from cloud/repository.js getCloudAccount (or null when signed out).
+// Reading a form and its responses needs only the two Forms scopes; listing the user's forms by name
+// is a bonus that needs the Drive metadata scope, so importing by pasted link works without it.
 export const hasGoogleFormsAccess = (account) =>
-  !!account && GOOGLE_FORMS_SCOPES.every((scope) => account.scopes?.includes(scope));
+  !!account && [FORMS_BODY_SCOPE, FORMS_RESPONSES_SCOPE].every((scope) => account.scopes?.includes(scope));
+
+export const canListGoogleForms = (account) => hasGoogleFormsAccess(account) && account.scopes.includes(DRIVE_METADATA_SCOPE);

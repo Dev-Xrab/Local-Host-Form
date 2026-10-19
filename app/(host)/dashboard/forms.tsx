@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
-import { Cloud, FileText, Plus, Upload } from "lucide-react-native";
+import { Cloud, FileInput, FileText, Plus, Upload } from "lucide-react-native";
 import { formsApi } from "../../../src/features/forms/services/formsApi";
 import { cloudApi } from "../../../src/features/cloud/services/cloudApi";
 import { describeCloudError } from "../../../src/features/cloud/utils/describeCloudError";
@@ -14,6 +14,7 @@ import { useFormExport } from "../../../components/forms/useFormExport";
 import { TemplateGallery } from "../../../components/forms/TemplateGallery";
 import { CreateFormDialog } from "../../../components/forms/CreateFormDialog";
 import { CloudImportDialog } from "../../../components/forms/ImportDialogs";
+import { GoogleFormsImportDialog } from "../../../components/forms/GoogleFormsImportDialog";
 import { GoogleAuthRequiredDialog } from "../../../components/forms/CloudDialogs";
 import { DeleteFormDialog } from "../../../components/forms/DeleteFormDialog";
 
@@ -23,7 +24,7 @@ export default function FormsPage() {
   const { forms, loading, error, refresh } = useForms();
   const { subjects } = useSubjects();
   const defaultSubjectId = subjects.find((s) => s.isDefault)?.id ?? null;
-  const { connected, login } = useCloudAccount();
+  const { account, connected, login, logout } = useCloudAccount();
 
   const [query, setQuery] = useState("");
   const [showCreate, setShowCreate] = useState(false);
@@ -38,16 +39,21 @@ export default function FormsPage() {
   const [pending, setPending] = useState(false);
   const [showAuthRequired, setShowAuthRequired] = useState(false);
   const [showCloud, setShowCloud] = useState(false);
+  const [showGoogleForms, setShowGoogleForms] = useState(false);
+  // Which dialog a request made while signed out should open once sign-in completes.
+  const [pendingTarget, setPendingTarget] = useState<"drive" | "forms">("drive");
 
   useEffect(() => {
     if (!connected || !pending) return;
-    setShowCloud(true);
+    if (pendingTarget === "forms") setShowGoogleForms(true);
+    else setShowCloud(true);
     setPending(false);
-  }, [connected, pending]);
+  }, [connected, pending, pendingTarget]);
 
-  const requireCloudThen = () => {
-    if (connected) return setShowCloud(true);
+  const requireCloudThen = (target: "drive" | "forms" = "drive") => {
+    if (connected) return target === "forms" ? setShowGoogleForms(true) : setShowCloud(true);
     setNotice(null);
+    setPendingTarget(target);
     setPending(true);
     setShowAuthRequired(true);
   };
@@ -123,7 +129,8 @@ export default function FormsPage() {
         actions={
           <>
             <Button label={importing ? "Importing…" : "Import file"} icon={Upload} disabled={importing} onPress={importFile} />
-            <Button label={pending ? "Waiting for sign-in…" : "From Drive"} icon={Cloud} disabled={pending} onPress={requireCloudThen} />
+            <Button label={pending ? "Waiting for sign-in…" : "From Drive"} icon={Cloud} disabled={pending} onPress={() => requireCloudThen("drive")} />
+            <Button label="From Google Forms" icon={FileInput} disabled={pending} onPress={() => requireCloudThen("forms")} />
             <Button label="New form" icon={Plus} variant="primary" onPress={() => setShowCreate(true)} />
           </>
         }
@@ -181,6 +188,15 @@ export default function FormsPage() {
       />
 
       <GoogleAuthRequiredDialog visible={showAuthRequired} onConfirm={confirmSignIn} onCancel={() => { setShowAuthRequired(false); setPending(false); }} />
+      <GoogleFormsImportDialog
+        visible={showGoogleForms}
+        forms={forms}
+        canAccessForms={!!account?.googleFormsAccess}
+        onClose={() => setShowGoogleForms(false)}
+        onOpenForm={open}
+        onChanged={refresh}
+        onReconnect={async () => { setShowGoogleForms(false); await logout(); setPendingTarget("forms"); setPending(true); await login(); }}
+      />
       <CloudImportDialog visible={showCloud} forms={forms} onClose={() => setShowCloud(false)} onOpenForm={open} onChanged={refresh} />
     </Page>
   );

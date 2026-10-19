@@ -48,7 +48,7 @@ test("sign-in sends the browser to Google with PKCE and only the app-data Drive 
   assert.ok(!googleUrl.toString().includes(google.stats.verifiers.at(-1)));
 
   const status = await A().api("GET", "/api/cloud/auth/status");
-  assert.deepEqual(status.data, { connected: true, email: "teacher@example.com", name: "Test Teacher", avatarUrl: null, googleFormsAccess: true });
+  assert.deepEqual(status.data, { connected: true, email: "teacher@example.com", name: "Test Teacher", avatarUrl: null, googleFormsAccess: true, googleFormsListing: true });
   assert.ok(!JSON.stringify(status.data).includes("refresh"), "tokens must never reach the UI");
 });
 

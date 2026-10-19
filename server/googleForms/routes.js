@@ -2,6 +2,7 @@ import { Router } from "express";
 import { isConfigured } from "../oauth/config.js";
 import { OAuthError } from "../oauth/googleClient.js";
 import { GoogleApiError, listGoogleForms } from "./client.js";
+import { parseGoogleFormLink } from "./link.js";
 import { applyChanges, checkChanges, getGoogleSyncedAt, importGoogleForm, pullResponses, syncAllLinkedForms } from "./sync.js";
 import * as formsRepo from "../forms/repository.js";
 
@@ -40,6 +41,14 @@ googleFormsRouter.get("/", wrap(async (req, res) => {
   const imported = new Map(formsRepo.listForms().filter((f) => f.googleFormId).map((f) => [f.googleFormId, f.id]));
   const forms = await listGoogleForms();
   res.json(forms.map((f) => ({ ...f, localFormId: imported.get(f.id) || null })));
+}));
+
+// Same as below, but from whatever the user pastes: an editor link or the bare form id.
+googleFormsRouter.post("/import", wrap(async (req, res) => {
+  const parsed = parseGoogleFormLink(req.body?.link);
+  if (parsed.error) return res.status(400).json({ error: parsed.error, code: "bad_link" });
+  const result = await importGoogleForm(parsed.id, { withResponses: req.body?.responses !== false });
+  res.status(result.alreadyImported ? 200 : 201).json(result);
 }));
 
 // Brings a Google Form (questions, then its responses) onto this device.

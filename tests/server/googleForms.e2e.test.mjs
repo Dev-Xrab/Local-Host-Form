@@ -125,6 +125,23 @@ test("structure changes are detected read-only, then applied without losing remo
   assert.ok(byId.q5 && !byId.q5.removedAt);
 });
 
+test("a form can be imported by pasting its editor link, and bad links are explained", async () => {
+  const id2 = "second-form-xyz789";
+  google.forms.set(id2, { info: { title: "Second" }, items: [item("a", "qa", "Name?", { textQuestion: { paragraph: false } })] });
+  google.formResponses.set(id2, []);
+
+  const byLink = await d.api("POST", "/api/google-forms/import", { link: `https://docs.google.com/forms/d/${id2}/edit?usp=sharing` });
+  assert.equal(byLink.status, 201, JSON.stringify(byLink.data));
+  assert.equal(byLink.data.form.googleFormId, id2);
+  assert.equal((await d.api("POST", "/api/google-forms/import", { link: id2 })).status, 200, "same form again is not duplicated");
+
+  for (const link of ["", "hello world", "https://forms.gle/abc", "https://docs.google.com/forms/d/e/1FAIpQLSabcdefghij/viewform", "https://example.com/forms/d/abcdefghijk/edit"]) {
+    const bad = await d.api("POST", "/api/google-forms/import", { link });
+    assert.equal(bad.status, 400, link);
+    assert.equal(bad.data.code, "bad_link");
+  }
+});
+
 test("bad ids, unknown forms and a missing scope are clean errors", async () => {
   assert.equal((await d.api("POST", "/api/google-forms/import/x")).status, 404);
   assert.equal((await d.api("POST", "/api/google-forms/import/does-not-exist-1")).status, 404);

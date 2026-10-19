@@ -1,5 +1,5 @@
 import * as cloudRepo from "../cloud/repository.js";
-import { formsApiBase, hasGoogleFormsAccess } from "../oauth/config.js";
+import { canListGoogleForms, formsApiBase, hasGoogleFormsAccess } from "../oauth/config.js";
 import { forceRefresh, getValidAccessToken } from "../oauth/session.js";
 import { driveApiBase } from "../cloud/googleConfig.js";
 import { fetchWithBackoff } from "./http.js";
@@ -67,6 +67,13 @@ async function googleGet(url, label) {
 
 export async function listGoogleForms() {
   assertFormsAccess();
+  if (!canListGoogleForms(cloudRepo.getCloudAccount())) {
+    throw new GoogleApiError(
+      "Browsing your Google Forms wasn't allowed. Paste a form's link instead, or sign in again and leave the Drive file-list permission ticked.",
+      403,
+      "listing_scope_missing"
+    );
+  }
   const files = [];
   let pageToken;
   // Drive caps a page at 100 files; follow nextPageToken or everything past the first page is lost.

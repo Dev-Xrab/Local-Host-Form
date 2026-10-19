@@ -23,7 +23,7 @@ export interface TunnelState {
 export const useTunnel = () => useTunnelJs() as unknown as TunnelState;
 
 export interface CloudAccountState {
-  account: { email?: string; name?: string; picture?: string } | null;
+  account: { email?: string; name?: string; picture?: string; googleFormsAccess?: boolean } | null;
   connected: boolean;
   loading: boolean;
   login: () => Promise<void>;

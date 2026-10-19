@@ -2,7 +2,7 @@ import { Router } from "express";
 import os from "node:os";
 import * as cloudRepo from "../cloud/repository.js";
 import { requireAuth } from "../auth/middleware.js";
-import { CALLBACK_PATH, DRIVE_APPDATA_SCOPE, hasGoogleFormsAccess, isConfigured } from "./config.js";
+import { CALLBACK_PATH, DRIVE_APPDATA_SCOPE, canListGoogleForms, hasGoogleFormsAccess, isConfigured } from "./config.js";
 import { launchTokens, newLaunchToken, pendingAttempts } from "./flowStore.js";
 import { OAuthError, buildAuthorizationUrl, exchangeCode, fetchUserInfo, revokeToken } from "./googleClient.js";
 import { sendPage } from "./pages.js";
@@ -112,6 +112,8 @@ oauthRouter.get("/auth/status", requireAuth, (req, res) => {
     avatarUrl: account?.avatarUrl || null,
     // True when the user granted read access to Google Forms and their responses.
     googleFormsAccess: hasGoogleFormsAccess(account),
+    // Whether the user's Google Forms can be browsed; otherwise forms are imported by pasting a link.
+    googleFormsListing: canListGoogleForms(account),
   });
 });
 
