@@ -67,7 +67,7 @@ Tests for the Drive layer and the full two-device flow run against a fake Google
 npm run test:drive
 ```
 
-The old `cloud-server/` (Postgres + Google OAuth server) is no longer used by the app and is scheduled for removal.
+The old `cloud-server/` (Postgres + Google OAuth server) is no longer used by the app.
 
 ## Project layout
 
