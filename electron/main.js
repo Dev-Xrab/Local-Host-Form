@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, session, shell } from "electron";
+import { app, BrowserWindow, ipcMain, powerSaveBlocker, session, shell } from "electron";
 import { spawn, execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -218,6 +218,10 @@ app.whenReady().then(async () => {
     return;
   }
 
+  // Students connect to this computer, so it must not go to sleep mid-exam. This blocks system
+  // sleep (the screen may still turn off) for as long as the app is open.
+  sleepBlockerId = powerSaveBlocker.start("prevent-app-suspension");
+
   createWindow();
 });
 
@@ -225,7 +229,13 @@ app.on("window-all-closed", () => {
   app.quit();
 });
 
+let sleepBlockerId = null;
+
 app.on("before-quit", () => {
+  if (sleepBlockerId !== null && powerSaveBlocker.isStarted(sleepBlockerId)) {
+    powerSaveBlocker.stop(sleepBlockerId);
+    sleepBlockerId = null;
+  }
   if (serverProcess) {
     // serverProcess.kill() only ever signals that one process — it does not take down a
     // grandchild the server itself spawned (a live Cloudflare tunnel, see server/tunnel/service.js),

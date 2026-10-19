@@ -2,6 +2,16 @@
 
 A desktop app for teachers to build forms, quizzes, and exams and host them from their own computer. Students answer in a browser on the same network, or over a public link through a Cloudflare tunnel. Responses stay on the host machine by default.
 
+## Who it is for
+
+Teachers and schools that want to run quizzes and exams **without sending student data to a third-party cloud**, or in rooms where the internet is slow or unreliable. Students only need a browser and the same Wi-Fi (or a public link). If you just need a quick survey and don't care where the data lives, Google Forms is simpler.
+
+## Before an exam
+
+- The host computer must stay on. The desktop app blocks system sleep while it is open, but keep the laptop plugged in and connected to Wi-Fi.
+- Do a trial run with a few devices on the same network first.
+- Exam integrity tools (fullscreen gate, refocus lock) **discourage casual cheating; they cannot prevent it**. A browser cannot fully lock down a student's device, so supervise in person for high-stakes exams.
+
 ## Features
 
 - **Form builder** with many question types, including matrix questions, file uploads, and templates
@@ -57,7 +67,7 @@ Tests for the Drive layer and the full two-device flow run against a fake Google
 npm run test:drive
 ```
 
-The old `cloud-server/` (Postgres + Google OAuth server) is no longer used by the app.
+The old `cloud-server/` (Postgres + Google OAuth server) is no longer used by the app and is scheduled for removal.
 
 ## Project layout
 
@@ -84,7 +94,9 @@ The UI is React Native, so the same components can target web, desktop (Electron
 - **Platform splits** use `.web.ts(x)` beside a default file. Web-only: fullscreen and copy protection on the respondent screen, Excel/PDF exports and file downloads, the Electron title bar.
 - **Backend untouched**: the Express API, database and auth are unchanged. The UI still talks to same-origin `/api/*` with the session cookie.
 
-### Hosting on a phone (Android)
+### Hosting on a phone (Android) — experimental
+
+> **Experimental.** Phone hosting has not been tested on real devices or with a full class. Use the desktop app for anything important.
 
 The mobile app can be the host, the same way the desktop app is: it runs the real server code (`server/`) inside the app, stores everything on the phone, serves the web UI to students on the same Wi-Fi, and syncs to your Google Drive when it's online. Choose **Host on this phone** the first time you open the app, or **connect to a host computer** to use a desktop as the host.
 
