@@ -44,3 +44,7 @@ server/data/cloudflared/
 modules/**/build/
 android/**/build/
 android/.gradle/
+
+# Local dev data: databases and the token encryption key
+server/data/
+*.key

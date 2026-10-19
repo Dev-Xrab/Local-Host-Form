@@ -52,3 +52,14 @@ test("authorization URL carries PKCE, state and offline access", () => {
   assert.equal(url.searchParams.get("access_type"), "offline");
   assert.equal(url.searchParams.get("client_id"), "client-1");
 });
+
+test("a stored token that cannot be decrypted signs the user out instead of failing", async () => {
+  const { db } = await import("../../server/db/index.js");
+  const repo = await import("../../server/cloud/repository.js");
+  repo.saveCloudAccount({ userId: "u", email: "a@b.c", accessToken: "at", accessTokenExpiresAt: new Date().toISOString(), refreshToken: "rt", scopes: [] });
+  assert.equal(repo.getCloudAccount().refreshToken, "rt");
+
+  db.prepare("UPDATE cloud_account SET refresh_token = ? WHERE id = 1").run("enc:v1:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+  assert.equal(repo.getCloudAccount(), null);
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM cloud_account").get().n, 0, "unusable credentials are removed");
+});

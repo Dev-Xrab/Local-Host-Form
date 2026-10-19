@@ -42,7 +42,15 @@ const selectAccountStmt = db.prepare("SELECT * FROM cloud_account WHERE id = 1")
 // Only ever called from within server/cloud — no route in this app returns the raw tokens to
 // the renderer (see routes.js authStatus, which strips them before responding).
 export function getCloudAccount() {
-  return rowToAccount(selectAccountStmt.get());
+  try {
+    return rowToAccount(selectAccountStmt.get());
+  } catch (err) {
+    // Stored tokens that can't be decrypted (the key changed, or the file was tampered with) are
+    // unusable: treat the user as signed out so they can sign in again, instead of failing every request.
+    console.error("Stored Google sign-in could not be read, signing out:", err.message);
+    clearCloudAccount();
+    return null;
+  }
 }
 
 const upsertAccountStmt = db.prepare(`

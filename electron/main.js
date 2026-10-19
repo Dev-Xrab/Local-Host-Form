@@ -1,5 +1,7 @@
-import { app, BrowserWindow, ipcMain, powerSaveBlocker, session, shell } from "electron";
+import { app, BrowserWindow, ipcMain, powerSaveBlocker, safeStorage, session, shell } from "electron";
 import { spawn, execFileSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -13,7 +15,25 @@ let splashWindow;
 const PORT = 5174;
 const APP_ICON = path.join(__dirname, "..", "build", "icon.ico");
 
+// The key that encrypts stored Google tokens. It is wrapped with the operating system's credential
+// store (Windows DPAPI, macOS Keychain) and kept outside the data folder, so copying the database
+// or the data folder does not reveal it: only this OS user account can unwrap it. If the OS store is
+// unavailable the server falls back to its own key file (server/oauth/tokenVault.js).
+function loadTokenKey() {
+  if (!safeStorage.isEncryptionAvailable()) return undefined;
+  const file = path.join(app.getPath("userData"), "token-key.bin");
+  try {
+    if (existsSync(file)) return safeStorage.decryptString(readFileSync(file));
+  } catch {
+    // Unreadable (e.g. a different OS user): make a new key; tokens under the old one just mean signing in again.
+  }
+  const key = randomBytes(32).toString("base64");
+  writeFileSync(file, safeStorage.encryptString(key), { mode: 0o600 });
+  return key;
+}
+
 function startServer() {
+  const tokenKey = loadTokenKey();
   const serverPath = path.join(
   __dirname,
   "..",
@@ -27,6 +47,7 @@ function startServer() {
       ELECTRON_RUN_AS_NODE: "1",
       PORT: String(PORT),
       DATA_DIR: path.join(app.getPath("userData"), "data"),
+      ...(tokenKey ? { TOKEN_ENCRYPTION_KEY: tokenKey } : {}),
     },
     stdio: "pipe",
     // The server can itself spawn a Cloudflare tunnel child process (Remote Access). Killing just
