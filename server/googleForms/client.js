@@ -3,6 +3,7 @@ import { canListGoogleForms, formsApiBase, hasGoogleFormsAccess } from "../oauth
 import { forceRefresh, getValidAccessToken } from "../oauth/session.js";
 import { driveApiBase } from "../cloud/googleConfig.js";
 import { fetchWithBackoff } from "./http.js";
+import { timeoutSignal } from "../oauth/timeout.js";
 
 const GOOGLE_FORM_MIME_TYPE = "application/vnd.google-apps.form";
 const REQUEST_TIMEOUT_MS = 20_000;
@@ -40,7 +41,7 @@ async function googleErrorMessage(res, fallback) {
 
 async function googleGet(url, label) {
   const attempt = async (token) =>
-    fetchWithBackoff(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+    fetchWithBackoff(url, { headers: { Authorization: `Bearer ${token}` }, signal: timeoutSignal(REQUEST_TIMEOUT_MS) });
 
   let res;
   try {

@@ -1,4 +1,5 @@
 import * as config from "./config.js";
+import { timeoutSignal } from "./timeout.js";
 
 // Failure from Google's OAuth endpoints. `code` is the RFC 6749 error code (e.g. invalid_grant).
 export class OAuthError extends Error {
@@ -17,7 +18,7 @@ async function post(url, params) {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
       body: params,
-      signal: AbortSignal.timeout(config.HTTP_TIMEOUT_MS),
+      signal: timeoutSignal(config.HTTP_TIMEOUT_MS),
     });
   } catch (err) {
     throw new OAuthError(`Could not reach Google: ${err.message}`, { code: "network_error" });
@@ -100,7 +101,7 @@ export async function fetchUserInfo(accessToken) {
   try {
     res = await fetch(config.userinfoUrl(), {
       headers: { Authorization: `Bearer ${accessToken}` },
-      signal: AbortSignal.timeout(config.HTTP_TIMEOUT_MS),
+      signal: timeoutSignal(config.HTTP_TIMEOUT_MS),
     });
   } catch (err) {
     throw new OAuthError(`Could not reach Google: ${err.message}`, { code: "network_error" });

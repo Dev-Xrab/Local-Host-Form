@@ -21,7 +21,10 @@ const MODULES = {
 };
 
 /** server files (matched by path suffix) replaced wholesale */
-const FILES = [{ suffix: path.join("server", "db", "dataDir.js"), replacement: shim("dataDir.js") }];
+const FILES = [
+  { suffix: path.join("server", "db", "dataDir.js"), replacement: shim("dataDir.js") },
+  { suffix: path.join("server", "oauth", "tokenVault.js"), replacement: shim("tokenVault.js") },
+];
 
 function fileAlias(resolvedPath) {
   const hit = FILES.find((f) => resolvedPath.endsWith(f.suffix));

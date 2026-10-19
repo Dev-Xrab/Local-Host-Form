@@ -1,3 +1,5 @@
+import { DEFAULT_CLIENT_ID, DEFAULT_CLIENT_SECRET } from "./clientDefaults.js";
+
 // Google OAuth 2.0 configuration. Everything is read at call time so tests can point the endpoints
 // at a fake Google (see tests/server/fakeDrive.mjs).
 //
@@ -22,13 +24,18 @@ export const userinfoUrl = () => process.env.GOOGLE_USERINFO_URL || "https://ope
 
 // "Desktop app" OAuth client from Google Cloud Console. Google documents that an installed-app
 // client's secret is not confidential, so it may ship with the app; PKCE is what protects the flow.
-// Set GOOGLE_CLIENT_ID (and GOOGLE_CLIENT_SECRET) in the environment, or fill in the defaults
-// before building a release.
-const DEFAULT_CLIENT_ID = "";
-const DEFAULT_CLIENT_SECRET = "";
+// The built-in defaults live in clientDefaults.js, which is empty in git and filled in at release time by
+// `npm run inject:oauth`. Ship only a Desktop client there, never a "Web application" client's secret.
+//
+// Resolution order: GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET in the environment (desktop, dev, tests),
+// then EXPO_PUBLIC_GOOGLE_CLIENT_ID / EXPO_PUBLIC_GOOGLE_CLIENT_SECRET, which Metro inlines at build
+// time into the phone app (the phone has no real process.env, so runtime variables cannot reach it),
+// then the built-in defaults.
+//
+// The EXPO_PUBLIC_* names must be written out in full, not looked up dynamically, or Metro cannot inline them.
 
-export const clientId = () => process.env.GOOGLE_CLIENT_ID || DEFAULT_CLIENT_ID;
-export const clientSecret = () => process.env.GOOGLE_CLIENT_SECRET || DEFAULT_CLIENT_SECRET;
+export const clientId = () => process.env.GOOGLE_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || DEFAULT_CLIENT_ID;
+export const clientSecret = () => process.env.GOOGLE_CLIENT_SECRET || process.env.EXPO_PUBLIC_GOOGLE_CLIENT_SECRET || DEFAULT_CLIENT_SECRET;
 export const isConfigured = () => !!clientId();
 
 export const formsApiBase = () => process.env.FORMS_API_BASE || "https://forms.googleapis.com/v1";

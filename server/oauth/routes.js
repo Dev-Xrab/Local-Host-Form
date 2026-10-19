@@ -1,5 +1,5 @@
 import { Router } from "express";
-import os from "node:os";
+import { networkInterfaces } from "node:os";
 import * as cloudRepo from "../cloud/repository.js";
 import { requireAuth } from "../auth/middleware.js";
 import { CALLBACK_PATH, DRIVE_APPDATA_SCOPE, canListGoogleForms, hasGoogleFormsAccess, isConfigured } from "./config.js";
@@ -24,7 +24,7 @@ oauthRouter.use((req, res, next) => {
 function isSameMachine(req) {
   const addr = String(req.socket.remoteAddress || "").replace(/^::ffff:/, "");
   if (addr === "::1" || addr.startsWith("127.")) return true;
-  return Object.values(os.networkInterfaces()).flat().some((i) => i && i.address === addr);
+  return Object.values(networkInterfaces()).flat().some((i) => i && i.address === addr);
 }
 
 const isLoopbackHost = (host) => /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host || "");

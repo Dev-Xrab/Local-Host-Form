@@ -11,8 +11,10 @@ export const googleFormsRouter = Router();
 // A Google Drive file id, or a local form uuid. Checked up front so junk is a clean 404.
 const GOOGLE_ID = /^[A-Za-z0-9_-]{10,200}$/;
 const LOCAL_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-googleFormsRouter.param("googleId", (req, res, next, id) => (GOOGLE_ID.test(id) ? next() : res.status(404).json({ error: "Google Form not found." })));
-googleFormsRouter.param("formId", (req, res, next, id) => (LOCAL_ID.test(id) ? next() : res.status(404).json({ error: "Form not found." })));
+// Plain middleware rather than Router.param, which the phone's mini Express does not implement.
+const checkParam = (name, pattern, message) => (req, res, next) => (pattern.test(req.params[name]) ? next() : res.status(404).json({ error: message }));
+const googleId = checkParam("googleId", GOOGLE_ID, "Google Form not found.");
+const formId = checkParam("formId", LOCAL_ID, "Form not found.");
 
 googleFormsRouter.use((req, res, next) => {
   if (!isConfigured()) return res.status(503).json({ error: "Google sign-in is not set up in this build." });
@@ -52,7 +54,7 @@ googleFormsRouter.post("/import", wrap(async (req, res) => {
 }));
 
 // Brings a Google Form (questions, then its responses) onto this device.
-googleFormsRouter.post("/import/:googleId", wrap(async (req, res) => {
+googleFormsRouter.post("/import/:googleId", googleId, wrap(async (req, res) => {
   const result = await importGoogleForm(req.params.googleId, { withResponses: req.query.responses !== "false" });
   res.status(result.alreadyImported ? 200 : 201).json(result);
 }));
@@ -62,23 +64,23 @@ googleFormsRouter.post("/sync", wrap(async (req, res) => {
   res.json({ results: await syncAllLinkedForms() });
 }));
 
-googleFormsRouter.get("/:formId/status", wrap(async (req, res) => {
+googleFormsRouter.get("/:formId/status", formId, wrap(async (req, res) => {
   const form = formsRepo.getForm(req.params.formId);
   if (!form) return res.status(404).json({ error: "Form not found." });
   res.json({ linked: !!form.googleFormId, googleFormId: form.googleFormId, lastSyncedAt: getGoogleSyncedAt(form.id) });
 }));
 
 // Pulls this form's new responses (incremental; nothing is fetched twice).
-googleFormsRouter.post("/:formId/sync", wrap(async (req, res) => {
+googleFormsRouter.post("/:formId/sync", formId, wrap(async (req, res) => {
   res.json(await pullResponses(req.params.formId));
 }));
 
 // Read-only: how the live Google Form differs from the local copy.
-googleFormsRouter.get("/:formId/changes", wrap(async (req, res) => {
+googleFormsRouter.get("/:formId/changes", formId, wrap(async (req, res) => {
   res.json(await checkChanges(req.params.formId));
 }));
 
 // Makes the local questions follow the live Google Form. Only on the host's say-so.
-googleFormsRouter.post("/:formId/apply-changes", wrap(async (req, res) => {
+googleFormsRouter.post("/:formId/apply-changes", formId, wrap(async (req, res) => {
   res.json(await applyChanges(req.params.formId));
 }));

@@ -17,7 +17,7 @@ Drive sync uses the OAuth 2.0 Authorization Code flow with PKCE (RFC 7636) again
 | `GOOGLE_CLIENT_SECRET` | Desktop-client secret; not confidential per Google, PKCE protects the flow. |
 | `TOKEN_ENCRYPTION_KEY` | Optional, 32 bytes base64. Otherwise a random key is stored in `<DATA_DIR>/token.key`. |
 
-For a release build, put the client id/secret in `DEFAULT_CLIENT_ID` / `DEFAULT_CLIENT_SECRET` in `server/oauth/config.js`.
+For a release build (installer or APK), put `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` of a **Desktop app** client in `.env.local` and run `npm run inject:oauth` first. It writes them into `server/oauth/clientDefaults.js` and marks that file skip-worktree, so they cannot be committed (GitHub push protection rejects client secrets). Run `npm run inject:oauth -- --reset` to clear it. Never ship a *Web application* client's secret: that one is confidential.
 
 ## 3. Flow
 

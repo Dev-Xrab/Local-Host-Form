@@ -26,6 +26,7 @@
     "test": "vitest run",
     "brand": "node scripts/generate-brand-assets.mjs",
     "pack:web-ui": "node scripts/pack-web-ui.mjs",
+    "inject:oauth": "node scripts/inject-oauth-client.mjs",
     "test:phone": "node mobile-server/test/ci.mjs",
     "test:drive": "node --test \"tests/server/*.test.mjs\""
   },
