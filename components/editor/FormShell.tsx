@@ -5,7 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, Plus, Save } from "lucide-react-native";
 import { cloudApi } from "../../src/features/cloud/services/cloudApi";
 import { describeCloudError } from "../../src/features/cloud/utils/describeCloudError";
-import { Badge, Button, Dialog, Divider, Icon, IconButton, Notice, SegmentedControl, Tabs, Text, radius, size, space, useLayout, useTheme } from "../../ui";
+import { Badge, Button, Dialog, Divider, Icon, IconButton, Notice, SegmentedControl, Tabs, Text, radius, space, useLayout, useTheme } from "../../ui";
 import { QUESTION_TYPES, useFormActions, useFormStore } from "../../lib/formStore";
 import { QUESTION_ICONS, SectionIcon } from "../../lib/questionIcons";
 import { useFocusRing } from "../../ui/interactive";
@@ -85,7 +85,6 @@ function SaveArea({ formId, compact }: { formId: string; compact?: boolean }) {
   const saveStatus = useFormStore((s) => s.saveStatus);
   const saveError = useFormStore((s) => s.saveError);
   const mode = useFormStore((s) => s.mode);
-  const recalculated = useFormStore((s) => s.recalculatedResponses);
   const cloudUnsaved = useFormStore((s) => s.cloudUnsaved);
 
   // After a local save, a cloud-linked form that now differs from its cloud copy asks whether to
@@ -120,7 +119,6 @@ function SaveArea({ formId, compact }: { formId: string; compact?: boolean }) {
   return (
     <View style={{ gap: space[2], alignItems: compact ? "flex-end" : "stretch" }}>
       {saveStatus === "error" ? <Text variant="small" tone="danger" accessibilityRole="alert">Couldn't save. Check the server. {saveError ?? ""}</Text> : null}
-      {saveStatus === "saved" && recalculated > 0 ? <Text variant="small" tone="secondary">{`Rescored ${recalculated} existing response${recalculated === 1 ? "" : "s"}.`}</Text> : null}
       {cloudUnsaved && saveStatus !== "saving" ? <Button label="Not saved to cloud" variant="ghost" compact onPress={() => setPrompt(true)} /> : null}
       <Button label={SAVE_LABEL[saveStatus]} icon={Save} variant="primary" loading={saveStatus === "saving"} disabled={mode === "view"} fullWidth={!compact} onPress={saveForm} />
       <Dialog

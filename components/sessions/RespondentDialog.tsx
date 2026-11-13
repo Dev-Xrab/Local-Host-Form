@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Image, Pressable, View } from "react-native";
 import { ChevronLeft, ChevronRight, Download, Eye, EyeOff } from "lucide-react-native";
 import { mimeOfDataUri, safeBaseName, safeExtensionForDataUri } from "../../src/lib/fileTypes";
-import { Button, Dialog, IconButton, Text, radius, space, useTheme } from "../../ui";
+import { Button, Dialog, IconButton, Notice, Text, radius, space, useTheme } from "../../ui";
 import { saveDataUri } from "../../lib/saveFile";
 import { FilePreview } from "./FilePreview";
 
@@ -12,6 +12,7 @@ export interface BreakdownItem {
 }
 export interface RespondentDetail {
   respondentName?: string; score?: number | null; maxScore?: number | null; submittedAt?: string | null; editCode?: string | null; breakdown: BreakdownItem[];
+  definitionProvenance?: "pinned" | "legacy_current_definition";
 }
 
 const format = (v: unknown) => (v === null || v === undefined || v === "" ? null : Array.isArray(v) ? v.join(", ") || null : String(v));
@@ -67,6 +68,10 @@ export function RespondentDialog({ respondent, onClose, onPrev, onNext, position
             </View>
           ) : null}
         </View>
+
+        {respondent.definitionProvenance === "legacy_current_definition" ? (
+          <Notice tone="warning">This response predates saved assessment versions. Question details reflect the current form; its original definition cannot be verified. The stored score has been preserved.</Notice>
+        ) : null}
 
         {respondent.editCode ? (
           <View style={{ flexDirection: "row", alignItems: "center", gap: space[2] }}>

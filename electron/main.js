@@ -207,14 +207,26 @@ function createWindow() {
   mainWindow.loadURL(`http://localhost:${PORT}`);
 }
 
-ipcMain.on("window:minimize", () => mainWindow?.minimize());
-ipcMain.on("window:toggle-maximize", () => {
-  if (!mainWindow) return;
+function isMainWindowSender(event) {
+  return !!mainWindow && event.sender === mainWindow.webContents
+    && event.senderFrame === mainWindow.webContents.mainFrame;
+}
+
+ipcMain.on("window:minimize", (event) => {
+  if (isMainWindowSender(event)) mainWindow.minimize();
+});
+ipcMain.on("window:toggle-maximize", (event) => {
+  if (!isMainWindowSender(event)) return;
   if (mainWindow.isMaximized()) mainWindow.unmaximize();
   else mainWindow.maximize();
 });
-ipcMain.on("window:close", () => mainWindow?.close());
-ipcMain.handle("window:is-maximized", () => mainWindow?.isMaximized() ?? false);
+ipcMain.on("window:close", (event) => {
+  if (isMainWindowSender(event)) mainWindow.close();
+});
+ipcMain.handle("window:is-maximized", (event) => {
+  if (!isMainWindowSender(event)) throw new Error("Unauthorized window sender");
+  return mainWindow.isMaximized();
+});
 
 // Deny every browser permission (camera, microphone, geolocation, notifications, ...) except the
 // few this app actually uses.

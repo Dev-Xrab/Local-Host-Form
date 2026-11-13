@@ -18,20 +18,21 @@ export function wantsBearer(req) {
   return req.headers["x-auth-mode"] === "bearer";
 }
 
-export function setSessionCookie(res, token, expiresAt) {
+export function setSessionCookie(res, token, expiresAt, secure = false) {
   const attrs = [
     `${COOKIE_NAME}=${encodeURIComponent(token)}`,
     "Path=/",
     "HttpOnly",
     "SameSite=Lax",
+    ...(secure ? ["Secure"] : []),
     `Expires=${expiresAt.toUTCString()}`,
   ];
   res.setHeader("Set-Cookie", attrs.join("; "));
 }
 
-export function clearSessionCookie(res) {
+export function clearSessionCookie(res, secure = false) {
   res.setHeader(
     "Set-Cookie",
-    `${COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
+    `${COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax${secure ? "; Secure" : ""}; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
   );
 }

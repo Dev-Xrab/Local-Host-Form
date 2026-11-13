@@ -34,7 +34,7 @@ authRouter.post("/setup", requireLocalConsole, (req, res) => {
   }
 
   const { token, expiresAt } = authRepo.createAuthSession();
-  setSessionCookie(res, token, expiresAt);
+  setSessionCookie(res, token, expiresAt, req.secure);
   res.json({ ok: true, hasRecoveryQuestion: false, ...(wantsBearer(req) && { token }) });
 });
 
@@ -51,7 +51,7 @@ authRouter.post("/login", blockTunnel, loginLimiter, globalLoginLimiter, (req, r
   }
 
   const { token, expiresAt } = authRepo.createAuthSession();
-  setSessionCookie(res, token, expiresAt);
+  setSessionCookie(res, token, expiresAt, req.secure);
   res.json({
     ok: true,
     hasRecoveryQuestion: authRepo.hasRecoveryQuestion(),
@@ -61,7 +61,7 @@ authRouter.post("/login", blockTunnel, loginLimiter, globalLoginLimiter, (req, r
 
 authRouter.post("/logout", (req, res) => {
   authRepo.deleteAuthSession(readSessionToken(req));
-  clearSessionCookie(res);
+  clearSessionCookie(res, req.secure);
   res.status(204).end();
 });
 
@@ -92,7 +92,7 @@ authRouter.post("/change-password", requireAuth, sensitiveAccountLimiter, (req, 
 
   // Changing the password signs out every device; keep the one that made the change signed in.
   const { token, expiresAt } = authRepo.createAuthSession();
-  setSessionCookie(res, token, expiresAt);
+  setSessionCookie(res, token, expiresAt, req.secure);
   res.json({ ok: true });
 });
 

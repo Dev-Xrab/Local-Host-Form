@@ -169,8 +169,20 @@ export function buildRespondentSummary(questions, answers, { includeChoices = fa
         type: q.type,
         submittedAnswer: submittedAnswerText(q, answers[q.id]) ?? "No answer",
         choices: includeChoices && choiceLabels?.length ? choiceLabels : null,
+        fileUrl: q.type === "file_upload" ? fileUrlOf(q, answers[q.id]) : null,
+        fileName: q.type === "file_upload" ? uploadedFileName(answers[q.id]) : null,
       };
     });
+}
+
+function uploadedFileName(value) {
+  if (typeof value !== "string") return null;
+  const hex = /^data:[^;,]+;name=([0-9a-f]+);base64,/i.exec(value)?.[1];
+  if (!hex || hex.length % 2) return null;
+  try {
+    const bytes = new Uint8Array(hex.match(/../g).map((part) => parseInt(part, 16)));
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes).slice(0, 255);
+  } catch { return null; }
 }
 
 // Full per-question breakdown for the host-facing detailed respondent view: every

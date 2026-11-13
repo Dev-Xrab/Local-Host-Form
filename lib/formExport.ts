@@ -4,7 +4,9 @@ interface ExportQuestion {
 }
 interface ExportResponse {
   respondentName?: string; sessionName?: string; startedAt?: string | null; submittedAt?: string | null; score?: number | null; maxScore?: number | null; answers?: object;
+  formSnapshotId?: string | null;
 }
+interface AssessmentDefinition { id: string; provenance?: string; title: string; description?: string; settings?: object; bannerImage?: string | null; remoteVersion?: number | null; questions: ExportQuestion[] }
 interface FullForm { title?: string; description?: string; settings?: object; bannerImage?: string | null; questions?: ExportQuestion[] }
 
 /**
@@ -14,7 +16,7 @@ interface FullForm { title?: string; description?: string; settings?: object; ba
  * question ids so the importer can remap them (see server/forms/routes.js POST /import). In-progress
  * attempts and per-device fields (device id, edit code, sync state) are left out.
  */
-export function buildFormExport(form: FullForm, responses?: ExportResponse[]): { filename: string; json: string } {
+export function buildFormExport(form: FullForm, responses?: ExportResponse[], definitions?: AssessmentDefinition[]): { filename: string; json: string } {
   const out: Record<string, unknown> = {
     title: form.title || "",
     description: form.description || "",
@@ -38,6 +40,15 @@ export function buildFormExport(form: FullForm, responses?: ExportResponse[]): {
     })),
   };
   if (responses) {
+    const pinnedDefinitions = (definitions || []).filter((d) => d.provenance === "pinned");
+    const pinnedIds = new Set(pinnedDefinitions.map((d) => d.id));
+    if (responses.some((r) => r.formSnapshotId && !pinnedIds.has(r.formSnapshotId))) {
+      throw new Error("A response is missing its assessment definition. Refresh responses before exporting.");
+    }
+    out.assessmentDefinitions = pinnedDefinitions
+      .map(({ id, title, description, settings, bannerImage, remoteVersion, questions }) => ({
+        id, title, description, settings, bannerImage, remoteVersion, questions,
+      }));
     out.responses = responses.map((r) => ({
       respondentName: r.respondentName || "",
       sessionName: r.sessionName || "",
@@ -46,6 +57,7 @@ export function buildFormExport(form: FullForm, responses?: ExportResponse[]): {
       score: r.score ?? null,
       maxScore: r.maxScore ?? null,
       answers: r.answers || {},
+      assessmentId: r.formSnapshotId || null,
     }));
   }
   return { filename: `${(form.title || "form").trim().replace(/\s+/g, "-").toLowerCase()}.json`, json: JSON.stringify(out, null, 2) };

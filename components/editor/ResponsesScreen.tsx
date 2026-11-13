@@ -9,9 +9,10 @@ import { canExportResponses, exportFormResponses } from "../../lib/exportFormRes
 import { RespondentDialog, type RespondentDetail } from "../sessions/RespondentDialog";
 import { oneLine } from "../../lib/text";
 
-interface Response extends RespondentDetail { id: string; sessionId: string; sessionName?: string; answers?: Record<string, unknown>; respondentName?: string }
+interface Response extends RespondentDetail { id: string; sessionId: string; sessionName?: string; answers?: Record<string, unknown>; respondentName?: string; formSnapshotId?: string | null }
 interface FormFull { id: string; subjectId: string | null; questions: Q[] }
 interface Q { id: string; type: string; title: string; removedAt?: string | null }
+interface AssessmentDefinition { id: string; title: string; questions: Q[]; provenance: "pinned" | "legacy_current_definition"; responseCount: number }
 
 // Bar length and label share one number (count / total), so a 40% option is a 40%-long bar, not
 // scaled against the biggest option (which made every top bar look full regardless of share).
@@ -88,11 +89,13 @@ export function ResponsesScreen({ formId }: { formId: string }) {
   const { subjects } = useSubjects();
   const [form, setForm] = useState<FormFull | null>(null);
   const [responses, setResponses] = useState<Response[]>([]);
+  const [definitions, setDefinitions] = useState<AssessmentDefinition[]>([]);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<"respondent" | "question">("respondent");
   const [query, setQuery] = useState("");
   const [sessionFilter, setSessionFilter] = useState("all");
+  const [definitionFilter, setDefinitionFilter] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
   const [showExport, setShowExport] = useState(false);
   const [exporting, setExporting] = useState<"excel" | "pdf" | null>(null);
@@ -101,8 +104,8 @@ export function ResponsesScreen({ formId }: { formId: string }) {
   const load = useCallback(() => {
     setState("loading");
     setError(null);
-    Promise.all([formsApi.get(formId), formsApi.responses(formId)])
-      .then(([f, r]: [FormFull, Response[]]) => { setForm(f); setResponses(r); setState("ready"); })
+    Promise.all([formsApi.get(formId), formsApi.responses(formId), formsApi.responseDefinitions(formId)])
+      .then(([f, r, d]: [FormFull, Response[], AssessmentDefinition[]]) => { setForm(f); setResponses(r); setDefinitions(d); setState("ready"); })
       .catch((err: Error) => { setError(err.message); setState("error"); });
   }, [formId]);
 
@@ -116,7 +119,10 @@ export function ResponsesScreen({ formId }: { formId: string }) {
   const inSession = sessionFilter === "all" ? responses : responses.filter((r) => r.sessionId === sessionFilter);
   const filtered = inSession.filter((r) => (r.respondentName || "").toLowerCase().includes(query.toLowerCase()));
   const openIndex = openId ? filtered.findIndex((r) => r.id === openId) : -1;
-  const answerable = form.questions.filter((q) => q.type !== "section");
+  const visibleDefinitions = definitions.filter((d) => inSession.some((r) => (r.formSnapshotId || "legacy") === d.id));
+  const selectedDefinition = visibleDefinitions.find((d) => d.id === definitionFilter) || visibleDefinitions[0];
+  const versionResponses = selectedDefinition ? inSession.filter((r) => (r.formSnapshotId || "legacy") === selectedDefinition.id) : [];
+  const answerable = (selectedDefinition?.questions || []).filter((q) => q.type !== "section");
   const live = answerable.filter((q) => !q.removedAt);
   const removed = answerable.filter((q) => q.removedAt);
   const selectedName = oneLine(sessions.find((s) => s.id === sessionFilter)?.name);
@@ -126,7 +132,7 @@ export function ResponsesScreen({ formId }: { formId: string }) {
     setExporting(format);
     setExportError(null);
     try {
-      await exportFormResponses(format, form, inSession, subjectName);
+      await exportFormResponses(format, form, inSession, subjectName, definitions);
       setShowExport(false);
     } catch (err) {
       setExportError((err as Error).message);
@@ -178,11 +184,15 @@ export function ResponsesScreen({ formId }: { formId: string }) {
         </>
       ) : (
         <View style={{ gap: space[3] }}>
-          {live.length === 0 ? <Surface><EmptyState title="This form has no answerable questions" /></Surface> : live.map((q) => <QuestionBlock key={q.id} question={q} responses={inSession} />)}
+          {visibleDefinitions.length > 1 ? (
+            <Select value={selectedDefinition?.id || ""} onChange={setDefinitionFilter} options={visibleDefinitions.map((d, i) => ({ value: d.id, label: `${d.title || "Untitled assessment"} · version ${i + 1} (${inSession.filter((r) => (r.formSnapshotId || "legacy") === d.id).length})` }))} />
+          ) : null}
+          {selectedDefinition?.provenance === "legacy_current_definition" ? <Notice tone="warning">Older responses have no saved question version. These charts use the current form and may not match what students originally saw.</Notice> : null}
+          {live.length === 0 ? <Surface><EmptyState title="This assessment has no answerable questions" /></Surface> : live.map((q) => <QuestionBlock key={q.id} question={q} responses={versionResponses} />)}
           {removed.length > 0 ? (
             <View style={{ gap: space[3] }}>
               <Text variant="label" tone="secondary">{`${removed.length} removed question${removed.length === 1 ? "" : "s"}, still shown historically`}</Text>
-              {removed.map((q) => <QuestionBlock key={q.id} question={q} responses={inSession} />)}
+              {removed.map((q) => <QuestionBlock key={q.id} question={q} responses={versionResponses} />)}
             </View>
           ) : null}
         </View>

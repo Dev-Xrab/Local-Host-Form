@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import { ConfirmDialog, Notice, Text, TextField, space } from "../../ui";
-import { parseRosterText, rosterToText, syncRoster, type Student } from "../../lib/roster";
+import { parseRosterText, rosterToText, type Student } from "../../lib/roster";
+import { syncRoster } from "../../lib/rosterSync";
 
 const DEBOUNCE_MS = 700;
 

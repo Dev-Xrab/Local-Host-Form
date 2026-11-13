@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { createJson, deleteFile, listAppFiles, readJson, updateJson } from "./drive.js";
 
 // Drive-backed stand-in for the old cloud server's HTTP API. server/cloud/routes.js and sync.js still
@@ -21,6 +21,8 @@ const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const UUID_PATTERN = new RegExp(`^${UUID}$`, "i");
 const FORM_NAME = new RegExp(`^form-(${UUID})\\.json$`, "i");
 const RESPONSE_NAME = new RegExp(`^resp-(${UUID})-(${UUID})\\.json$`, "i");
+const snapshotFileName = (formId, hash) => `assessment-${formId}-${hash}.json`;
+const HASH_PATTERN = /^[0-9a-f]{64}$/i;
 
 const QUESTION_TYPES = new Set([
   "short_answer",
@@ -177,8 +179,8 @@ async function deleteForm(token, id) {
   const files = await listAppFiles(token);
   const form = files.find((f) => f.name === formFileName(id));
   if (!form) return notFound();
-  const responses = files.filter((f) => f.name.startsWith(`resp-${id}-`));
-  await mapLimit(responses, FETCH_CONCURRENCY, (f) => deleteFile(token, f.id));
+  const related = files.filter((f) => f.name.startsWith(`resp-${id}-`) || f.name.startsWith(`assessment-${id}-`));
+  await mapLimit(related, FETCH_CONCURRENCY, (f) => deleteFile(token, f.id));
   await deleteFile(token, form.id);
   return reply(204, null);
 }
@@ -295,6 +297,22 @@ export async function handleCloudRequest(token, method, path, body, ctx) {
   if (parts[0] !== "api") return reply(404, { error: "Not found." });
 
   if (parts[1] === "sync" && parts.length === 2 && method === "POST") return sync(token, body, ctx);
+
+  if (parts[1] === "assessment-snapshots" && parts.length === 4) {
+    const [, , formId, hash] = parts;
+    if (!UUID_PATTERN.test(formId) || !HASH_PATTERN.test(hash)) return notFound();
+    const name = snapshotFileName(formId, hash);
+    const file = (await listAppFiles(token)).find((f) => f.name === name);
+    if (method === "GET") return file ? reply(200, await readJson(token, file.id)) : notFound();
+    if (method === "PUT") {
+      const definition = body?.definition;
+      if (!definition || !Array.isArray(definition.questions)) return reply(400, { error: "Invalid assessment definition." });
+      const actual = createHash("sha256").update(JSON.stringify(definition)).digest("hex");
+      if (actual !== hash.toLowerCase()) return reply(400, { error: "Assessment hash mismatch." });
+      if (!file) await createJson(token, name, { definition });
+      return reply(200, { ok: true });
+    }
+  }
 
   if (parts[1] === "forms") {
     const id = parts[2];

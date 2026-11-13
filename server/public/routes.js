@@ -1,5 +1,5 @@
 import { Router } from "express";
-import * as formsRepo from "../forms/repository.js";
+import { formForSession, formForResponse } from "../forms/snapshots.js";
 import * as sessionsRepo from "../sessions/repository.js";
 import { isPlaceholderCode } from "../sessions/repository.js";
 import * as responsesRepo from "../responses/repository.js";
@@ -87,14 +87,12 @@ function canEditResponses(session) {
   return session.responsesEditable && session.status === "active";
 }
 
-// A response with its own deadline can still be submitted a short grace period past it
-// (covers the auto-submit-at-zero request landing late over the network); one with no
-// deadline (untimed session) is only cut off if the host has explicitly ended the session.
+// Deadlines and host stops are enforced by the server, including for auto-submit requests.
 function canStillSubmit(response, session) {
-  if (response.deadlineAt) {
-    return Date.now() - new Date(response.deadlineAt).getTime() < 30_000;
-  }
-  return session.status !== "ended";
+  if (!session || session.status === "ended") return false;
+  if (!response.deadlineAt) return true;
+  const deadline = Date.parse(response.deadlineAt);
+  return Number.isFinite(deadline) && Date.now() < deadline;
 }
 
 function answerableQuestionsOf(form) {
@@ -151,7 +149,7 @@ publicRouter.get("/sessions/:code", (req, res) => {
   if (!session) return res.status(404).json({ error: "That code isn't valid." });
   if (isPlaceholderCode(session.code)) return res.status(400).json({ error: NOT_JOINABLE_MESSAGE });
 
-  const form = formsRepo.getForm(session.formId);
+  const form = formForSession(session);
   res.json({
     ...sessionSummary(session),
     formTitle: form.title,
@@ -175,7 +173,7 @@ publicRouter.post("/sessions/:code/join", joinLimiter, limitEditCodeAttempts, (r
   if (!session) return res.status(404).json({ error: "That code isn't valid." });
   if (isPlaceholderCode(session.code)) return res.status(400).json({ error: NOT_JOINABLE_MESSAGE });
 
-  const form = formsRepo.getForm(session.formId);
+  const form = formForSession(session);
   const { name, deviceId, editCode } = req.body || {};
 
   if (!isValidDeviceId(deviceId)) {
@@ -237,6 +235,7 @@ publicRouter.post("/sessions/:code/join", joinLimiter, limitEditCodeAttempts, (r
     deviceId,
     respondentName: name.trim(),
     durationMinutes: session.durationMinutes,
+    formSnapshotId: session.formSnapshotId,
   });
   res.status(201).json(joinedPayload(session, response, form));
 });
@@ -247,12 +246,12 @@ publicRouter.get("/responses/:id", (req, res) => {
 
   // A response ID alone isn't enough to view it — the requester must be the same
   // device that created it, so one respondent can't inspect another's by guessing an id.
-  if (!ownsResponse(response, req.query.deviceId)) {
+  if (!ownsResponse(response, req.get("X-Respondent-Device-Id"))) {
     return res.status(403).json({ error: "You don't have access to this response." });
   }
 
   const session = sessionsRepo.getSession(response.sessionId);
-  const form = formsRepo.getForm(response.formId);
+  const form = formForResponse(response);
   res.json(joinedPayload(session, response, form));
 });
 
@@ -274,7 +273,7 @@ publicRouter.post("/responses/:id/edit", (req, res) => {
     return res.status(403).json({ error: "Editing isn't currently allowed for this session." });
   }
 
-  const form = formsRepo.getForm(response.formId);
+  const form = formForResponse(response);
   const reopened = responsesRepo.reopenResponseForEditing(response.id);
   res.json(joinedPayload(session, reopened, form));
 });
@@ -320,7 +319,7 @@ publicRouter.post("/responses/:id/submit", (req, res) => {
     return res.status(400).json({ error: "Your time is up — this response can no longer be submitted." });
   }
 
-  const form = formsRepo.getForm(response.formId);
+  const form = formForResponse(response);
   const { answers, timedOut } = req.body || {};
   if (!answers || typeof answers !== "object" || Array.isArray(answers)) {
     return res.status(400).json({ error: "answers must be an object" });
@@ -332,7 +331,12 @@ publicRouter.post("/responses/:id/submit", (req, res) => {
 
   // A timed-out auto-submit skips the required-field gate (whatever was answered is
   // final); a deliberate submit still has to satisfy it.
-  if (!timedOut) {
+  // A client may request an automatic timeout submission, but it cannot decide when
+  // the timer has expired. Only the server-held deadline or a host-ended session can
+  // waive required fields.
+  const serverTimedOut = (response.deadlineAt && Date.now() >= new Date(response.deadlineAt).getTime())
+    || session.status === "ended";
+  if (!timedOut || !serverTimedOut) {
     const missing = findMissingRequiredQuestions(answerableQuestions, answers);
     if (missing.length > 0) {
       return res.status(400).json({

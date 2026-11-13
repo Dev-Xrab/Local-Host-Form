@@ -48,6 +48,9 @@ const smoke = await run("smoke.mjs", env);
 console.log("\n=== HTTP edge cases ===");
 const edge = await run("edge.mjs", env);
 
+// Windows keeps the SQLite files open until the child has actually exited.
+const stopped = new Promise((resolve) => server.once("exit", resolve));
 server.kill();
+await stopped;
 rmSync(dataDir, { recursive: true, force: true });
 process.exit(smoke || edge ? 1 : 0);

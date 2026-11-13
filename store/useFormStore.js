@@ -55,7 +55,6 @@ const useFormStore = create((set, get) => ({
   formSettings: DEFAULT_FORM_SETTINGS,
   saveStatus: "idle", // idle | saving | saved | error
   saveError: null,
-  recalculatedResponses: 0,
   // True when this form is linked to the cloud and has edits the cloud copy doesn't have yet.
   cloudUnsaved: false,
 
@@ -77,7 +76,6 @@ const useFormStore = create((set, get) => ({
         mode: "edit",
         saveStatus: "idle",
         saveError: null,
-        recalculatedResponses: 0,
         cloudUnsaved: !!form.hasUnsavedCloudChanges,
       }),
 
@@ -103,7 +101,6 @@ const useFormStore = create((set, get) => ({
         });
         set({
           saveStatus: "saved",
-          recalculatedResponses: saved.recalculatedResponses || 0,
           cloudUnsaved: !!saved.hasUnsavedCloudChanges,
         });
       } catch (err) {

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import * as sessionsRepo from "./repository.js";
 import * as formsRepo from "../forms/repository.js";
+import { formForResponse, formForSession, getFormSnapshot } from "../forms/snapshots.js";
 import * as responsesRepo from "../responses/repository.js";
 import { buildFullBreakdown } from "../responses/grading.js";
 
@@ -26,8 +27,30 @@ formResponsesRouter.get("/", (req, res) => {
 
   const responses = responsesRepo.listSubmittedResponsesForForm(req.params.formId);
   res.json(
-    responses.map((r) => ({ ...r, breakdown: buildFullBreakdown(form.questions, r.answers) }))
+    responses.map((r) => ({ ...r, breakdown: buildFullBreakdown(formForResponse(r).questions, r.answers) }))
   );
+});
+
+formResponsesRouter.get("/definitions", (req, res) => {
+  const form = formsRepo.getForm(req.params.formId);
+  if (!form) return res.status(404).json({ error: "Form not found" });
+  const responses = responsesRepo.listSubmittedResponsesForForm(req.params.formId);
+  const ids = [...new Set(responses.map((r) => r.formSnapshotId || "legacy"))];
+  res.json(ids.map((id) => {
+    const snapshot = id === "legacy" ? null : getFormSnapshot(id);
+    if (id !== "legacy" && !snapshot) throw new Error("Assessment definition is missing");
+    return {
+      id,
+      title: snapshot?.form.title || form.title,
+      description: snapshot?.form.description || form.description,
+      settings: snapshot?.form.settings || form.settings,
+      bannerImage: snapshot?.form.bannerImage || form.bannerImage,
+      remoteVersion: snapshot?.form.remoteVersion ?? form.remoteVersion,
+      questions: snapshot?.form.questions || form.questions,
+      provenance: snapshot ? "pinned" : "legacy_current_definition",
+      responseCount: responses.filter((r) => (r.formSnapshotId || "legacy") === id).length,
+    };
+  }));
 });
 
 // Mounted at /api/sessions
@@ -199,7 +222,7 @@ sessionsRouter.get("/:id/respondents/:responseId", (req, res) => {
     return res.status(403).json({ error: "This respondent hasn't submitted yet." });
   }
 
-  const form = formsRepo.getForm(session.formId);
+  const form = formForResponse(response);
   res.json({ ...response, breakdown: buildFullBreakdown(form.questions, response.answers) });
 });
 
@@ -207,14 +230,14 @@ sessionsRouter.get("/:id/export", (req, res) => {
   const session = sessionsRepo.getSession(req.params.id);
   if (!session) return res.status(404).json({ error: "Session not found" });
 
-  const form = formsRepo.getForm(session.formId);
+  const form = formForSession(session);
   const respondents = sortRespondents(responsesRepo.listResponsesForSession(session.id));
   const rows = respondents.map((r) => {
     const full = responsesRepo.getResponse(r.id);
     return {
       ...r,
       percentage: r.maxScore ? Math.round((r.score / r.maxScore) * 1000) / 10 : null,
-      breakdown: buildFullBreakdown(form.questions, full.answers),
+      breakdown: buildFullBreakdown(formForResponse(full).questions, full.answers),
     };
   });
 

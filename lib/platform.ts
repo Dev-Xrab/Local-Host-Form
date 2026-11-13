@@ -24,6 +24,7 @@ export async function pickImageDataUri(): Promise<string | null> {
   if (res.canceled || !res.assets?.length) return null;
   const asset = res.assets[0];
   const blob: Blob = asset.file ?? (await (await fetch(asset.uri)).blob());
+  if (!blob.type.startsWith("image/")) throw new Error("Only image files are allowed.");
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result as string);
@@ -46,5 +47,6 @@ export async function pickFileDataUri(): Promise<PickedFile | null> {
     reader.onerror = () => reject(new Error("Couldn't read that file."));
     reader.readAsDataURL(blob);
   });
-  return { name: asset.name, size: asset.size ?? blob.size, mime: asset.mimeType || blob.type, dataUri };
+  const encodedName = Array.from(new TextEncoder().encode(asset.name).slice(0, 100), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return { name: asset.name, size: asset.size ?? blob.size, mime: asset.mimeType || blob.type, dataUri: dataUri.replace(";base64,", `;name=${encodedName};base64,`) };
 }

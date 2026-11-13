@@ -1,8 +1,5 @@
-// Runs automatically before `npm run dist` (see package.json's "predist") — wipes this
-// machine's own Electron userData directory so every packaged build starts from a clean
-// database, the same way a brand-new install would. Never runs on an end user's machine:
-// electron-builder doesn't execute npm scripts on install, only at package time on the
-// developer's own machine, and only for whoever runs `npm run dist` here.
+// Manual developer-only reset utility. Packaging does not call this script because builds
+// must never delete an existing installation's forms or responses.
 import { rmSync, existsSync } from "node:fs";
 import path from "node:path";
 

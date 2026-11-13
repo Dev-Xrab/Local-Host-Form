@@ -19,8 +19,12 @@ export function useFormExport(onError: (message: string) => void) {
     setTarget(null);
     setExportingId(form.id);
     try {
-      const [full, responses] = await Promise.all([formsApi.get(form.id), includeResponses ? formsApi.responses(form.id) : Promise.resolve(undefined)]);
-      const { filename, json } = buildFormExport(full, responses);
+      const [full, responses, definitions] = await Promise.all([
+        formsApi.get(form.id),
+        includeResponses ? formsApi.responses(form.id) : Promise.resolve(undefined),
+        includeResponses ? formsApi.responseDefinitions(form.id) : Promise.resolve(undefined),
+      ]);
+      const { filename, json } = buildFormExport(full, responses, definitions);
       await saveTextFile(filename, json);
     } catch (err) {
       onError((err as Error).message);

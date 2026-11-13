@@ -34,7 +34,9 @@ export const responsesApi = {
       body: JSON.stringify(payload),
     }),
   getResponse: (id, deviceId) =>
-    request(`${BASE}/responses/${id}?deviceId=${encodeURIComponent(deviceId)}`),
+    request(`${BASE}/responses/${id}`, {
+      headers: { "X-Respondent-Device-Id": deviceId },
+    }),
   submit: (id, payload) =>
     request(`${BASE}/responses/${id}/submit`, {
       method: "POST",

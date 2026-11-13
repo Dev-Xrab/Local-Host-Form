@@ -42,6 +42,24 @@ describe("form export", () => {
     const { json } = buildFormExport({ title: "T", questions: [] }, [{ respondentName: "Ana", score: 1, maxScore: 2, answers: { q1: 0 } }]);
     expect(JSON.parse(json).responses[0].respondentName).toBe("Ana");
   });
+  it("carries pinned assessment definitions with response backups", () => {
+    const definition = { id: "snapshot-1", provenance: "pinned", title: "Original", questions: [{ id: "q1", type: "multiple_choice", title: "Old wording" }] };
+    const { json } = buildFormExport(
+      { title: "Edited", questions: [{ id: "q1", type: "multiple_choice", title: "New wording" }] },
+      [{ respondentName: "Ana", formSnapshotId: "snapshot-1", answers: { q1: 1 }, score: 1, maxScore: 1 }],
+      [definition]
+    );
+    const backup = JSON.parse(json);
+    expect(backup.responses[0].assessmentId).toBe("snapshot-1");
+    expect(backup.assessmentDefinitions[0].questions[0].title).toBe("Old wording");
+  });
+  it("refuses a response backup when a pinned definition is missing", () => {
+    expect(() => buildFormExport(
+      { title: "Edited", questions: [] },
+      [{ formSnapshotId: "missing", answers: {} }],
+      []
+    )).toThrow("missing its assessment definition");
+  });
 });
 
 describe("question types", () => {

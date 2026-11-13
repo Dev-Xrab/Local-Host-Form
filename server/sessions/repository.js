@@ -1,5 +1,6 @@
 import { randomInt, randomUUID } from "node:crypto";
 import { db } from "../db/index.js";
+import { createFormSnapshot } from "../forms/snapshots.js";
 
 const SESSION_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const generateCode = () =>
@@ -33,6 +34,7 @@ function rowToSession(row) {
     responsesEditable: !!row.responses_editable,
     refocusLockSeconds: row.refocus_lock_seconds,
     fullscreenEnabled: !!row.fullscreen_enabled,
+    formSnapshotId: row.form_snapshot_id,
   };
 }
 
@@ -155,7 +157,16 @@ export function startSession(id) {
   if (!existing) return null;
   if (existing.status !== "draft") return getSession(id);
 
-  db.prepare("UPDATE sessions SET status = 'active', started_at = ? WHERE id = ?").run(now(), id);
+  db.exec("BEGIN");
+  try {
+    const snapshotId = createFormSnapshot(existing.form_id);
+    db.prepare("UPDATE sessions SET status = 'active', started_at = ?, form_snapshot_id = ? WHERE id = ? AND status = 'draft'")
+      .run(now(), snapshotId, id);
+    db.exec("COMMIT");
+  } catch (err) {
+    db.exec("ROLLBACK");
+    throw err;
+  }
   return getSession(id);
 }
 

@@ -3,6 +3,7 @@ import { cloudFetch, isCloudConfigured } from "./client.js";
 import * as formsRepo from "../forms/repository.js";
 import * as responsesRepo from "../responses/repository.js";
 import * as sessionsRepo from "../sessions/repository.js";
+import { getFormSnapshot, importFormSnapshot } from "../forms/snapshots.js";
 import { describeRejection } from "./rejectionReasons.js";
 
 const UPLOAD_BATCH_SIZE = 200;
@@ -12,6 +13,7 @@ const MAX_ROUNDS = 25; // safety valve for a very large backlog — see runSync
 // sync plumbing — only this function and applyRemoteResponse (server/responses/repository.js)
 // know its shape.
 function buildPayload(response) {
+  const assessment = getFormSnapshot(response.formSnapshotId);
   return {
     respondentName: response.respondentName,
     score: response.score,
@@ -21,6 +23,7 @@ function buildPayload(response) {
     editCode: response.editCode,
     googleResponseId: response.googleResponseId || undefined,
     answers: response.answers,
+    ...(assessment ? { assessmentHash: assessment.hash } : {}),
   };
 }
 
@@ -75,6 +78,13 @@ async function applyDownloadedChanges(changes) {
         change.deviceName
       );
       const payload = change.payload || {};
+      let formSnapshotId = null;
+      if (payload.assessmentHash) {
+        const snapshotRes = await cloudFetch(`/api/assessment-snapshots/${encodeURIComponent(change.formId)}/${encodeURIComponent(payload.assessmentHash)}`);
+        if (!snapshotRes.ok) throw new Error("Synced assessment definition is unavailable; response will be retried.");
+        const { definition } = await snapshotRes.json();
+        formSnapshotId = importFormSnapshot(localFormId, definition, payload.assessmentHash);
+      }
 
       const result = responsesRepo.applyRemoteResponse({
         id: change.id,
@@ -88,6 +98,7 @@ async function applyDownloadedChanges(changes) {
         editCode: payload.editCode,
         version: change.version,
         formVersion: change.formVersion,
+        formSnapshotId,
         deviceId: change.deviceId,
         googleResponseId: payload.googleResponseId,
         answers: payload.answers,
@@ -108,6 +119,20 @@ async function applyDownloadedChanges(changes) {
 // 'synced' and drop out on their own, so this never re-sends something that just succeeded.
 async function syncOneRound() {
   const pending = responsesRepo.listPendingSyncResponses().slice(0, UPLOAD_BATCH_SIZE);
+  // Publish each immutable assessment definition before a response points at it. A failed
+  // upload leaves the response pending; the next sync can retry without losing provenance.
+  const uploadedSnapshots = new Set();
+  for (const response of pending) {
+    const snapshot = getFormSnapshot(response.formSnapshotId);
+    if (!snapshot || uploadedSnapshots.has(`${response.remoteFormId}:${snapshot.hash}`)) continue;
+    const path = `/api/assessment-snapshots/${encodeURIComponent(response.remoteFormId)}/${snapshot.hash}`;
+    const saved = await cloudFetch(path, { method: "PUT", body: JSON.stringify({ definition: snapshot.definition }) });
+    if (!saved.ok) {
+      const detail = await saved.json().catch(() => ({}));
+      throw new Error(detail.error || "Could not save the assessment definition to Drive.");
+    }
+    uploadedSnapshots.add(`${response.remoteFormId}:${snapshot.hash}`);
+  }
   const changes = pending.map((r) => ({
     id: r.id,
     formId: r.remoteFormId,

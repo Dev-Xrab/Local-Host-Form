@@ -73,7 +73,7 @@ db.exec(`
 
   -- A response is one respondent's attempt within a session: created at join time
   -- (in_progress) and finalized at submit time (submitted). Submitted answers are
-  -- immutable; score/max_score are derived and recalculated whenever grading changes.
+  -- immutable; new session responses retain their assessment definition and original score.
   CREATE TABLE IF NOT EXISTS responses (
     id TEXT PRIMARY KEY,
     form_id TEXT NOT NULL REFERENCES forms(id) ON DELETE CASCADE,
@@ -295,3 +295,20 @@ db.exec("CREATE INDEX IF NOT EXISTS idx_responses_edit_code ON responses(session
 // way, but keeping the row (with its last-known title/type/options) is what lets analytics still
 // show a removed question's historical answers, labeled instead of just vanishing.
 ensureColumn("questions", "removed_at", "TEXT");
+
+// New sessions pin a form definition at start. Existing sessions/responses intentionally keep
+// NULL: their historical definition cannot be reconstructed from the current mutable form.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS form_snapshots (
+    id TEXT PRIMARY KEY,
+    form_id TEXT NOT NULL REFERENCES forms(id) ON DELETE CASCADE,
+    content_hash TEXT NOT NULL,
+    definition TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE(form_id, content_hash)
+  );
+  CREATE INDEX IF NOT EXISTS idx_form_snapshots_form_id ON form_snapshots(form_id);
+`);
+ensureColumn("sessions", "form_snapshot_id", "TEXT REFERENCES form_snapshots(id) ON DELETE SET NULL");
+ensureColumn("responses", "form_snapshot_id", "TEXT REFERENCES form_snapshots(id) ON DELETE SET NULL");
+db.exec("CREATE INDEX IF NOT EXISTS idx_responses_form_snapshot_id ON responses(form_snapshot_id);");

@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
 import { addGridSheet, triggerDownload } from "../../sessions/utils/export";
 import { aggregateQuestion, formatPercent } from "./responseAnalytics";
+import { assessmentGroups } from "./assessmentGroups";
 
 // One row per respondent, one column per answerable question — mirrors the on-screen "By
 // Respondent" table but with every answer spelled out instead of just score/status. A question a
@@ -104,7 +105,7 @@ function buildQuestionStatisticsGrid(form, responses) {
 // Two sheets rather than three ("Responses" and "Question Statistics") — a separate bare
 // "Summary" sheet would mostly repeat the info block already on both (title/subject/date/count),
 // so it's folded in instead of adding a sheet with little content of its own.
-export async function exportFormResponsesToWorkbook(form, responses, subjectName) {
+export async function exportFormResponsesToWorkbook(form, responses, subjectName, definitions = []) {
   const wb = new ExcelJS.Workbook();
   wb.creator = "Self Host Form";
   wb.created = new Date();
@@ -116,8 +117,14 @@ export async function exportFormResponsesToWorkbook(form, responses, subjectName
     `Responses: ${responses.length}`,
   ].filter(Boolean);
 
-  addGridSheet(wb, "Responses", buildResponsesGrid(form, responses), { infoLines });
-  addGridSheet(wb, "Question Statistics", buildQuestionStatisticsGrid(form, responses), { infoLines });
+  const groups = assessmentGroups(form, responses, definitions);
+  groups.forEach((group, i) => {
+    const suffix = groups.length === 1 ? "" : ` ${i + 1}`;
+    const notes = [...infoLines, `Assessment: ${group.title || "Untitled"}`];
+    if (group.provenance === "legacy_current_definition") notes.push("Legacy responses: question definition is based on the current form and cannot be verified historically.");
+    addGridSheet(wb, `Responses${suffix}`, buildResponsesGrid(group, group.responses), { infoLines: notes });
+    addGridSheet(wb, `Question Statistics${suffix}`, buildQuestionStatisticsGrid(group, group.responses), { infoLines: notes });
+  });
 
   const buffer = await wb.xlsx.writeBuffer();
   const filename = `${(form.title || "responses").toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 60)}-responses-${new Date()

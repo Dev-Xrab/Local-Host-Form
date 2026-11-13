@@ -81,6 +81,15 @@ const setFont = (ctx, size, weight = 400) => {
   ctx.font = `${weight} ${size}px ${FONT}`;
 };
 
+function loadImage(url) {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => resolve(null);
+    image.src = url;
+  });
+}
+
 export async function downloadAnswersAsPdf({
   formTitle,
   respondentName,
@@ -143,14 +152,14 @@ export async function downloadAnswersAsPdf({
   y += metaH + 26;
 
   // ---- Questions & answers ----
-  answers.forEach((a, i) => {
+  for (const [i, a] of answers.entries()) {
     const measure = page.ctx;
     setFont(measure, 14, 600);
     const titleLines = wrapText(measure, a.title || "Untitled question", CONTENT_W - 34);
     setFont(measure, 12, 400);
     const choiceLines = a.choices ? wrapText(measure, `Choices: ${a.choices.join(", ")}`, CONTENT_W - 34) : [];
     setFont(measure, 13.5, 500);
-    const answerLines = wrapText(measure, a.submittedAnswer ?? "No answer", CONTENT_W - 36);
+    const answerLines = wrapText(measure, a.fileName || a.submittedAnswer || "No answer", CONTENT_W - 36);
 
     const answerH = answerLines.length * 19 + 22;
     const blockH = titleLines.length * 20 + choiceLines.length * 17 + answerH + 30;
@@ -212,6 +221,17 @@ export async function downloadAnswersAsPdf({
     }
     y = cursor + 12;
 
+    if (a.fileUrl && /^data:image\//i.test(a.fileUrl)) {
+      const image = await loadImage(a.fileUrl);
+      if (image) {
+        const width = Math.min(CONTENT_W - 34, image.width);
+        const height = Math.min(330, width * image.height / image.width);
+        ensureSpace(height + 22);
+        page.ctx.drawImage(image, MARGIN + 34, y, width, height);
+        y += height + 22;
+      }
+    }
+
     // Divider between questions
     if (i < answers.length - 1) {
       ensureSpace(20);
@@ -219,7 +239,7 @@ export async function downloadAnswersAsPdf({
       page.ctx.fillRect(MARGIN, y, CONTENT_W, 1);
       y += 20;
     }
-  });
+  }
 
   // ---- Footers (page count is only known now) ----
   pages.forEach(({ ctx }, i) => {

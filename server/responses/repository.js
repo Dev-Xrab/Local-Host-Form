@@ -1,6 +1,5 @@
 import { randomInt, randomUUID } from "node:crypto";
 import { db } from "../db/index.js";
-import { scoreResponse } from "./grading.js";
 import { REJECTION_MESSAGES, NON_RETRYABLE_REASONS } from "../cloud/rejectionReasons.js";
 
 const NON_RETRYABLE_MESSAGES = new Set(
@@ -44,6 +43,8 @@ function rowToResponseSummary(row) {
     editCode: row.edit_code,
     version: row.version,
     formVersion: row.form_version,
+    formSnapshotId: row.form_snapshot_id,
+    definitionProvenance: row.form_snapshot_id ? "pinned" : "legacy_current_definition",
     syncStatus: row.sync_status,
     syncedAt: row.synced_at,
     retryCount: row.retry_count,
@@ -112,16 +113,16 @@ export function findResponseByEditCode(sessionId, editCode) {
 // Each respondent gets their own deadline computed the moment THEY join — not a shared
 // session-wide clock — so someone who joins late still gets the full time limit, and
 // nobody's countdown is affected by when anyone else started.
-export function createInProgressResponse({ formId, sessionId, deviceId, respondentName, durationMinutes }) {
+export function createInProgressResponse({ formId, sessionId, deviceId, respondentName, durationMinutes, formSnapshotId = null }) {
   const id = randomUUID();
   const startedAt = now();
   const deadlineAt = durationMinutes
     ? new Date(Date.now() + durationMinutes * 60 * 1000).toISOString()
     : null;
   db.prepare(
-    `INSERT INTO responses (id, form_id, session_id, device_id, respondent_name, status, started_at, deadline_at)
-     VALUES (?, ?, ?, ?, ?, 'in_progress', ?, ?)`
-  ).run(id, formId, sessionId, deviceId || null, respondentName || "", startedAt, deadlineAt);
+    `INSERT INTO responses (id, form_id, session_id, device_id, respondent_name, status, started_at, deadline_at, form_snapshot_id)
+     VALUES (?, ?, ?, ?, ?, 'in_progress', ?, ?, ?)`
+  ).run(id, formId, sessionId, deviceId || null, respondentName || "", startedAt, deadlineAt, formSnapshotId);
   return rowToResponseSummary(selectResponseStmt.get(id));
 }
 
@@ -229,41 +230,6 @@ export function listSubmittedResponsesForForm(formId) {
   }));
 }
 
-const selectSubmittedForFormStmt = db.prepare(
-  "SELECT id FROM responses WHERE form_id = ? AND status = 'submitted'"
-);
-const updateScoreStmt = db.prepare("UPDATE responses SET score = ?, max_score = ? WHERE id = ?");
-
-// The critical piece for "grading changed after people already answered": re-run the
-// authoritative scorer against every already-submitted response's stored answers, using
-// whatever the form's questions look like right now, and persist the new score. Submitted
-// answers themselves are never touched — only the derived score.
-export function recalculateResponsesForForm(formId, questions) {
-  const ids = selectSubmittedForFormStmt.all(formId).map((r) => r.id);
-  if (ids.length === 0) return 0;
-
-  // Excludes questions a Google structural sync marked removed (see
-  // server/forms/questionDiff.js) the same way submit-time scoring already does (see
-  // server/public/routes.js answerableQuestionsOf) — a removed question no longer counts toward
-  // max score on recalculation, consistent with new respondents never being shown it.
-  const answerableQuestions = questions.filter((q) => q.type !== "section" && !q.removedAt);
-
-  db.exec("BEGIN");
-  try {
-    for (const id of ids) {
-      const answers = answersFor(id);
-      const { score, maxScore } = scoreResponse(answerableQuestions, answers);
-      updateScoreStmt.run(score, maxScore, id);
-    }
-    db.exec("COMMIT");
-  } catch (err) {
-    db.exec("ROLLBACK");
-    throw err;
-  }
-
-  return ids.length;
-}
-
 // --- Cloud sync (see server/cloud/sync.js) -------------------------------------------------
 //
 // Only submitted responses under a cloud-linked form are sync-eligible — an in-progress draft
@@ -355,8 +321,9 @@ const selectResponseVersionStmt = db.prepare("SELECT version FROM responses WHER
 const insertRemoteResponseStmt = db.prepare(`
   INSERT INTO responses (
     id, form_id, session_id, device_id, respondent_name, status, score, max_score,
-    started_at, submitted_at, edit_code, version, form_version, sync_status, synced_at, google_response_id
-  ) VALUES (?, ?, ?, ?, ?, 'submitted', ?, ?, ?, ?, ?, ?, ?, 'synced', ?, ?)
+    started_at, submitted_at, edit_code, version, form_version, sync_status, synced_at, google_response_id,
+    form_snapshot_id
+  ) VALUES (?, ?, ?, ?, ?, 'submitted', ?, ?, ?, ?, ?, ?, ?, 'synced', ?, ?, ?)
 `);
 const selectByGoogleResponseIdStmt = db.prepare(
   "SELECT id FROM responses WHERE form_id = ? AND google_response_id = ?"
@@ -364,7 +331,7 @@ const selectByGoogleResponseIdStmt = db.prepare(
 const updateRemoteResponseStmt = db.prepare(`
   UPDATE responses SET
     respondent_name = ?, score = ?, max_score = ?, submitted_at = ?, edit_code = ?,
-    version = ?, form_version = ?, sync_status = 'synced', synced_at = ?
+    version = ?, form_version = ?, form_snapshot_id = COALESCE(?, form_snapshot_id), sync_status = 'synced', synced_at = ?
   WHERE id = ? AND version < ?
 `);
 
@@ -387,6 +354,7 @@ export function applyRemoteResponse({
   editCode,
   version,
   formVersion,
+  formSnapshotId,
   deviceId,
   googleResponseId,
   answers,
@@ -423,7 +391,8 @@ export function applyRemoteResponse({
         version,
         formVersion ?? null,
         timestamp,
-        googleResponseId || null
+        googleResponseId || null,
+        formSnapshotId || null
       );
       writeAnswers(id, answers || {});
       db.exec("COMMIT");
@@ -446,6 +415,7 @@ export function applyRemoteResponse({
       editCode || null,
       version,
       formVersion ?? null,
+      formSnapshotId || null,
       timestamp,
       id,
       version
@@ -462,21 +432,22 @@ export function applyRemoteResponse({
 const insertImportedResponseStmt = db.prepare(`
   INSERT INTO responses (
     id, form_id, session_id, respondent_name, status, score, max_score,
-    started_at, submitted_at, edit_code, version, sync_status
-  ) VALUES (?, ?, ?, ?, 'submitted', ?, ?, ?, ?, ?, 1, 'pending')
+    started_at, submitted_at, edit_code, version, sync_status, form_snapshot_id
+  ) VALUES (?, ?, ?, ?, 'submitted', ?, ?, ?, ?, ?, 1, 'pending', ?)
 `);
 
 // Inserts responses that came in with an imported form file. `questionIdMap` translates the
 // exported form's question ids to the ids the import minted for its fresh copy of the form —
 // an answer to a question with no mapping is dropped rather than stored under an id nothing reads.
 // Everything is one transaction so a bad row can't leave a half-imported set behind.
-export function importResponses(formId, sessionId, responses, questionIdMap) {
+export function importResponses(formId, sessionId, responses, questionIdMap, assessmentMaps = new Map()) {
   let imported = 0;
   db.exec("BEGIN");
   try {
     for (const r of responses) {
       const id = randomUUID();
       const timestamp = now();
+      const assessment = r.assessmentId ? assessmentMaps.get(r.assessmentId) : null;
       insertImportedResponseStmt.run(
         id,
         formId,
@@ -486,11 +457,12 @@ export function importResponses(formId, sessionId, responses, questionIdMap) {
         Number.isFinite(r.maxScore) ? r.maxScore : null,
         r.startedAt || r.submittedAt || timestamp,
         r.submittedAt || timestamp,
-        uniqueEditCodeForSession(sessionId)
+        uniqueEditCodeForSession(sessionId),
+        assessment?.snapshotId || null
       );
       const answers = {};
       Object.entries(r.answers && typeof r.answers === "object" ? r.answers : {}).forEach(([oldId, value]) => {
-        const newId = questionIdMap.get(oldId);
+        const newId = (assessment?.idMap || questionIdMap).get(oldId);
         if (newId) answers[newId] = value;
       });
       writeAnswers(id, answers);

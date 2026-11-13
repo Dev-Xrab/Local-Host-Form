@@ -122,12 +122,16 @@ test("a second device signs in to the same account, lists the form and imports i
   assert.equal(responses.status, 200, JSON.stringify(responses.data));
   const names = JSON.stringify(responses.data);
   assert.match(names, /Ana Reyes/, "the response collected on device A should arrive on device B");
+  assert.equal(responses.data[0].definitionProvenance, "pinned");
+  assert.equal(responses.data[0].breakdown[0].title, "2+2?");
+  assert.ok([...google.files.values()].some((f) => f.name.startsWith(`assessment-${remoteFormId}-`)));
 });
 
 test("publishing again adds a version, and the other device can pull it", async () => {
   const local = (await A().api("GET", "/api/forms")).data.find((f) => f.title === "Math quiz");
   const full = (await A().api("GET", `/api/forms/${local.id}`)).data;
-  const edit = await A().api("PUT", `/api/forms/${local.id}`, { title: "Math quiz (edited)", description: "d", settings: full.settings, questions: full.questions });
+  const changedQuestions = full.questions.map((q, i) => i === 0 ? { ...q, title: "Changed after students answered", correctAnswerIndex: [0], points: 9 } : q);
+  const edit = await A().api("PUT", `/api/forms/${local.id}`, { title: "Math quiz (edited)", description: "d", settings: full.settings, questions: changedQuestions });
   assert.equal(edit.status, 200, JSON.stringify(edit.data));
   const publish = await A().api("POST", `/api/cloud/forms/${local.id}/publish`);
   assert.equal(publish.status, 200);
@@ -136,6 +140,9 @@ test("publishing again adds a version, and the other device can pull it", async 
   const pulled = await B().api("POST", `/api/cloud/forms/${remoteFormId}/import`, {});
   assert.equal(pulled.status, 200, JSON.stringify(pulled.data));
   assert.equal(pulled.data.title, "Math quiz (edited)");
+  const historical = await B().api("GET", `/api/forms/${importedLocalId}/responses`);
+  assert.equal(historical.data[0].breakdown[0].title, "2+2?");
+  assert.equal(historical.data[0].score, 1);
 });
 
 test("responses synced from another device sit in a placeholder session that cannot be joined", async () => {

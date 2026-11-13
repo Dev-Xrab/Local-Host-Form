@@ -2,6 +2,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { downloadBytes } from "../../../../lib/downloadBytes";
 import { aggregateQuestion, formatPercent } from "./responseAnalytics";
+import { assessmentGroups } from "./assessmentGroups";
 
 const MARGIN = 40;
 const BRAND = [55, 53, 47]; // #37352f, matches the app's Notion-inspired accent
@@ -118,7 +119,7 @@ function addQuestionSection(doc, question, responses, y) {
 // per-respondent table, each on its own logical section with proper margins and automatic page
 // breaks (autoTable repeats its header row across a page split, so a long question list or
 // response table never overflows unreadably onto one page).
-export async function exportFormResponsesToPdf(form, responses, subjectName) {
+export async function exportFormResponsesToPdf(form, responses, subjectName, definitions = []) {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   let y = addHeader(doc, form, subjectName, responses.length);
 
@@ -144,16 +145,25 @@ export async function exportFormResponsesToPdf(form, responses, subjectName) {
   });
   y = doc.lastAutoTable.finalY + 26;
 
-  const questions = (form.questions || []).filter((q) => q.type !== "section" && !q.removedAt);
-  if (questions.length > 0) {
+  const groups = assessmentGroups(form, responses, definitions);
+  groups.forEach((group) => {
+    const questions = (group.questions || []).filter((q) => q.type !== "section" && !q.removedAt);
+    if (questions.length === 0) return;
+    y = ensureSpace(doc, y, 80);
     doc.setFontSize(13);
     doc.setFont(undefined, "bold");
-    doc.text("Question Analytics", MARGIN, y);
+    doc.text(`Question Analytics: ${group.title || "Untitled assessment"}`.slice(0, 95), MARGIN, y);
     y += 16;
+    if (group.provenance === "legacy_current_definition") {
+      doc.setFontSize(9);
+      doc.setFont(undefined, "normal");
+      doc.text("Legacy responses: original question definition cannot be verified; current form used.", MARGIN, y);
+      y += 18;
+    }
     questions.forEach((q) => {
-      y = addQuestionSection(doc, q, responses, y);
+      y = addQuestionSection(doc, q, group.responses, y);
     });
-  }
+  });
 
   y = ensureSpace(doc, y, 80);
   doc.setFontSize(13);
@@ -163,15 +173,16 @@ export async function exportFormResponsesToPdf(form, responses, subjectName) {
   autoTable(doc, {
     startY: y,
     margin: { left: MARGIN, right: MARGIN },
-    head: [["Respondent", "Session", "Submitted", "Score"]],
+    head: [["Respondent", "Session", "Assessment", "Submitted", "Score"]],
     body: responses.length
       ? responses.map((r) => [
           r.respondentName || "Anonymous",
           r.sessionName || "Untitled session",
+          groups.find((g) => (r.formSnapshotId || "legacy") === g.id)?.title || "Untitled assessment",
           r.submittedAt ? new Date(r.submittedAt).toLocaleString() : "—",
           r.maxScore != null ? `${r.score}/${r.maxScore}` : "—",
         ])
-      : [["No responses yet", "", "", ""]],
+      : [["No responses yet", "", "", "", ""]],
     theme: "striped",
     headStyles: { fillColor: BRAND },
     styles: { fontSize: 9 },

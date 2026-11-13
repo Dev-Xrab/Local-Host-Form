@@ -32,4 +32,5 @@ export const formsApi = {
   update: (id, data) => request(`${BASE}/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   remove: (id) => request(`${BASE}/${id}`, { method: "DELETE" }),
   responses: (id) => request(`${BASE}/${id}/responses`),
+  responseDefinitions: (id) => request(`${BASE}/${id}/responses/definitions`),
 };

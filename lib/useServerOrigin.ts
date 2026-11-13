@@ -35,8 +35,8 @@ export function useServerOrigin(): string {
     const load = () =>
       apiFetch("/api/network-info")
         .then((res) => res.json())
-        .then(({ port, addresses }: { port: number; addresses?: { address: string }[] }) => {
-          if (!cancelled && addresses?.length) setOrigin(`${protocol}//${addresses[0].address}:${port}`);
+        .then(({ port, protocol: shareProtocol, addresses }: { port: number; protocol?: string; addresses?: { address: string }[] }) => {
+          if (!cancelled && addresses?.length) setOrigin(`${shareProtocol || protocol}//${addresses[0].address}:${port}`);
         })
         .catch(() => {});
     load();

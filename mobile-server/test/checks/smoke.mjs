@@ -80,6 +80,8 @@ const deviceId = "smoke-device-" + Date.now();
 r = await call("POST", `/api/public/sessions/${sess.code}/join`, { name: "Smoke Student", deviceId }, { auth: false });
 const joined = r.json;
 ok("respondent joins (no host cookie)", !!joined?.responseId);
+r = await call("POST", `/api/public/responses/${joined.responseId}/submit`, { answers: {}, timedOut: true, deviceId }, { auth: false });
+ok("early timeout claim cannot skip required answers", r.status === 400 && r.json?.missingQuestionIds?.includes("q1"));
 r = await call("POST", `/api/public/responses/${joined.responseId}/submit`, { answers: { q1: 1, q2: "paris", q3: [0, 2], q4: 4 }, timedOut: false, deviceId }, { auth: false });
 ok("submit and auto-grade", r.json?.score === 7 && r.json?.maxScore === 7, `score ${r.json?.score}/${r.json?.maxScore}`);
 const editCode = r.json?.editCode;

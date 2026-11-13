@@ -92,7 +92,9 @@ The UI is React Native, so the same components can target web, desktop (Electron
 - **Design system** in `ui/`: all colors, type sizes, radii and spacing live in `ui/tokens.ts`. Dark is the default theme, with a light theme and follow-system option under Settings > Appearance. Screens do not use raw colors or sizes.
 - **Layouts differ by size**, not just scale: a sidebar on desktop, an icon rail on tablets, and a bottom tab bar plus bottom-sheet dialogs on phones.
 - **Platform splits** use `.web.ts(x)` beside a default file. Web-only: fullscreen and copy protection on the respondent screen, Excel/PDF exports and file downloads, the Electron title bar.
-- **Backend untouched**: the Express API, database and auth are unchanged. The UI still talks to same-origin `/api/*` with the session cookie.
+- **Same-origin API**: the web and desktop UI talk to the local Express server at `/api/*` with a session cookie. Native clients use bearer tokens.
+
+For the current production-readiness findings and open release blockers, see [the audit report](docs/audit/PROJECT_AUDIT.md) and [release readiness](docs/audit/RELEASE_READINESS.md).
 
 ### Hosting on a phone (Android) — experimental
 

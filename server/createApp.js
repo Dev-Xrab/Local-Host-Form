@@ -126,7 +126,9 @@ export function createApp({ port, mountWebUi } = {}) {
       .sort((a, b) => rankAdapter(a.name) - rankAdapter(b.name))
       .map(({ name, address }) => ({ name, address }));
 
-    res.json({ port: PORT, addresses });
+    const httpsPort = process.env.SHF_TLS_CERT && process.env.SHF_TLS_KEY
+      ? Number(process.env.SHF_HTTPS_PORT || 5443) : null;
+    res.json({ port: httpsPort || PORT, protocol: httpsPort ? "https:" : "http:", addresses });
   });
 
   // Respondents: no cookie, no session — every route in here does its own ownership checks.

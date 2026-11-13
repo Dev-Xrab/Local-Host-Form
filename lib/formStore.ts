@@ -46,7 +46,6 @@ export interface FormState {
   formSettings: FormSettings;
   saveStatus: SaveStatus;
   saveError: string | null;
-  recalculatedResponses: number;
   cloudUnsaved: boolean;
 }
 
