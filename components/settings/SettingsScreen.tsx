@@ -41,46 +41,12 @@ function AppearanceSection() {
 
 function ServerSection() {
   const origin = useServerOrigin();
-  const hostingOnPhone = useAuthStore((s) => s.hostingOnPhone);
-  const tunnel = useTunnel();
-  const [busy, setBusy] = useState(false);
-  const [accessError, setAccessError] = useState<string | null>(null);
-  const run = async (fn: () => Promise<void>) => { setBusy(true); setAccessError(null); try { await fn(); } catch (error) { setAccessError((error as Error).message); } finally { setBusy(false); } };
-  const starting = tunnel.status === "installing" || tunnel.status === "starting";
-
   return (
-    <Section split title="Server" description="Where students reach this server, locally or over the internet.">
+    <Section split title="Local server" description="For students on the same network.">
       <Surface padded={false}>
-        <SettingRow label="Local server address" description="Share this with students on the same network.">
+        <SettingRow last label="Local server address" description="Share this with students on the same network.">
           <AddressBox value={origin} label="Copy address" />
         </SettingRow>
-        {hostingOnPhone ? (
-          <SettingRow last label="Remote access (Internet)" description="Not available when this phone is the host: the public-link tunnel needs a program that can't run on a phone. Students on the same Wi-Fi can still join with the address above. For internet access, host from a computer, or sync to your cloud account." >
-            <Text variant="small" tone="tertiary">Unavailable on phone</Text>
-          </SettingRow>
-        ) : (
-        <SettingRow
-          last
-          stacked
-          label="Remote access (Internet)"
-          description="Create a temporary public link so students can join from outside this network, with no router setup and no account. Powered by a Cloudflare Quick Tunnel: the link changes every time you start it, and stops working as soon as you stop it or close the app."
-        >
-          <View style={{ gap: space[2], alignItems: "flex-start" }}>
-            {tunnel.allowedEmails.length > 0 ? <Notice tone="danger">The saved email PIN list blocks this link. Cloudflare's Quick Tunnel email sign-in is currently failing. Clearing the list creates a public student link; remote admin still requires your password and authenticator code after you enable it below.</Notice> : null}
-            {tunnel.allowedEmails.length > 0 ? <Button label="Clear email list for public link" variant="secondary" compact disabled={tunnel.status !== "idle" || busy} onPress={() => run(() => tunnel.saveAccess([]))} /> : null}
-            {tunnel.status === "connected" ? (
-              <Button label="Stop" variant="danger" loading={busy} onPress={() => run(tunnel.stop)} />
-            ) : tunnel.status === "error" ? (
-              <Button label="Reset remote access" variant="secondary" loading={busy} onPress={() => run(tunnel.stop)} />
-            ) : (
-              <Button label={tunnel.status === "installing" ? "Setting up…" : tunnel.status === "starting" ? "Connecting…" : "Start remote access"} icon={Globe} variant="primary" loading={busy || starting} disabled={tunnel.allowedEmails.length > 0} onPress={() => run(tunnel.start)} />
-            )}
-            {tunnel.status === "connected" && tunnel.url ? <AddressBox value={tunnel.url} label="Copy link" /> : null}
-            {tunnel.status === "error" && tunnel.error ? <Text variant="small" tone="danger">{tunnel.error}</Text> : null}
-            {accessError ? <Text variant="small" tone="danger">{accessError}</Text> : null}
-          </View>
-        </SettingRow>
-        )}
       </Surface>
     </Section>
   );
@@ -95,6 +61,7 @@ function RemoteAdminSection() {
   const [setup, setSetup] = useState<{ secret: string; uri: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [startAfterSetup, setStartAfterSetup] = useState(false);
 
   useEffect(() => {
     if (hostingOnPhone) return;
@@ -107,24 +74,36 @@ function RemoteAdminSection() {
     try { await fn(); } catch (reason) { setError((reason as Error).message); } finally { setBusy(false); }
   };
 
-  if (hostingOnPhone) return null;
+  if (hostingOnPhone) return <Section split title="Remote access" description="Reach this server over the internet."><Surface><Text tone="secondary">Remote access needs the desktop app running on a computer.</Text></Surface></Section>;
+
+  const startAccess = async () => {
+    if (tunnel.allowedEmails.length > 0) await tunnel.saveAccess([]);
+    await tunnel.start();
+  };
 
   return (
-    <Section split title="Remote admin" description="Manage this server from another network through its Cloudflare link.">
+    <Section split title="Remote access" description="Share forms and manage this server from another network.">
       <Surface style={{ gap: space[3] }}>
-        {enabled === null ? <Text tone="secondary">{error || "Checking remote admin…"}</Text> : setup ? (
+        <Text tone="secondary">Cloudflare creates a temporary public link. It changes each time you start access and works only while this app stays open.</Text>
+        {enabled === null ? <Text tone="secondary">{error || "Checking remote access…"}</Text> : setup ? (
           <View style={{ gap: space[3], maxWidth: 420 }}>
-            <Text tone="secondary">Scan this QR code in an authenticator app, then enter its current code to finish setup.</Text>
+            <Text style={{ fontWeight: "600" }}>1. Protect admin sign-in</Text>
+            <Text tone="secondary">Scan this QR code in an authenticator app, then enter its current code.</Text>
             <QrCode value={setup.uri} size={180} />
             <Text variant="small" selectable>Manual key: {setup.secret}</Text>
             <TextField label="Authenticator code" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} />
-            <Button label="Confirm and enable" variant="primary" loading={busy} disabled={!/^\d{6}$/.test(code)} onPress={() => run(async () => { await authApi.confirmRemoteAdmin(code); setEnabled(true); setSetup(null); setPassword(""); setCode(""); })} />
-            <Button label="Cancel" variant="ghost" onPress={() => { setSetup(null); setCode(""); }} />
+            <Button label="Confirm code" variant="primary" loading={busy} disabled={!/^\d{6}$/.test(code)} onPress={() => run(async () => { await authApi.confirmRemoteAdmin(code); setEnabled(true); setSetup(null); setPassword(""); setCode(""); if (startAfterSetup) { setStartAfterSetup(false); await startAccess(); } })} />
+            <Button label="Cancel" variant="ghost" onPress={() => { setSetup(null); setCode(""); setStartAfterSetup(false); }} />
           </View>
         ) : enabled ? (
           <>
-            <Text tone="secondary">Enabled. Remote sign-in requires your server password and a 6-digit code from your authenticator app.</Text>
-            {tunnel.status === "connected" && tunnel.url ? <AddressBox value={`${tunnel.url}/host/login`} label="Copy admin link" /> : <Text variant="small" tone="tertiary">Start remote access above to get an admin link.</Text>}
+            <Text style={{ fontWeight: "600" }}>1. Admin protection is on</Text>
+            <Text tone="secondary">Admin sign-in requires your server password and a 6-digit authenticator code.</Text>
+            {tunnel.allowedEmails.length > 0 ? <Notice tone="danger">The old email PIN list cannot be used with Quick Tunnels. Starting access will clear that list and create a public student link. Admin sign-in will still require your password and authenticator code.</Notice> : null}
+            <Text style={{ fontWeight: "600" }}>2. Start the public link</Text>
+            {tunnel.status === "connected" ? <Button label="Stop remote access" variant="danger" loading={busy} onPress={() => run(tunnel.stop)} /> : tunnel.status === "error" ? <Button label="Reset remote access" variant="secondary" loading={busy} onPress={() => run(tunnel.stop)} /> : <Button label={tunnel.status === "installing" ? "Setting up…" : tunnel.status === "starting" ? "Connecting…" : "Start remote access"} icon={Globe} variant="primary" loading={busy || tunnel.status === "installing" || tunnel.status === "starting"} onPress={() => run(startAccess)} />}
+            {tunnel.status === "connected" && tunnel.url ? <><Text style={{ fontWeight: "600" }}>3. Copy the right link</Text><Text variant="small" tone="secondary">Student link</Text><AddressBox value={tunnel.url} label="Copy student link" /><Text variant="small" tone="secondary">Admin link</Text><AddressBox value={`${tunnel.url}/host/login`} label="Copy admin link" /></> : null}
+            {tunnel.status === "error" && tunnel.error ? <Notice tone="danger">{tunnel.error}</Notice> : null}
             <View style={{ gap: space[2], maxWidth: 420 }}>
               <TextField label="Server password" value={password} onChangeText={setPassword} secureTextEntry autoComplete="current-password" />
               <TextField label="Authenticator code" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} />
@@ -134,12 +113,17 @@ function RemoteAdminSection() {
           </>
         ) : (
           <View style={{ gap: space[3], maxWidth: 420 }}>
-            <Text tone="secondary">Off by default. Set up an authenticator app on this computer before using the public Cloudflare link for administration.</Text>
+            <Text style={{ fontWeight: "600" }}>1. Protect admin sign-in</Text>
+            <Text tone="secondary">Enter your server password, then pair an authenticator app. The public link will start after you confirm its code.</Text>
+            {tunnel.allowedEmails.length > 0 ? <Notice tone="danger">Starting a Quick Tunnel will clear the saved email PIN list because Cloudflare's email sign-in is failing. The student link will be public. Admin sign-in will require your password and authenticator code.</Notice> : null}
             <TextField label="Server password" hint="Enter the password you use to sign in to this server." value={password} onChangeText={setPassword} secureTextEntry autoComplete="current-password" />
-            <Button label="Set up remote admin" variant="primary" loading={busy} onPress={() => {
+            <Button label="Set up and start remote access" variant="primary" loading={busy} onPress={() => {
               if (!password.trim()) { setError("Enter your server password above to continue."); return; }
-              run(async () => { setSetup(await authApi.beginRemoteAdmin(password)); setPassword(""); });
+              run(async () => { setSetup(await authApi.beginRemoteAdmin(password)); setStartAfterSetup(true); setPassword(""); });
             }} />
+            <Text variant="small" tone="tertiary">Need a student link only? Start one without admin access.</Text>
+            {tunnel.status === "connected" ? <><AddressBox value={tunnel.url!} label="Copy student link" /><Button label="Stop student link" variant="secondary" onPress={() => run(tunnel.stop)} /></> : <Button label="Start student link only" variant="secondary" loading={busy || tunnel.status === "installing" || tunnel.status === "starting"} onPress={() => run(startAccess)} />}
+            {tunnel.status === "error" ? <><Notice tone="danger">{tunnel.error || "Could not start the link."}</Notice><Button label="Reset remote access" variant="secondary" onPress={() => run(tunnel.stop)} /></> : null}
           </View>
         )}
         {enabled !== null && error ? <Notice tone="danger">{error}</Notice> : null}
