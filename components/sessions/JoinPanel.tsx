@@ -42,12 +42,13 @@ export function JoinPanel({ code, shareUrl, publicUrl, inline }: { code: string;
     </View>
   );
   if (inline) {
-    // Single horizontal strip: code, then link + copy + QR.
+    // Keep both destinations visible so the host can share the right link for each student.
     return (
-      <View style={{ flexDirection: "row", alignItems: "center", gap: space[4], flexWrap: "wrap" }}>
+      <View style={{ flexDirection: "row", alignItems: "flex-start", gap: space[4], flexWrap: "wrap" }}>
         {codeBlock}
-        <View style={{ flex: 1, minWidth: 240 }}>
-          <LinkBlock compact label={publicUrl ? "Public link" : "Link on this network"} url={publicUrl ?? shareUrl} qrTitle="Scan to join this session" />
+        <View style={{ flex: 1, minWidth: 240, gap: space[3] }}>
+          <LinkBlock compact label="Local link · same network" url={shareUrl} qrTitle="Scan to join on this network" />
+          {publicUrl ? <LinkBlock compact label="Online link · any network" url={publicUrl} qrTitle="Scan to join online" /> : null}
         </View>
       </View>
     );
