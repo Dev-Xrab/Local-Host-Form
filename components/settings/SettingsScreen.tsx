@@ -135,8 +135,11 @@ function RemoteAdminSection() {
         ) : (
           <View style={{ gap: space[3], maxWidth: 420 }}>
             <Text tone="secondary">Off by default. Set up an authenticator app on this computer before using the public Cloudflare link for administration.</Text>
-            <TextField label="Server password" value={password} onChangeText={setPassword} secureTextEntry autoComplete="current-password" />
-            <Button label="Set up remote admin" variant="primary" loading={busy} disabled={!password} onPress={() => run(async () => { setSetup(await authApi.beginRemoteAdmin(password)); setPassword(""); })} />
+            <TextField label="Server password" hint="Enter the password you use to sign in to this server." value={password} onChangeText={setPassword} secureTextEntry autoComplete="current-password" />
+            <Button label="Set up remote admin" variant="primary" loading={busy} onPress={() => {
+              if (!password.trim()) { setError("Enter your server password above to continue."); return; }
+              run(async () => { setSetup(await authApi.beginRemoteAdmin(password)); setPassword(""); });
+            }} />
           </View>
         )}
         {enabled !== null && error ? <Notice tone="danger">{error}</Notice> : null}
