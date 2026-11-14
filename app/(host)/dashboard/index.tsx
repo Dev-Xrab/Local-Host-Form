@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { useRouter } from "expo-router";
-import { ClipboardList, FileText, Folder } from "lucide-react-native";
+import { ClipboardList, FileText, Folder, History } from "lucide-react-native";
 import { Button, EmptyState, ListRow, Notice, Page, PageHeader, Section, Surface, Text, space, useTheme } from "../../../ui";
 import { useForms, useSessions, useSubjects } from "../../../lib/data";
 import { sessionCodeLabel } from "../../../lib/text";
+import { apiFetch } from "../../../lib/http";
 
 // Fixed height so a long list scrolls inside its card instead of pushing the page down.
 const LIST_HEIGHT = 300;
@@ -22,14 +23,40 @@ function Stat({ label, value, hint, onPress, last }: { label: string; value: num
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
+type Activity = { type: string; targetId: string; label: string; occurredAt: string };
+
+const activityLabels: Record<string, string> = {
+  form_created: "Form created", form_updated: "Form updated",
+  folder_created: "Folder created", folder_updated: "Folder updated",
+  session_created: "Session created", session_started: "Session started",
+  session_ended: "Session ended", response_submitted: "Response submitted",
+};
+
+function activityPath(item: Activity) {
+  if (item.type.startsWith("form_")) return `/forms/${item.targetId}`;
+  if (item.type.startsWith("folder_")) return `/dashboard/subjects/${item.targetId}`;
+  return `/dashboard/sessions/${item.targetId}`;
+}
+
 export default function DashboardHome() {
   const router = useRouter();
   const { forms, error: formsError } = useForms();
   const { subjects } = useSubjects();
   const { sessions, refresh } = useSessions();
+  const [activity, setActivity] = useState<Activity[]>([]);
+  const [activityError, setActivityError] = useState(false);
 
   useEffect(() => {
-    const t = setInterval(refresh, 5000);
+    const loadActivity = async () => {
+      try {
+        const response = await apiFetch("/api/activity");
+        if (!response.ok) throw new Error("Activity unavailable");
+        setActivity(await response.json());
+        setActivityError(false);
+      } catch { setActivityError(true); }
+    };
+    void loadActivity();
+    const t = setInterval(() => { void refresh(); void loadActivity(); }, 5000);
     return () => clearInterval(t);
   }, [refresh]);
 
@@ -39,7 +66,7 @@ export default function DashboardHome() {
 
   return (
     <Page>
-      <PageHeader title="Dashboard" subtitle="Manage sessions, folders, and forms from one place." />
+      <PageHeader title="Dashboard" subtitle="Manage forms and sessions, and see recent activity." />
       {formsError ? <Notice tone="danger">{`Couldn't reach the local server: ${formsError}`}</Notice> : null}
 
       <Surface padded={false} style={{ flexDirection: "row", flexWrap: "wrap" }}>
@@ -87,17 +114,18 @@ export default function DashboardHome() {
       </View>
 
       <View>
-          <Section title={`Folders · ${subjects.length}`}>
+          <Section title="Recent activity" description="Latest form, folder, session, and response events.">
             <Surface padded={false}>
-              {subjects.length === 0 ? (
-                <EmptyState icon={Folder} title="No folders yet" body="Create one to start organizing your forms." actionLabel="Go to folders" onAction={() => go("/dashboard/subjects")} />
+              {activity.length === 0 ? (
+                <EmptyState icon={History} title={activityError ? "Activity unavailable" : "No activity yet"} body={activityError ? "Check your connection to the local server." : "New forms, sessions, and responses will appear here."} />
               ) : (
-                subjects.slice(0, 5).map((s, i, arr) => (
-                  <ListRow key={s.id} last={i === arr.length - 1} icon={Folder} title={s.name} subtitle={s.code || undefined} meta={plural(s.formCount, "form")} onPress={() => go(`/dashboard/subjects/${s.id}`)} />
-                ))
+                <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator>
+                  {activity.map((item, index) => (
+                    <ListRow key={`${item.type}-${item.targetId}-${item.occurredAt}`} last={index === activity.length - 1} icon={item.type.startsWith("form_") ? FileText : item.type.startsWith("folder_") ? Folder : ClipboardList} title={activityLabels[item.type] || "Activity"} subtitle={item.label || "Untitled"} meta={new Date(item.occurredAt).toLocaleString()} onPress={() => go(activityPath(item))} />
+                  ))}
+                </ScrollView>
               )}
             </Surface>
-            {subjects.length > 0 ? <Button label="All folders" variant="ghost" compact onPress={() => go("/dashboard/subjects")} /> : null}
           </Section>
       </View>
     </Page>
