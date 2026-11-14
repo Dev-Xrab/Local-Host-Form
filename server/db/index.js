@@ -311,4 +311,5 @@ db.exec(`
 `);
 ensureColumn("sessions", "form_snapshot_id", "TEXT REFERENCES form_snapshots(id) ON DELETE SET NULL");
 ensureColumn("responses", "form_snapshot_id", "TEXT REFERENCES form_snapshots(id) ON DELETE SET NULL");
+ensureColumn("auth_sessions", "remote_allowed", "INTEGER NOT NULL DEFAULT 0");
 db.exec("CREATE INDEX IF NOT EXISTS idx_responses_form_snapshot_id ON responses(form_snapshot_id);");

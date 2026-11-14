@@ -62,10 +62,18 @@ export function startTunnel() {
       const myTunnel = Tunnel.quick(`http://localhost:${PORT}`, allowedEmails.length ? { "--allowed-mail": allowedEmails.join(",") } : {});
       tunnel = myTunnel;
 
+      let publicUrl = null;
+      let connected = false;
+      const showConnected = () => {
+        if (myGeneration !== generation || !publicUrl || !connected) return;
+        state = { status: "connected", url: publicUrl, error: null };
+      };
       myTunnel.once("url", (url) => {
         if (myGeneration !== generation) return;
-        state = { status: "connected", url, error: null };
+        publicUrl = url;
+        showConnected();
       });
+      myTunnel.once("connected", () => { connected = true; showConnected(); });
 
       myTunnel.on("error", (err) => {
         if (myGeneration !== generation) return;

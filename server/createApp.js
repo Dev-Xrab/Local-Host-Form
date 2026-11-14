@@ -18,7 +18,7 @@ import { startGoogleFormsPolling } from "./googleForms/poller.js";
 import { encryptLegacyTokens, ensureDeviceId } from "./cloud/repository.js";
 import { tunnelRouter } from "./tunnel/routes.js";
 import { activityRouter } from "./activity/routes.js";
-import { requireSameOrigin } from "./security/network.js";
+import { requireSameOrigin, requireLocalConsole } from "./security/network.js";
 import { apiLimiter, importLimiter, submitLimiter } from "./security/rateLimits.js";
 
 
@@ -151,7 +151,7 @@ export function createApp({ port, mountWebUi } = {}) {
   // other route inside cloudRouter applies requireAuth itself — see server/cloud/routes.js.
   app.use("/api/cloud", cloudRouter);
   app.use("/api/google-forms", requireAuth, googleFormsRouter);
-  app.use("/api/tunnel", requireAuth, tunnelRouter);
+  app.use("/api/tunnel", requireAuth, requireLocalConsole, tunnelRouter);
   app.use("/api/activity", requireAuth, activityRouter);
 
 

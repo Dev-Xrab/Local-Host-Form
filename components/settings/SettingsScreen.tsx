@@ -10,6 +10,7 @@ import { Button, Dialog, IconButton, Notice, Page, PageHeader, SegmentedControl,
 import { useCloudAccount, useTunnel } from "../../lib/data";
 import { copyText } from "../../lib/platform";
 import { useServerOrigin } from "../../lib/useServerOrigin";
+import { QrCode } from "../QrCode";
 
 const CLEAR_CONFIRM = "DELETE";
 const MONO = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"; // addresses stay monospace so they copy and read exactly
@@ -43,13 +44,8 @@ function ServerSection() {
   const hostingOnPhone = useAuthStore((s) => s.hostingOnPhone);
   const tunnel = useTunnel();
   const [busy, setBusy] = useState(false);
-  const [allowedEmailInput, setAllowedEmailInput] = useState("");
   const [accessError, setAccessError] = useState<string | null>(null);
-  useEffect(() => { setAllowedEmailInput(tunnel.allowedEmails.join(", ")); }, [tunnel.allowedEmails]);
   const run = async (fn: () => Promise<void>) => { setBusy(true); setAccessError(null); try { await fn(); } catch (error) { setAccessError((error as Error).message); } finally { setBusy(false); } };
-  const enteredEmails = allowedEmailInput.split(/[\s,;]+/).filter(Boolean).map((email) => email.toLowerCase());
-  const accessDirty = JSON.stringify(enteredEmails) !== JSON.stringify(tunnel.allowedEmails);
-  const saveAccess = () => run(() => tunnel.saveAccess(enteredEmails));
   const starting = tunnel.status === "installing" || tunnel.status === "starting";
 
   return (
@@ -70,33 +66,80 @@ function ServerSection() {
           description="Create a temporary public link so students can join from outside this network, with no router setup and no account. Powered by a Cloudflare Quick Tunnel: the link changes every time you start it, and stops working as soon as you stop it or close the app."
         >
           <View style={{ gap: space[2], alignItems: "flex-start" }}>
-            <Notice tone="danger">Cloudflare's email PIN flow for Quick Tunnels is currently failing at sign-in. Email-protected links are paused. Your saved email list will stay in place; clearing it makes the link public.</Notice>
-            <View style={{ alignSelf: "stretch", maxWidth: 420 }}><TextField
-              label="Require email PIN for public link"
-              hint="Optional. Enter allowed email addresses separated by commas. Everyone opening the public link, including students, must verify an allowed email. Leave blank for a public link."
-              value={allowedEmailInput}
-              onChangeText={setAllowedEmailInput}
-              editable={tunnel.status === "idle" && !busy}
-              autoCapitalize="none"
-              autoCorrect={false}
-              placeholder="teacher@example.com, student@example.com"
-            /></View>
-            <Button label="Save email access" variant="secondary" compact disabled={tunnel.status !== "idle" || busy || tunnel.loading || !accessDirty} onPress={saveAccess} />
-            {tunnel.status !== "idle" ? <Text variant="small" tone="tertiary">Stop remote access to change the email list.</Text> : null}
+            {tunnel.allowedEmails.length > 0 ? <Notice tone="danger">The saved email PIN list blocks this link. Cloudflare's Quick Tunnel email sign-in is currently failing. Clearing the list creates a public student link; remote admin still requires your password and authenticator code after you enable it below.</Notice> : null}
+            {tunnel.allowedEmails.length > 0 ? <Button label="Clear email list for public link" variant="secondary" compact disabled={tunnel.status !== "idle" || busy} onPress={() => run(() => tunnel.saveAccess([]))} /> : null}
             {tunnel.status === "connected" ? (
               <Button label="Stop" variant="danger" loading={busy} onPress={() => run(tunnel.stop)} />
             ) : tunnel.status === "error" ? (
               <Button label="Reset remote access" variant="secondary" loading={busy} onPress={() => run(tunnel.stop)} />
             ) : (
-              <Button label={tunnel.status === "installing" ? "Setting up…" : tunnel.status === "starting" ? "Connecting…" : "Start remote access"} icon={Globe} variant="primary" loading={busy || starting} disabled={accessDirty || tunnel.allowedEmails.length > 0} onPress={() => run(tunnel.start)} />
+              <Button label={tunnel.status === "installing" ? "Setting up…" : tunnel.status === "starting" ? "Connecting…" : "Start remote access"} icon={Globe} variant="primary" loading={busy || starting} disabled={tunnel.allowedEmails.length > 0} onPress={() => run(tunnel.start)} />
             )}
-            {accessDirty ? <Text variant="small" tone="secondary">Save the email list before starting remote access.</Text> : null}
             {tunnel.status === "connected" && tunnel.url ? <AddressBox value={tunnel.url} label="Copy link" /> : null}
             {tunnel.status === "error" && tunnel.error ? <Text variant="small" tone="danger">{tunnel.error}</Text> : null}
             {accessError ? <Text variant="small" tone="danger">{accessError}</Text> : null}
           </View>
         </SettingRow>
         )}
+      </Surface>
+    </Section>
+  );
+}
+
+function RemoteAdminSection() {
+  const hostingOnPhone = useAuthStore((s) => s.hostingOnPhone);
+  const tunnel = useTunnel();
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const [setup, setSetup] = useState<{ secret: string; uri: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (hostingOnPhone) return;
+    authApi.remoteAdminStatus().then((result: { enabled: boolean }) => setEnabled(result.enabled)).catch(() => setError("Remote admin setup is available only on the computer running this server."));
+  }, [hostingOnPhone]);
+
+  const run = async (fn: () => Promise<void>) => {
+    setBusy(true);
+    setError(null);
+    try { await fn(); } catch (reason) { setError((reason as Error).message); } finally { setBusy(false); }
+  };
+
+  if (hostingOnPhone) return null;
+
+  return (
+    <Section split title="Remote admin" description="Manage this server from another network through its Cloudflare link.">
+      <Surface style={{ gap: space[3] }}>
+        {enabled === null ? <Text tone="secondary">{error || "Checking remote admin…"}</Text> : setup ? (
+          <View style={{ gap: space[3], maxWidth: 420 }}>
+            <Text tone="secondary">Scan this QR code in an authenticator app, then enter its current code to finish setup.</Text>
+            <QrCode value={setup.uri} size={180} />
+            <Text variant="small" selectable>Manual key: {setup.secret}</Text>
+            <TextField label="Authenticator code" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} />
+            <Button label="Confirm and enable" variant="primary" loading={busy} disabled={!/^\d{6}$/.test(code)} onPress={() => run(async () => { await authApi.confirmRemoteAdmin(code); setEnabled(true); setSetup(null); setPassword(""); setCode(""); })} />
+            <Button label="Cancel" variant="ghost" onPress={() => { setSetup(null); setCode(""); }} />
+          </View>
+        ) : enabled ? (
+          <>
+            <Text tone="secondary">Enabled. Remote sign-in requires your server password and a 6-digit code from your authenticator app.</Text>
+            {tunnel.status === "connected" && tunnel.url ? <AddressBox value={`${tunnel.url}/host/login`} label="Copy admin link" /> : <Text variant="small" tone="tertiary">Start remote access above to get an admin link.</Text>}
+            <View style={{ gap: space[2], maxWidth: 420 }}>
+              <TextField label="Server password" value={password} onChangeText={setPassword} secureTextEntry autoComplete="current-password" />
+              <TextField label="Authenticator code" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} />
+              <Button label="Replace authenticator" variant="secondary" loading={busy} disabled={!password} onPress={() => run(async () => { setSetup(await authApi.beginRemoteAdmin(password)); setPassword(""); setCode(""); })} />
+              <Button label="Disable remote admin" variant="danger" loading={busy} disabled={!password || !/^\d{6}$/.test(code)} onPress={() => run(async () => { await authApi.disableRemoteAdmin(password, code); setEnabled(false); setPassword(""); setCode(""); })} />
+            </View>
+          </>
+        ) : (
+          <View style={{ gap: space[3], maxWidth: 420 }}>
+            <Text tone="secondary">Off by default. Set up an authenticator app on this computer before using the public Cloudflare link for administration.</Text>
+            <TextField label="Server password" value={password} onChangeText={setPassword} secureTextEntry autoComplete="current-password" />
+            <Button label="Set up remote admin" variant="primary" loading={busy} disabled={!password} onPress={() => run(async () => { setSetup(await authApi.beginRemoteAdmin(password)); setPassword(""); })} />
+          </View>
+        )}
+        {enabled !== null && error ? <Notice tone="danger">{error}</Notice> : null}
       </Surface>
     </Section>
   );
@@ -274,6 +317,7 @@ export function SettingsScreen() {
       <PageHeader title="Settings" subtitle="Configure how this server and your account behave." />
       <AppearanceSection />
       <ServerSection />
+      <RemoteAdminSection />
       <CloudSection />
       <Section split title="Security" description="Your server password and recovery question.">
         <Surface padded={false}>

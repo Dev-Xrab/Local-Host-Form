@@ -2,7 +2,8 @@ import { Router } from "express";
 import * as authRepo from "./repository.js";
 import { readSessionToken, setSessionCookie, clearSessionCookie, wantsBearer } from "./cookies.js";
 import { requireAuth } from "./middleware.js";
-import { blockTunnel, requireLocalConsole } from "../security/network.js";
+import { isTunnelRequest, requireLocalConsole } from "../security/network.js";
+import { beginRemoteAdminSetup, confirmRemoteAdminSetup, disableRemoteAdmin, isRemoteAdminEnabled, verifyRemoteAdminCode } from "./remoteAdmin.js";
 import {
   loginLimiter,
   globalLoginLimiter,
@@ -40,18 +41,22 @@ authRouter.post("/setup", requireLocalConsole, (req, res) => {
 
 // Reachable from phones/tablets on the LAN (hosts manage sessions from them), so this is the
 // endpoint password-guessing would target: limited per client and across the whole LAN.
-authRouter.post("/login", blockTunnel, loginLimiter, globalLoginLimiter, (req, res) => {
-  const { password } = req.body || {};
+authRouter.post("/login", loginLimiter, globalLoginLimiter, (req, res) => {
+  const { password, code } = req.body || {};
+  const remote = isTunnelRequest(req);
   if (!password || typeof password !== "string") {
     return res.status(400).json({ error: "Password is required." });
   }
 
-  if (!authRepo.verifyHostPassword(password)) {
-    return res.status(401).json({ error: "Incorrect password." });
+  if (remote && !isRemoteAdminEnabled()) {
+    return res.status(403).json({ error: "Remote admin is off. Enable it on the host computer first." });
+  }
+  if (!authRepo.verifyHostPassword(password) || (remote && !verifyRemoteAdminCode(code))) {
+    return res.status(401).json({ error: remote ? "Incorrect password or authenticator code." : "Incorrect password." });
   }
 
-  const { token, expiresAt } = authRepo.createAuthSession();
-  setSessionCookie(res, token, expiresAt, req.secure);
+  const { token, expiresAt } = authRepo.createAuthSession({ remote });
+  setSessionCookie(res, token, expiresAt, req.secure || remote);
   res.json({
     ok: true,
     hasRecoveryQuestion: authRepo.hasRecoveryQuestion(),
@@ -61,17 +66,20 @@ authRouter.post("/login", blockTunnel, loginLimiter, globalLoginLimiter, (req, r
 
 authRouter.post("/logout", (req, res) => {
   authRepo.deleteAuthSession(readSessionToken(req));
-  clearSessionCookie(res, req.secure);
+  clearSessionCookie(res, req.secure || isTunnelRequest(req));
   res.status(204).end();
 });
 
 authRouter.get("/me", (req, res) => {
-  const authenticated = authRepo.isValidAuthSession(readSessionToken(req));
+  const remote = isTunnelRequest(req);
+  const authenticated = (!remote || isRemoteAdminEnabled()) && authRepo.isValidAuthSession(readSessionToken(req), { remote });
   res.json({
     authenticated,
+    remoteLoginRequired: remote,
+    remoteAdminEnabled: remote ? isRemoteAdminEnabled() : undefined,
     // Unlike isLogin/hasRecoveryQuestion, this has to be readable before anyone is logged
     // in — it's what tells the login screen to show "create your account" instead.
-    needsSetup: !authRepo.hasOwner(),
+    needsSetup: !remote && !authRepo.hasOwner(),
     hasRecoveryQuestion: authenticated ? authRepo.hasRecoveryQuestion() : false,
   });
 });
@@ -91,9 +99,34 @@ authRouter.post("/change-password", requireAuth, sensitiveAccountLimiter, (req, 
   }
 
   // Changing the password signs out every device; keep the one that made the change signed in.
-  const { token, expiresAt } = authRepo.createAuthSession();
-  setSessionCookie(res, token, expiresAt, req.secure);
+  const remote = isTunnelRequest(req);
+  const { token, expiresAt } = authRepo.createAuthSession({ remote });
+  setSessionCookie(res, token, expiresAt, req.secure || remote);
   res.json({ ok: true });
+});
+
+authRouter.get("/remote-admin/status", requireAuth, requireLocalConsole, (_req, res) => {
+  res.json({ enabled: isRemoteAdminEnabled() });
+});
+
+authRouter.post("/remote-admin/begin", requireAuth, requireLocalConsole, sensitiveAccountLimiter, (req, res) => {
+  if (!authRepo.verifyHostPassword(req.body?.password)) return res.status(401).json({ error: "Incorrect password." });
+  res.json(beginRemoteAdminSetup());
+});
+
+authRouter.post("/remote-admin/confirm", requireAuth, requireLocalConsole, sensitiveAccountLimiter, (req, res) => {
+  if (!confirmRemoteAdminSetup(req.body?.code)) return res.status(400).json({ error: "Invalid or expired code. Start setup again." });
+  authRepo.deleteRemoteAuthSessions();
+  res.json({ enabled: true });
+});
+
+authRouter.post("/remote-admin/disable", requireAuth, requireLocalConsole, sensitiveAccountLimiter, (req, res) => {
+  if (!authRepo.verifyHostPassword(req.body?.password) || !verifyRemoteAdminCode(req.body?.code)) {
+    return res.status(401).json({ error: "Incorrect password or authenticator code." });
+  }
+  disableRemoteAdmin();
+  authRepo.deleteRemoteAuthSessions();
+  res.json({ enabled: false });
 });
 
 // Only from the host computer: the question is a hint toward the recovery answer, which is

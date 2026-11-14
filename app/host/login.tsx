@@ -85,8 +85,11 @@ export default function HostLogin() {
   const needsSetup = useAuthStore((s) => s.needsSetup);
   const needsServer = useAuthStore((s) => s.needsServer);
   const serverUrl = useAuthStore((s) => s.serverUrl);
+  const remoteLoginRequired = useAuthStore((s) => s.remoteLoginRequired);
+  const remoteAdminEnabled = useAuthStore((s) => s.remoteAdminEnabled);
   const { changeServer } = useAuthActions();
   const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
   const [fieldError, setFieldError] = useState<string | null>(null);
   const { show, toggle } = useReveal();
 
@@ -97,14 +100,15 @@ export default function HostLogin() {
 
   async function submit() {
     if (!password) return setFieldError("Password is required.");
+    if (remoteLoginRequired && !/^\d{6}$/.test(code)) return setFieldError("Enter the 6-digit authenticator code.");
     setFieldError(null);
-    if (await login(password)) router.replace("/dashboard");
+    if (await login(password, code)) router.replace("/dashboard");
   }
 
   return (
     <AuthCard
       title="Log in as host"
-      subtitle="Manage your forms, sessions, and results."
+      subtitle={remoteLoginRequired ? "Manage this server remotely with your password and authenticator code." : "Manage your forms, sessions, and results."}
       footer={
         <View style={{ gap: space[2] }}>
           <Text variant="small" tone="secondary">Answering a form instead? <AuthLink href="/respondent/login">Join as a respondent</AuthLink></Text>
@@ -113,9 +117,10 @@ export default function HostLogin() {
       }
     >
       <View style={{ gap: space[3] }}>
+        {remoteLoginRequired && !remoteAdminEnabled ? <Text tone="danger">Remote admin is off. Enable it in Settings on the host computer.</Text> : null}
         <PasswordField label="Server password" value={password} onChangeText={setPassword} show={show} onToggle={toggle} autoComplete="current-password" placeholder="Enter your password" error={fieldError ?? serverError} onSubmitEditing={submit} autoFocus />
-        <AuthLink href="/host/recover">Forgot password?</AuthLink>
-        <Button label="Log in" variant="primary" fullWidth loading={isSubmitting} onPress={submit} />
+        {remoteLoginRequired ? <TextField label="Authenticator code" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} autoComplete="one-time-code" onSubmitEditing={submit} /> : <AuthLink href="/host/recover">Forgot password?</AuthLink>}
+        <Button label="Log in" variant="primary" fullWidth loading={isSubmitting} disabled={remoteLoginRequired && !remoteAdminEnabled} onPress={submit} />
       </View>
     </AuthCard>
   );

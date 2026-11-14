@@ -3,6 +3,7 @@ import { db } from "../db/index.js";
 import { hashPassword, verifyPassword } from "./passwords.js";
 
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+const REMOTE_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 
 export const MIN_PASSWORD_LENGTH = 8;
 // scrypt cost is fixed per call, but there's no reason to accept megabytes of "password".
@@ -86,27 +87,32 @@ export function resetPasswordWithRecovery(answer, newPassword) {
 }
 
 const insertSessionStmt = db.prepare(
-  "INSERT INTO auth_sessions (token, created_at, expires_at) VALUES (?, ?, ?)"
+  "INSERT INTO auth_sessions (token, created_at, expires_at, remote_allowed) VALUES (?, ?, ?, ?)"
 );
 const selectSessionStmt = db.prepare("SELECT * FROM auth_sessions WHERE token = ?");
 const deleteSessionStmt = db.prepare("DELETE FROM auth_sessions WHERE token = ?");
 const deleteExpiredStmt = db.prepare("DELETE FROM auth_sessions WHERE expires_at < ?");
 const deleteAllSessionsStmt = db.prepare("DELETE FROM auth_sessions");
+const deleteRemoteSessionsStmt = db.prepare("DELETE FROM auth_sessions WHERE remote_allowed = 1");
 
-export function createAuthSession() {
+export function createAuthSession({ remote = false } = {}) {
   // 256 bits from the CSPRNG (randomUUID carries 122).
   const token = randomBytes(32).toString("base64url");
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + SESSION_TTL_MS);
-  insertSessionStmt.run(token, now.toISOString(), expiresAt.toISOString());
+  const expiresAt = new Date(now.getTime() + (remote ? REMOTE_SESSION_TTL_MS : SESSION_TTL_MS));
+  insertSessionStmt.run(token, now.toISOString(), expiresAt.toISOString(), remote ? 1 : 0);
   return { token, expiresAt };
 }
 
-export function isValidAuthSession(token) {
+export function isValidAuthSession(token, { remote = false } = {}) {
   if (!token) return false;
   deleteExpiredStmt.run(new Date().toISOString());
   const row = selectSessionStmt.get(token);
-  return !!row;
+  return !!row && (!remote || !!row.remote_allowed);
+}
+
+export function deleteRemoteAuthSessions() {
+  deleteRemoteSessionsStmt.run();
 }
 
 export function deleteAuthSession(token) {

@@ -29,6 +29,8 @@ const useAuthStore = create((set) => ({
   hostingOnPhone: false, // native app only: this phone runs its own server
   needsSetup: false, // true when no one has created an account on this server yet
   hasRecoveryQuestion: false,
+  remoteLoginRequired: false,
+  remoteAdminEnabled: false,
   error: null,
 
   // 2. Grouped Actions (Cleaner to import and call in components)
@@ -53,11 +55,13 @@ const useAuthStore = create((set) => ({
         set({ needsServer: false, serverUrl: getServerUrl() });
       }
       try {
-        const { authenticated, needsSetup, hasRecoveryQuestion } = await authApi.me();
+        const { authenticated, needsSetup, hasRecoveryQuestion, remoteLoginRequired, remoteAdminEnabled } = await authApi.me();
         set({
           isLogin: authenticated,
           needsSetup: !!needsSetup,
           hasRecoveryQuestion: !!hasRecoveryQuestion,
+          remoteLoginRequired: !!remoteLoginRequired,
+          remoteAdminEnabled: !!remoteAdminEnabled,
           isChecking: false,
         });
       } catch {
@@ -121,10 +125,10 @@ const useAuthStore = create((set) => ({
       }
     },
 
-    login: async (password) => {
+    login: async (password, code) => {
       set({ isSubmitting: true, error: null });
       try {
-        const { hasRecoveryQuestion, token } = await authApi.login(password);
+        const { hasRecoveryQuestion, token } = await authApi.login(password, code);
         if (isNativeClient) await setAuthToken(token ?? null);
         set({
           isLogin: true,

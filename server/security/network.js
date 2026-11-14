@@ -51,17 +51,6 @@ export function requireLocalConsole(req, res, next) {
   next();
 }
 
-// Host controls stay reachable from phones/tablets on the LAN, but never through the public
-// Remote Access link — that link exists for respondents, and exposing the host login to the whole
-// internet would turn the host password into the only thing standing between strangers and the
-// gradebook.
-export function blockTunnel(req, res, next) {
-  if (isTunnelRequest(req)) {
-    return res.status(403).json({ error: "Host controls aren't available over the Remote Access link." });
-  }
-  next();
-}
-
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 // CSRF defence for the cookie-authenticated routes. SameSite=Lax already stops cross-site POSTs,

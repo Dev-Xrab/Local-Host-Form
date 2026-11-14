@@ -24,7 +24,11 @@ async function request(path, options) {
 
 export const authApi = {
   setup: (password) => request("/api/auth/setup", { method: "POST", body: JSON.stringify({ password }) }),
-  login: (password) => request("/api/auth/login", { method: "POST", body: JSON.stringify({ password }) }),
+  login: (password, code) => request("/api/auth/login", { method: "POST", body: JSON.stringify({ password, code }) }),
+  remoteAdminStatus: () => request("/api/auth/remote-admin/status"),
+  beginRemoteAdmin: (password) => request("/api/auth/remote-admin/begin", { method: "POST", body: JSON.stringify({ password }) }),
+  confirmRemoteAdmin: (code) => request("/api/auth/remote-admin/confirm", { method: "POST", body: JSON.stringify({ code }) }),
+  disableRemoteAdmin: (password, code) => request("/api/auth/remote-admin/disable", { method: "POST", body: JSON.stringify({ password, code }) }),
   logout: () => request("/api/auth/logout", { method: "POST" }),
   me: () => request("/api/auth/me"),
   changePassword: (oldPassword, newPassword) =>
