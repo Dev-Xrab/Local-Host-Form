@@ -2,7 +2,7 @@
   "name": "self-host-form",
   "description": "Create and host classroom forms and assessments from your own device.",
   "private": true,
-  "version": "1.2.1",
+  "version": "1.2.2",
   "license": "SEE LICENSE IN LICENSE",
   "repository": {
     "type": "git",
