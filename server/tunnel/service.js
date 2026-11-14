@@ -37,6 +37,14 @@ export function startTunnel() {
     return getStatus();
   }
 
+  if (getAllowedEmails().length > 0) {
+    state = {
+      status: "error", url: null,
+      error: "Cloudflare's email-protected Quick Tunnel sign-in is currently failing. The saved email list was kept. Clear it only if you want a public link, or use a named tunnel with Cloudflare Access.",
+    };
+    return getStatus();
+  }
+
   const myGeneration = ++generation;
   state = { status: "installing", url: null, error: null };
 

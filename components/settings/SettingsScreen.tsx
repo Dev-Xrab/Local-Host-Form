@@ -70,6 +70,7 @@ function ServerSection() {
           description="Create a temporary public link so students can join from outside this network, with no router setup and no account. Powered by a Cloudflare Quick Tunnel: the link changes every time you start it, and stops working as soon as you stop it or close the app."
         >
           <View style={{ gap: space[2], alignItems: "flex-start" }}>
+            <Notice tone="danger">Cloudflare's email PIN flow for Quick Tunnels is currently failing at sign-in. Email-protected links are paused. Your saved email list will stay in place; clearing it makes the link public.</Notice>
             <View style={{ alignSelf: "stretch", maxWidth: 420 }}><TextField
               label="Require email PIN for public link"
               hint="Optional. Enter allowed email addresses separated by commas. Everyone opening the public link, including students, must verify an allowed email. Leave blank for a public link."
@@ -87,7 +88,7 @@ function ServerSection() {
             ) : tunnel.status === "error" ? (
               <Button label="Reset remote access" variant="secondary" loading={busy} onPress={() => run(tunnel.stop)} />
             ) : (
-              <Button label={tunnel.status === "installing" ? "Setting up…" : tunnel.status === "starting" ? "Connecting…" : "Start remote access"} icon={Globe} variant="primary" loading={busy || starting} disabled={accessDirty} onPress={() => run(tunnel.start)} />
+              <Button label={tunnel.status === "installing" ? "Setting up…" : tunnel.status === "starting" ? "Connecting…" : "Start remote access"} icon={Globe} variant="primary" loading={busy || starting} disabled={accessDirty || tunnel.allowedEmails.length > 0} onPress={() => run(tunnel.start)} />
             )}
             {accessDirty ? <Text variant="small" tone="secondary">Save the email list before starting remote access.</Text> : null}
             {tunnel.status === "connected" && tunnel.url ? <AddressBox value={tunnel.url} label="Copy link" /> : null}

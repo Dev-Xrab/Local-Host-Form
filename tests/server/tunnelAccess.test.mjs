@@ -21,6 +21,10 @@ test("only the host can configure Quick Tunnel email access", async () => {
     assert.equal((await device.api("PUT", "/api/tunnel/access", { allowedEmails: [" Teacher@Example.com ", "teacher@example.com"] })).status, 200);
     const status = await device.api("GET", "/api/tunnel/status");
     assert.deepEqual(status.data.allowedEmails, ["teacher@example.com"]);
+    const start = await device.api("POST", "/api/tunnel/start");
+    assert.equal(start.data.status, "error");
+    assert.equal(start.data.url, null);
+    assert.deepEqual(start.data.allowedEmails, ["teacher@example.com"]);
   } finally {
     device.stop();
   }
