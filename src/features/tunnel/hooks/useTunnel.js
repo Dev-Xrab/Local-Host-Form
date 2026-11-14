@@ -8,7 +8,7 @@ const IN_FLIGHT_STATUSES = new Set(["installing", "starting"]);
 // then poll only while something is actually in progress, so a settled state (connected, error,
 // idle) doesn't keep hitting the endpoint forever.
 export function useTunnel() {
-  const [state, setState] = useState({ status: "idle", url: null, error: null });
+  const [state, setState] = useState({ status: "idle", url: null, error: null, allowedEmails: [] });
   const [loading, setLoading] = useState(true);
   const pollRef = useRef(null);
 
@@ -53,11 +53,16 @@ export function useTunnel() {
     if (IN_FLIGHT_STATUSES.has(status.status)) startPolling();
   }, [startPolling]);
 
+  const saveAccess = useCallback(async (allowedEmails) => {
+    const status = await tunnelApi.saveAccess(allowedEmails);
+    setState(status);
+  }, []);
+
   const stop = useCallback(async () => {
     stopPolling();
     const status = await tunnelApi.stop();
     setState(status);
   }, [stopPolling]);
 
-  return { ...state, loading, start, stop };
+  return { ...state, loading, start, stop, saveAccess };
 }

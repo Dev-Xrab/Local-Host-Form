@@ -43,7 +43,13 @@ function ServerSection() {
   const hostingOnPhone = useAuthStore((s) => s.hostingOnPhone);
   const tunnel = useTunnel();
   const [busy, setBusy] = useState(false);
-  const run = async (fn: () => Promise<void>) => { setBusy(true); try { await fn(); } finally { setBusy(false); } };
+  const [allowedEmailInput, setAllowedEmailInput] = useState("");
+  const [accessError, setAccessError] = useState<string | null>(null);
+  useEffect(() => { setAllowedEmailInput(tunnel.allowedEmails.join(", ")); }, [tunnel.allowedEmails]);
+  const run = async (fn: () => Promise<void>) => { setBusy(true); setAccessError(null); try { await fn(); } catch (error) { setAccessError((error as Error).message); } finally { setBusy(false); } };
+  const enteredEmails = allowedEmailInput.split(/[\s,;]+/).filter(Boolean).map((email) => email.toLowerCase());
+  const accessDirty = JSON.stringify(enteredEmails) !== JSON.stringify(tunnel.allowedEmails);
+  const saveAccess = () => run(() => tunnel.saveAccess(enteredEmails));
   const starting = tunnel.status === "installing" || tunnel.status === "starting";
 
   return (
@@ -64,13 +70,29 @@ function ServerSection() {
           description="Create a temporary public link so students can join from outside this network, with no router setup and no account. Powered by a Cloudflare Quick Tunnel: the link changes every time you start it, and stops working as soon as you stop it or close the app."
         >
           <View style={{ gap: space[2], alignItems: "flex-start" }}>
+            <View style={{ alignSelf: "stretch", maxWidth: 420 }}><TextField
+              label="Require email PIN for public link"
+              hint="Optional. Enter allowed email addresses separated by commas. Everyone opening the public link, including students, must verify an allowed email. Leave blank for a public link."
+              value={allowedEmailInput}
+              onChangeText={setAllowedEmailInput}
+              editable={tunnel.status === "idle" && !busy}
+              autoCapitalize="none"
+              autoCorrect={false}
+              placeholder="teacher@example.com, student@example.com"
+            /></View>
+            <Button label="Save email access" variant="secondary" compact disabled={tunnel.status !== "idle" || busy || tunnel.loading || !accessDirty} onPress={saveAccess} />
+            {tunnel.status !== "idle" ? <Text variant="small" tone="tertiary">Stop remote access to change the email list.</Text> : null}
             {tunnel.status === "connected" ? (
               <Button label="Stop" variant="danger" loading={busy} onPress={() => run(tunnel.stop)} />
+            ) : tunnel.status === "error" ? (
+              <Button label="Reset remote access" variant="secondary" loading={busy} onPress={() => run(tunnel.stop)} />
             ) : (
-              <Button label={tunnel.status === "installing" ? "Setting up…" : tunnel.status === "starting" ? "Connecting…" : "Start remote access"} icon={Globe} variant="primary" loading={busy || starting} onPress={() => run(tunnel.start)} />
+              <Button label={tunnel.status === "installing" ? "Setting up…" : tunnel.status === "starting" ? "Connecting…" : "Start remote access"} icon={Globe} variant="primary" loading={busy || starting} disabled={accessDirty} onPress={() => run(tunnel.start)} />
             )}
+            {accessDirty ? <Text variant="small" tone="secondary">Save the email list before starting remote access.</Text> : null}
             {tunnel.status === "connected" && tunnel.url ? <AddressBox value={tunnel.url} label="Copy link" /> : null}
             {tunnel.status === "error" && tunnel.error ? <Text variant="small" tone="danger">{tunnel.error}</Text> : null}
+            {accessError ? <Text variant="small" tone="danger">{accessError}</Text> : null}
           </View>
         </SettingRow>
         )}

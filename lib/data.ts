@@ -17,8 +17,10 @@ export interface TunnelState {
   url: string | null;
   error: string | null;
   loading: boolean;
+  allowedEmails: string[];
   start: () => Promise<void>;
   stop: () => Promise<void>;
+  saveAccess: (allowedEmails: string[]) => Promise<void>;
 }
 export const useTunnel = () => useTunnelJs() as unknown as TunnelState;
 

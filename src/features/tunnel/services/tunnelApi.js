@@ -25,6 +25,7 @@ async function request(path, options) {
 
 export const tunnelApi = {
   status: () => request("/status"),
+  saveAccess: (allowedEmails) => request("/access", { method: "PUT", body: JSON.stringify({ allowedEmails }) }),
   start: () => request("/start", { method: "POST" }),
   stop: () => request("/stop", { method: "POST" }),
 };

@@ -6,6 +6,7 @@ import { execFileSync } from "node:child_process";
 // this is plain server-side Node, not React, so the collision is cosmetic only.
 import { Tunnel, install, use as setCloudflaredBin } from "cloudflared";
 import { dataDir } from "../db/index.js";
+import { getAllowedEmails } from "./settings.js";
 
 const PORT = process.env.PORT || 5174;
 
@@ -25,7 +26,7 @@ let tunnel = null;
 let generation = 0;
 
 export function getStatus() {
-  return { ...state };
+  return { ...state, allowedEmails: getAllowedEmails() };
 }
 
 // Fire-and-forget by design: the caller (the /start route) returns immediately with whatever
@@ -49,7 +50,8 @@ export function startTunnel() {
       setCloudflaredBin(binPath);
       state = { status: "starting", url: null, error: null };
 
-      const myTunnel = Tunnel.quick(`http://localhost:${PORT}`);
+      const allowedEmails = getAllowedEmails();
+      const myTunnel = Tunnel.quick(`http://localhost:${PORT}`, allowedEmails.length ? { "--allowed-mail": allowedEmails.join(",") } : {});
       tunnel = myTunnel;
 
       myTunnel.once("url", (url) => {
