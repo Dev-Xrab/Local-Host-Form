@@ -6,12 +6,16 @@ name: Build macOS
 # or by pushing a version tag.
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to attach the build to (e.g. v1.2.2). Leave empty to only keep it as a workflow artifact."
+        required: false
   push:
     tags:
       - "v*.*.*"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-mac:
@@ -52,7 +56,7 @@ jobs:
       # the user right-clicks > Open. Add those secrets later to sign + notarize for real
       # distribution.
       - name: Build macOS app
-        run: npx electron-builder --mac
+        run: npx electron-builder --mac --universal
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
@@ -64,3 +68,11 @@ jobs:
             release/*.dmg
             release/*.zip
           if-no-files-found: error
+
+      # Attach to the GitHub release under fixed names (Self-Host-Form-mac.dmg / .zip) so the
+      # website's releases/latest/download/... links keep working across versions.
+      - name: Upload to release
+        if: github.event_name == 'push' || inputs.tag != ''
+        run: gh release upload "${{ inputs.tag || github.ref_name }}" release/Self-Host-Form-mac.dmg release/Self-Host-Form-mac.zip --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
