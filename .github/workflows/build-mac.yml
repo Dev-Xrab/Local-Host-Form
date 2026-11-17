@@ -61,7 +61,7 @@ jobs:
       # the user right-clicks > Open. Add those secrets later to sign + notarize for real
       # distribution.
       - name: Build macOS app
-        run: npx electron-builder --mac --universal
+        run: npx electron-builder --mac --universal --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
