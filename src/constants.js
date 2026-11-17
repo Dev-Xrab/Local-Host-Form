@@ -20,4 +20,9 @@ export const ANDROID_DOWNLOAD_URL =
 export const LINUX_DOWNLOAD_URL =
   "https://github.com/Dev-Xrab/Local-Host-Form/releases/latest/download/Self-Host-Form-linux-x64.tar.gz";
 
+// macOS build (universal: Intel + Apple Silicon). Produced by the Build macOS workflow,
+// which uploads it to the release as Self-Host-Form-mac.dmg.
+export const MAC_DOWNLOAD_URL =
+  "https://github.com/Dev-Xrab/Local-Host-Form/releases/latest/download/Self-Host-Form-mac.dmg";
+
 export const RELEASE_VERSION = "v1.2.2";

@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
 import { Icons } from "./icons";
-import { ANDROID_DOWNLOAD_URL, LINUX_DOWNLOAD_URL, RELEASE_VERSION, WINDOWS_DOWNLOAD_URL } from "../constants";
+import { ANDROID_DOWNLOAD_URL, LINUX_DOWNLOAD_URL, MAC_DOWNLOAD_URL, RELEASE_VERSION, WINDOWS_DOWNLOAD_URL } from "../constants";
 import { SectionHead, ease } from "./ui/Section";
 
 const CARDS = [
@@ -30,6 +30,20 @@ const CARDS = [
       "Extract the archive and run the self-host-form binary. No installation needed.",
       "Starts its own local server. Respondents join from any browser on your network.",
       "For 64-bit (x64) desktops. If the app won't start, run it with --no-sandbox.",
+    ],
+  },
+  {
+    id: "mac",
+    icon: "monitor",
+    title: "macOS",
+    badge: "New",
+    meta: "DMG · Intel and Apple Silicon",
+    href: MAC_DOWNLOAD_URL,
+    cta: "Download for macOS",
+    points: [
+      "Starts its own local server. Respondents join from any browser on your network.",
+      "Not signed or notarized yet, so macOS will block the first launch. Right-click the app, choose Open, then Open again.",
+      "If macOS says the app is damaged, run xattr -cr \"/Applications/Self Host Form.app\" in Terminal.",
     ],
   },
   {
@@ -95,7 +109,7 @@ export default function Download() {
         </div>
 
         <p className="download-foot">
-macOS is not available as a download yet.
+The macOS and Linux builds are new and have had less testing than Windows.
         </p>
       </div>
     </section>

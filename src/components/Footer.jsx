@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Icons } from "./icons";
 import { NAV_LINKS } from "../content";
-import { ANDROID_DOWNLOAD_URL, LINUX_DOWNLOAD_URL, WINDOWS_DOWNLOAD_URL } from "../constants";
+import { ANDROID_DOWNLOAD_URL, LINUX_DOWNLOAD_URL, MAC_DOWNLOAD_URL, WINDOWS_DOWNLOAD_URL } from "../constants";
 import SupportModal from "./Support/SupportModal";
 
 export default function Footer({ base = "" }) {
@@ -40,6 +40,11 @@ export default function Footer({ base = "" }) {
               <li>
                 <a href={WINDOWS_DOWNLOAD_URL} download>
                   Download for Windows
+                </a>
+              </li>
+              <li>
+                <a href={MAC_DOWNLOAD_URL} download>
+                  Download for macOS
                 </a>
               </li>
               <li>
