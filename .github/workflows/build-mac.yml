@@ -13,6 +13,11 @@ on:
   push:
     tags:
       - "v*.*.*"
+    # The repo's default branch (main) is docs-only; the app source lives on drive-sync.
+    branches:
+      - drive-sync
+    paths:
+      - ".github/workflows/build-mac.yml"
 
 permissions:
   contents: write
@@ -72,7 +77,12 @@ jobs:
       # Attach to the GitHub release under fixed names (Self-Host-Form-mac.dmg / .zip) so the
       # website's releases/latest/download/... links keep working across versions.
       - name: Upload to release
-        if: github.event_name == 'push' || inputs.tag != ''
-        run: gh release upload "${{ inputs.tag || github.ref_name }}" release/Self-Host-Form-mac.dmg release/Self-Host-Form-mac.zip --clobber
+        id: rel
+        run: |
+          if [ -n "${{ inputs.tag }}" ]; then TAG="${{ inputs.tag }}"
+          elif [ "${{ github.ref_type }}" = "tag" ]; then TAG="${{ github.ref_name }}"
+          else TAG="v$(node -p "require('./package.json').version")"; fi
+          echo "Uploading to release $TAG"
+          gh release upload "$TAG" release/Self-Host-Form-mac.dmg release/Self-Host-Form-mac.zip --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
