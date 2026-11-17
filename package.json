@@ -110,6 +110,15 @@
       "icon": "build/icon.png",
       "category": "public.app-category.productivity"
     },
+    "linux": {
+      "target": [
+        "AppImage",
+        "tar.gz"
+      ],
+      "icon": "build/icon.png",
+      "category": "Education",
+      "artifactName": "Self-Host-Form-${version}-${arch}.${ext}"
+    },
     "extraMetadata": {
       "main": "electron/main.js"
     }
