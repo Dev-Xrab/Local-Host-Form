@@ -163,7 +163,7 @@ export const FEATURES = [
 ];
 
 export const WHY = [
-  { icon: "monitor", title: "Runs on your computer", text: "Install it on a Windows PC and it starts its own local server. Nothing to sign up for and nothing to subscribe to." },
+  { icon: "monitor", title: "Runs on your computer", text: "Install it on a Windows PC or run it on Linux and it starts its own local server. Nothing to sign up for and nothing to subscribe to." },
   { icon: "database", title: "Data stays with you", text: "Forms and responses are stored in a local database on the host machine, not on a vendor's servers." },
   { icon: "wifiOff", title: "Works without internet", text: "Run a whole session over your office, venue or classroom Wi-Fi, even when the internet connection is down." },
 ];
@@ -215,7 +215,7 @@ export const FAQS = [
   { q: "What can I use it for?", a: "Anything that collects answers from people in the same place or on the same network: quizzes and tests, surveys, event RSVPs and registrations, feedback forms, applications, sign-up sheets and internal polls." },
   { q: "Is it free?", a: "It's free to run for personal, educational and internal institutional use. The source is available to read, but it isn't open source. You can't redistribute or sell it, offer it as a hosted service, or use it commercially without permission." },
   { q: "Is it similar to Google Forms?", a: "The basics are the same: build a form, share it, collect responses. The differences are that it runs on your own computer, works over a local network without internet, and is built around live sessions with join codes, time limits, grading and test controls." },
-  { q: "Which platforms does it run on?", a: "The installer is for Windows. Respondents can answer from any device with a modern browser. There is also an experimental Android build that can host from a phone, with some limits: no public link, and the app must stay open during a session." },
+  { q: "Which platforms does it run on?", a: "There is a Windows installer and a Linux (x64) archive. Respondents can answer from any device with a modern browser. There is also an experimental Android build that can host from a phone, with some limits: no public link, and the app must stay open during a session." },
   { q: "Where is my data stored?", a: "In a local SQLite database on the computer running the app. Nothing is sent to a cloud service unless you choose to connect a Google account." },
   { q: "Do respondents need an account?", a: "No. They open the link, scan the QR code or type the session code, enter a name, email or N/A, and answer. Only the host needs a password." },
   { q: "What question types are supported?", a: "Short answer, paragraph, multiple choice, checkboxes, dropdown, linear scale, date, time, file upload, multiple choice grid and checkbox grid, plus section breaks. There are also 16 templates for common forms." },

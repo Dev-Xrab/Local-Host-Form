@@ -15,4 +15,9 @@ export const WINDOWS_DOWNLOAD_URL =
 export const ANDROID_DOWNLOAD_URL =
   "https://github.com/Dev-Xrab/Local-Host-Form/releases/latest/download/Self-Host-Form.apk";
 
-export const RELEASE_VERSION = "v1.2.1";
+// Linux build: upload release/Self-Host-Form-<version>-x64.tar.gz to the latest
+// release renamed to Self-Host-Form-linux-x64.tar.gz so this link follows it.
+export const LINUX_DOWNLOAD_URL =
+  "https://github.com/Dev-Xrab/Local-Host-Form/releases/latest/download/Self-Host-Form-linux-x64.tar.gz";
+
+export const RELEASE_VERSION = "v1.2.2";

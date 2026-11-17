@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
 import { Icons } from "./icons";
-import { ANDROID_DOWNLOAD_URL, RELEASE_VERSION, WINDOWS_DOWNLOAD_URL } from "../constants";
+import { ANDROID_DOWNLOAD_URL, LINUX_DOWNLOAD_URL, RELEASE_VERSION, WINDOWS_DOWNLOAD_URL } from "../constants";
 import { SectionHead, ease } from "./ui/Section";
 
 const CARDS = [
@@ -16,6 +16,20 @@ const CARDS = [
       "Starts its own local server. Respondents join from any browser on your network.",
       "Includes the one-click public link for remote respondents.",
       "Not code-signed yet, so SmartScreen may warn. Choose More info, then Run anyway.",
+    ],
+  },
+  {
+    id: "linux",
+    icon: "monitor",
+    title: "Linux",
+    badge: "New",
+    meta: "tar.gz · 115 MB · x64",
+    href: LINUX_DOWNLOAD_URL,
+    cta: "Download for Linux",
+    points: [
+      "Extract the archive and run the self-host-form binary. No installation needed.",
+      "Starts its own local server. Respondents join from any browser on your network.",
+      "For 64-bit (x64) desktops. If the app won't start, run it with --no-sandbox.",
     ],
   },
   {
@@ -81,7 +95,7 @@ export default function Download() {
         </div>
 
         <p className="download-foot">
-Other platforms are not available as downloads yet.
+macOS is not available as a download yet.
         </p>
       </div>
     </section>
