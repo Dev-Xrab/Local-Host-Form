@@ -28,7 +28,8 @@
     "pack:web-ui": "node scripts/pack-web-ui.mjs",
     "inject:oauth": "node scripts/inject-oauth-client.mjs",
     "test:phone": "node mobile-server/test/ci.mjs",
-    "test:drive": "node --test \"tests/server/*.test.mjs\""
+    "test:drive": "node --test \"tests/server/*.test.mjs\"",
+    "release": "node scripts/release.mjs"
   },
   "dependencies": {
     "cloudflared": "^0.7.3",
