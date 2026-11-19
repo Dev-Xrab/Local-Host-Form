@@ -157,7 +157,7 @@ cloudRouter.post("/forms/:id/publish", requireAuth, requireCloudAccount, async (
 
 // Automatic saving of forms and responses to Drive (see autosave.js).
 cloudRouter.get("/auto-save", requireAuth, (req, res) => {
-  res.json({ enabled: isAutoSaveEnabled() });
+  res.json({ enabled: isAutoSaveEnabled(), error: getLastAutoSaveError()?.message || null });
 });
 
 cloudRouter.put("/auto-save", requireAuth, (req, res) => {

@@ -50,7 +50,7 @@ export function Tabs<T extends string>({ options, value, onChange }: { options: 
 
 const styles = StyleSheet.create({
   track: { flexDirection: "row", alignSelf: "flex-start", gap: space[1], flexWrap: "wrap" },
-  segment: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: space[3], minHeight: 30, borderRadius: radius.md },
+  segment: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: space[3], minHeight: 40, borderRadius: radius.md },
   tabs: { flexGrow: 0, borderBottomWidth: 1 },
   tab: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 40, borderBottomWidth: 2, marginBottom: -1 },
 });

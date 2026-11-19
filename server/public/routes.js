@@ -8,8 +8,10 @@ import {
   scoreResponse,
   buildAnswerReview,
   buildRespondentSummary,
+  isQuizForm,
 } from "../responses/grading.js";
 import { validateAnswers } from "../responses/validateAnswers.js";
+import { questionsOnPath } from "../responses/sectionFlow.js";
 import { scheduleAutoSync } from "../cloud/autosave.js";
 import {
   joinLimiter,
@@ -22,6 +24,8 @@ import {
 export const publicRouter = Router();
 
 const MAX_NAME_LENGTH = 100;
+const MAX_EMAIL_LENGTH = 254;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_CODE_LENGTH = 64;
 // Also matches the older "device-<timestamp>-<hex>" fallback ids already stored on some devices.
 const DEVICE_ID_PATTERN = /^[A-Za-z0-9_-]{8,128}$/;
@@ -68,14 +72,18 @@ function stripAnswerKeys(form) {
   };
 }
 
-function sessionSummary(session) {
+// The form can switch editing on for all of its sessions (Settings > Responses), on top of the
+// per-session switch.
+const editableFor = (session, form) => !!(session.responsesEditable || form?.settings?.allowResponseEditing);
+
+function sessionSummary(session, form) {
   return {
     id: session.id,
     name: session.name,
     code: session.code,
     status: session.status,
     durationMinutes: session.durationMinutes,
-    responsesEditable: session.responsesEditable,
+    responsesEditable: editableFor(session, form),
     refocusLockSeconds: session.refocusLockSeconds,
     fullscreenEnabled: session.fullscreenEnabled,
   };
@@ -83,8 +91,8 @@ function sessionSummary(session) {
 
 // Editing a submitted answer is only ever allowed while the host still has the session
 // open — ending it locks answers in place even if the "editable" toggle was left on.
-function canEditResponses(session) {
-  return session.responsesEditable && session.status === "active";
+function canEditResponses(session, form) {
+  return editableFor(session, form) && session.status === "active";
 }
 
 // Deadlines and host stops are enforced by the server, including for auto-submit requests.
@@ -99,11 +107,27 @@ function answerableQuestionsOf(form) {
   return form.questions.filter((q) => q.type !== "section" && !q.removedAt);
 }
 
+// With section links, which sections a respondent reached depends on their answers; a section the
+// answers skipped is neither required nor scored. Without links this is every answerable question.
+function reachedQuestionsOf(form, answers) {
+  return questionsOnPath(form.questions.filter((q) => !q.removedAt), answers);
+}
+
+// An answer in progress always reads the form its session currently runs. A response reopened for
+// editing, or one that predates a form edit, would otherwise keep showing (and being validated
+// against) the older definition it was first pinned to.
+function followSession(response, session) {
+  if (response.status === "in_progress" && session?.formSnapshotId && response.formSnapshotId !== session.formSnapshotId) {
+    return responsesRepo.setResponseSnapshot(response.id, session.formSnapshotId) || response;
+  }
+  return response;
+}
+
 function joinedPayload(session, response, form) {
   const base = {
     responseId: response.id,
     status: response.status,
-    session: sessionSummary(session),
+    session: sessionSummary(session, form),
     deadlineAt: response.deadlineAt,
     // Present (and possibly still in the future) even across a reload — see
     // POST /responses/:id/refocus-lock — so the tab-refocus countdown can't be skipped by
@@ -115,15 +139,27 @@ function joinedPayload(session, response, form) {
     // Included so a device reopening this response for editing (possibly not the device
     // that originally answered — see the edit-code flow below) can prefill what was already
     // there instead of starting blank; a brand-new in_progress response just has none yet.
-    return { ...base, form: stripAnswerKeys(form), answers: response.answers };
+    // `definitionId` lets a respondent's page notice that the host has since edited the form.
+    return { ...base, form: stripAnswerKeys(form), answers: response.answers, definitionId: response.formSnapshotId };
   }
 
-  const answerable = answerableQuestionsOf(form);
+  const answerable = reachedQuestionsOf(form, response.answers || {});
+  const settings = form.settings;
+  // Scores and feedback exist only for quizzes; each kind of feedback is released separately.
+  const quiz = isQuizForm(form);
+  const wantsReview = quiz && (settings.revealCorrectAnswers || settings.showMissedQuestions || settings.showPointValues);
   return {
     ...base,
-    score: form.settings.showScoreImmediately ? response.score : null,
-    maxScore: form.settings.showScoreImmediately ? response.maxScore : null,
-    review: form.settings.revealCorrectAnswers ? buildAnswerReview(answerable, response.answers) : null,
+    score: quiz && settings.showScoreImmediately ? response.score : null,
+    maxScore: quiz && settings.showScoreImmediately ? response.maxScore : null,
+    review: wantsReview
+      ? buildAnswerReview(answerable, response.answers, { showCorrect: !!settings.revealCorrectAnswers, showMissed: !!settings.showMissedQuestions, showPoints: !!settings.showPointValues })
+      : null,
+    // What the finished screen offers (see components/respond/RespondViews.tsx).
+    confirmationMessage: settings.confirmationMessage || "",
+    showSubmitAnother: !!settings.showSubmitAnother && !!settings.allowMultipleResponses,
+    allowDownloadCopy: settings.allowDownloadCopy !== false,
+    respondentEmail: response.respondentEmail || "",
     answers: buildRespondentSummary(answerable, response.answers, {
       includeChoices: form.settings.downloadIncludesChoices,
     }),
@@ -151,7 +187,8 @@ publicRouter.get("/sessions/:code", (req, res) => {
 
   const form = formForSession(session);
   res.json({
-    ...sessionSummary(session),
+    ...sessionSummary(session, form),
+    collectEmail: !!form.settings.collectEmail,
     formTitle: form.title,
     formDescription: form.description,
     // Needed before the respondent has joined (the form itself isn't sent until then).
@@ -174,7 +211,7 @@ publicRouter.post("/sessions/:code/join", joinLimiter, limitEditCodeAttempts, (r
   if (isPlaceholderCode(session.code)) return res.status(400).json({ error: NOT_JOINABLE_MESSAGE });
 
   const form = formForSession(session);
-  const { name, deviceId, editCode } = req.body || {};
+  const { name, deviceId, editCode, email } = req.body || {};
 
   if (!isValidDeviceId(deviceId)) {
     return res.status(400).json({ error: "This device couldn't be identified. Reload the page and try again." });
@@ -187,7 +224,7 @@ publicRouter.post("/sessions/:code/join", joinLimiter, limitEditCodeAttempts, (r
     if (typeof editCode !== "string" || editCode.length > 32) {
       return res.status(400).json({ error: "That edit code isn't valid." });
     }
-    if (!canEditResponses(session)) {
+    if (!canEditResponses(session, form)) {
       return res.status(403).json({ error: "Editing isn't currently allowed for this session." });
     }
     if (isEditCodeLockedForSession(session.id)) {
@@ -198,7 +235,7 @@ publicRouter.post("/sessions/:code/join", joinLimiter, limitEditCodeAttempts, (r
       recordEditCodeFailure(session.id);
       return res.status(404).json({ error: "That edit code doesn't match any response in this session." });
     }
-    const reopened = responsesRepo.reopenResponseForEditing(existing.id, deviceId);
+    const reopened = followSession(responsesRepo.reopenResponseForEditing(existing.id, deviceId), session);
     return res.json(joinedPayload(session, reopened, form));
   }
 
@@ -209,7 +246,7 @@ publicRouter.post("/sessions/:code/join", joinLimiter, limitEditCodeAttempts, (r
   if (!form.settings.allowMultipleResponses) {
     const existing = responsesRepo.findExistingResponse(session.id, deviceId);
     if (existing) {
-      return res.json(joinedPayload(session, existing, form));
+      return res.json(joinedPayload(session, followSession(existing, session), form));
     }
   }
 
@@ -225,6 +262,13 @@ publicRouter.post("/sessions/:code/join", joinLimiter, limitEditCodeAttempts, (r
   if (name.trim().length > MAX_NAME_LENGTH) {
     return res.status(400).json({ error: `Your name must be ${MAX_NAME_LENGTH} characters or fewer.` });
   }
+  const cleanEmail = typeof email === "string" ? email.trim() : "";
+  if (form.settings.collectEmail) {
+    if (!cleanEmail) return res.status(400).json({ error: "Your email address is required to join." });
+    if (cleanEmail.length > MAX_EMAIL_LENGTH || !EMAIL_PATTERN.test(cleanEmail)) {
+      return res.status(400).json({ error: "Enter a valid email address." });
+    }
+  }
   if (session.respondentCount >= MAX_RESPONSES_PER_SESSION) {
     return res.status(409).json({ error: "This session has reached its maximum number of respondents." });
   }
@@ -234,6 +278,7 @@ publicRouter.post("/sessions/:code/join", joinLimiter, limitEditCodeAttempts, (r
     sessionId: session.id,
     deviceId,
     respondentName: name.trim(),
+    respondentEmail: form.settings.collectEmail ? cleanEmail : "",
     durationMinutes: session.durationMinutes,
     formSnapshotId: session.formSnapshotId,
   });
@@ -251,8 +296,9 @@ publicRouter.get("/responses/:id", (req, res) => {
   }
 
   const session = sessionsRepo.getSession(response.sessionId);
-  const form = formForResponse(response);
-  res.json(joinedPayload(session, response, form));
+  const current = followSession(response, session);
+  const form = formForResponse(current);
+  res.json(joinedPayload(session, current, form));
 });
 
 // Same-device edit: the respondent is looking at their own "done" screen right after
@@ -269,12 +315,12 @@ publicRouter.post("/responses/:id/edit", (req, res) => {
   }
 
   const session = sessionsRepo.getSession(response.sessionId);
-  if (!canEditResponses(session)) {
+  if (!canEditResponses(session, formForResponse(response))) {
     return res.status(403).json({ error: "Editing isn't currently allowed for this session." });
   }
 
-  const form = formForResponse(response);
-  const reopened = responsesRepo.reopenResponseForEditing(response.id);
+  const reopened = followSession(responsesRepo.reopenResponseForEditing(response.id), session);
+  const form = formForResponse(reopened);
   res.json(joinedPayload(session, reopened, form));
 });
 
@@ -319,13 +365,14 @@ publicRouter.post("/responses/:id/submit", (req, res) => {
     return res.status(400).json({ error: "Your time is up — this response can no longer be submitted." });
   }
 
-  const form = formForResponse(response);
+  const form = formForResponse(followSession(response, session));
   const { answers, timedOut } = req.body || {};
   if (!answers || typeof answers !== "object" || Array.isArray(answers)) {
     return res.status(400).json({ error: "answers must be an object" });
   }
 
   const answerableQuestions = answerableQuestionsOf(form);
+  const reachedQuestions = reachedQuestionsOf(form, answers);
   const answerError = validateAnswers(answerableQuestions, answers);
   if (answerError) return res.status(400).json({ error: answerError });
 
@@ -337,7 +384,7 @@ publicRouter.post("/responses/:id/submit", (req, res) => {
   const serverTimedOut = (response.deadlineAt && Date.now() >= new Date(response.deadlineAt).getTime())
     || session.status === "ended";
   if (!timedOut || !serverTimedOut) {
-    const missing = findMissingRequiredQuestions(answerableQuestions, answers);
+    const missing = findMissingRequiredQuestions(reachedQuestions, answers);
     if (missing.length > 0) {
       return res.status(400).json({
         error: "Some required questions are missing an answer.",
@@ -346,11 +393,11 @@ publicRouter.post("/responses/:id/submit", (req, res) => {
     }
   }
 
-  const validIds = new Set(answerableQuestions.map((q) => q.id));
+  const validIds = new Set(reachedQuestions.map((q) => q.id));
   const cleanedAnswers = Object.fromEntries(
     Object.entries(answers).filter(([id]) => validIds.has(id))
   );
-  const { score, maxScore } = scoreResponse(answerableQuestions, cleanedAnswers);
+  const { score, maxScore } = isQuizForm(form) ? scoreResponse(reachedQuestions, cleanedAnswers) : { score: null, maxScore: null };
 
   const saved = responsesRepo.submitResponse(response.id, {
     answers: cleanedAnswers,

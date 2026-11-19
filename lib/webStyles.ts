@@ -26,7 +26,7 @@ export function installWebStyles() {
 export function syncWebTheme(dark: boolean, background: string) {
   if (Platform.OS !== "web" || typeof document === "undefined") return;
   const root = document.documentElement;
-  if (dark) root.removeAttribute("data-theme"); else root.setAttribute("data-theme", "light");
+  root.setAttribute("data-theme", dark ? "dark" : "light");
   root.style.colorScheme = dark ? "dark" : "light";
   document.body.style.backgroundColor = background;
 }

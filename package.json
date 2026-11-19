@@ -2,7 +2,7 @@
   "name": "self-host-form",
   "description": "Create and host classroom forms and assessments from your own device.",
   "private": true,
-  "version": "1.2.2",
+  "version": "1.3.0",
   "license": "SEE LICENSE IN LICENSE",
   "repository": {
     "type": "git",
@@ -16,6 +16,7 @@
   "scripts": {
     "dev": "expo start --web",
     "server": "node --watch server/index.js",
+    "dev:watch": "node scripts/dev-watch.js",
     "cloud-server": "node --watch --env-file=cloud-server/.env cloud-server/index.js",
     "build": "expo export -p web --output-dir dist",
     "start": "node server/index.js",

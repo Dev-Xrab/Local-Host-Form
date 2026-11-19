@@ -26,6 +26,8 @@ async function request(path, options) {
 
 export const formsApi = {
   list: () => request(BASE),
+  getDefaults: () => request(`${BASE}/defaults`),
+  setDefaults: (data) => request(`${BASE}/defaults`, { method: "PUT", body: JSON.stringify(data) }),
   get: (id) => request(`${BASE}/${id}`),
   create: (data) => request(BASE, { method: "POST", body: JSON.stringify(data) }),
   import: (data) => request(`${BASE}/import`, { method: "POST", body: JSON.stringify(data) }),

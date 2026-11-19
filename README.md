@@ -1,23 +1,23 @@
-# Self Host Form
+# Self-Host Form
 
-A desktop app for teachers to build forms, quizzes, and exams and host them from their own computer. Students answer in a browser on the same network, or over a public link through a Cloudflare tunnel. Responses stay on the host machine by default.
+A self-hosted desktop and web app for building forms, running live sessions and reviewing responses. Participants answer in a browser on the same network, or over an optional public link through a Cloudflare tunnel. Responses stay on the host device by default.
 
 ## Who it is for
 
-Teachers and schools that want to run quizzes and exams **without sending student data to a third-party cloud**, or in rooms where the internet is slow or unreliable. Students only need a browser and the same Wi-Fi (or a public link). If you just need a quick survey and don't care where the data lives, Google Forms is simpler.
+Organizers who need to collect responses **without sending data to a third-party cloud**. The app can support assessments, surveys, feedback, registration and research across many fields. Participants need only a browser and access to the host's network, or a public link when the host enables one.
 
-## Before an exam
+## Before a live session
 
 - The host computer must stay on. The desktop app blocks system sleep while it is open, but keep the laptop plugged in and connected to Wi-Fi.
 - Do a trial run with a few devices on the same network first.
-- Exam integrity tools (fullscreen gate, refocus lock) **discourage casual cheating; they cannot prevent it**. A browser cannot fully lock down a student's device, so supervise in person for high-stakes exams.
+- Session controls such as fullscreen and refocus lock can support a focused assessment, but a browser cannot fully lock down a participant's device. Use appropriate supervision for high-stakes work.
 
 ## Features
 
 - **Form builder** with many question types, including matrix questions, file uploads, and templates
-- **Subjects, rosters, and sessions** to organize classes and track who answered
+- **Folders, participant lists and sessions** to organize forms and track responses
 - **Automatic grading** and response analytics
-- **Exam integrity tools**: fullscreen gate, refocus lock, and connection overlays for respondents
+- **Session controls**: fullscreen gate, refocus lock, and connection overlays for respondents
 - **Exports** to Excel, PDF, and ZIP
 - **Public links** through a built-in Cloudflare tunnel, with no port forwarding needed
 - **Optional Google Drive sync**: forms and responses are stored in a private app folder in the user's own Drive, with no server of ours in between
@@ -98,9 +98,9 @@ For the current production-readiness findings and open release blockers, see [th
 
 ### Hosting on a phone (Android) — experimental
 
-> **Experimental.** Phone hosting has not been tested on real devices or with a full class. Use the desktop app for anything important.
+> **Experimental.** Phone hosting has not been tested on real devices or with a full participant group. Use the desktop app for important sessions.
 
-The mobile app can be the host, the same way the desktop app is: it runs the real server code (`server/`) inside the app, stores everything on the phone, serves the web UI to students on the same Wi-Fi, and syncs to your Google Drive when it's online. Choose **Host on this phone** the first time you open the app, or **connect to a host computer** to use a desktop as the host.
+The mobile app can be the host, the same way the desktop app is: it runs the real server code (`server/`) inside the app, stores everything on the phone, serves the web UI to participants on the same network, and syncs to your Google Drive when it's online. Choose **Host on this phone** the first time you open the app, or **connect to a host computer** to use a desktop as the host.
 
 How it works (no code is duplicated; `mobile-server/` only supplies what Node provides on desktop):
 - `server/createApp.js` builds the Express app; both `server/index.js` (desktop) and the phone call it.
@@ -112,7 +112,7 @@ How it works (no code is duplicated; `mobile-server/` only supplies what Node pr
 Build and run on a phone: `npm run build && npm run pack:web-ui`, then `npx expo run:android` (a phone with USB debugging, or an emulator). Tests: `npm run test:phone` runs the API smoke test and the HTTP edge-case suite against the phone runtime in Node.
 
 **Phone hosting limits**
-- Remote access through the Cloudflare tunnel is desktop-only. Students must be on the same Wi-Fi as the phone.
+- Remote access through the Cloudflare tunnel is desktop-only. Participants must be on the same network as the phone.
 - Keep the app open during a session. Android keeps it running in the background with a notification; iOS suspends background apps, so on iOS the app must stay in the foreground.
 - Signing in with Google opens your phone's browser and returns to the app's own server on the phone.
 - Logging in is slower on a phone (password hashing runs in JavaScript).
@@ -130,4 +130,4 @@ To report a security vulnerability, see [SECURITY.md](SECURITY.md). Please don't
 
 ## License
 
-This project is **source-available, not open source.** You can view the code, run it for personal or school use, and change it to send us contributions. You may **not** redistribute or sell it, or modified versions of it, without permission. See [LICENSE](LICENSE) for the full terms.
+This project is **source-available, not open source.** You can view the code and use it under the terms in [LICENSE](LICENSE), and change it to send us contributions. You may **not** redistribute or sell it, or modified versions of it, without permission.

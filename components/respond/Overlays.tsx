@@ -23,7 +23,7 @@ export function ConnectionOverlay() {
     <Cover label="Connection lost">
       <ActivityIndicator />
       <Text variant="title">Connection lost</Text>
-      <Text tone="secondary" align="center">Can't reach the server. Stay on this page: your answers are kept, and this screen clears on its own as soon as you're back online.</Text>
+      <Text tone="secondary" align="center">Can't reach the host server. Stay on this page. Your answers remain on this device, and this screen clears when the connection returns. Your time limit continues.</Text>
     </Cover>
   );
 }

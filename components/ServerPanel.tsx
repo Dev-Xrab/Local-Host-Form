@@ -27,7 +27,7 @@ function AddressRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** Where students connect, as one horizontal strip: status + addresses, QR, live counts. */
+/** Where participants connect: status, addresses, QR and live counts. */
 export function ServerPanel(_: { running?: number; connected?: number }) {
   const { colors } = useTheme();
   const { isDesktop } = useLayout();
@@ -36,7 +36,7 @@ export function ServerPanel(_: { running?: number; connected?: number }) {
   const [qrOpen, setQrOpen] = useState(false);
 
   return (
-    <Section title="Local server" description="Online. Share this address with students on your network.">
+    <Section title="Local server" description="Online. Share this address with participants on your network.">
       <Surface style={{ flexDirection: isDesktop ? "row" : "column", alignItems: isDesktop ? "center" : "stretch", justifyContent: "space-between", gap: space[5] }}>
         <View style={{ flex: 1, minWidth: 0, maxWidth: 480, gap: space[3] }}>
           <AddressRow label="Local address" value={origin} />

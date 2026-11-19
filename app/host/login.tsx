@@ -2,9 +2,10 @@ import { useState } from "react";
 import { useRouter } from "expo-router";
 import { View } from "react-native";
 import useAuthStore, { useAuthActions } from "../../store/useAuthStore";
-import { AuthCard, AuthLink, PasswordField, useReveal } from "../../components/AuthCard";
+import { AuthCard, AuthField, AuthLink, Button, PasswordField, useReveal } from "../../components/AuthCard";
 import { canHostOnPhone } from "../../lib/phoneServer";
-import { Button, Spinner, Text, TextField, space } from "../../ui";
+import { Notice, Spinner, space } from "../../ui";
+import { GText } from "../../ui/gforms";
 
 function HostSetup() {
   const router = useRouter();
@@ -25,14 +26,16 @@ function HostSetup() {
 
   return (
     <AuthCard
-      title="Create your account"
-      subtitle="Nobody has set up this server yet. Choose a password to become its host. You'll use it to sign in from now on."
-      footer={<Text variant="small" tone="tertiary">You can add a recovery question later in Settings.</Text>}
+      kind="host"
+      eyebrow="Set up your server"
+      title="Start hosting on your terms."
+      subtitle="Choose a password for this server. Your forms and responses stay on this device unless you choose to sync them."
+      footer={<GText size={14} secondary>After setup, add a recovery question in Settings so you can reset this password.</GText>}
     >
       <View style={{ gap: space[3] }}>
         <PasswordField label="Password" value={password} onChangeText={setPassword} show={show} onToggle={toggle} autoComplete="new-password" placeholder="At least 8 characters" autoFocus />
         <PasswordField label="Confirm password" value={confirm} onChangeText={setConfirm} show={show} autoComplete="new-password" placeholder="Type it again" error={fieldError ?? serverError} onSubmitEditing={submit} />
-        <Button label="Create account" variant="primary" fullWidth loading={isSubmitting} onPress={submit} />
+        <Button label="Create host account" variant="primary" fullWidth loading={isSubmitting} onPress={submit} />
       </View>
     </AuthCard>
   );
@@ -57,18 +60,20 @@ function ConnectServer() {
 
   return (
     <AuthCard
-      title={canHostOnPhone ? "How do you want to run Self Host Form?" : "Connect to your server"}
-      subtitle={canHostOnPhone ? "Host everything on this phone, or connect to a computer that's already running it." : "Enter the address shown on the computer running Self Host Form, e.g. 192.168.1.20:5174. Your phone must be on the same Wi-Fi."}
+      kind="host"
+      eyebrow="Connect to a host"
+      title={canHostOnPhone ? "Choose your host device." : "Connect to your host."}
+      subtitle={canHostOnPhone ? "Host everything on this phone, or connect to a computer that's already running it." : "Enter the address shown on the computer running Self-Host Form, e.g. 192.168.1.20:5174. Your phone must be on the same network."}
     >
       <View style={{ gap: space[4] }}>
         {canHostOnPhone ? (
           <View style={{ gap: space[2] }}>
             <Button label="Host on this phone" variant="primary" fullWidth loading={busy === "host"} disabled={isSubmitting && busy !== "host"} onPress={() => run("host", hostOnPhone)} />
-            <Text variant="small" tone="secondary">Your forms and responses stay on this phone. Students on the same Wi-Fi join with its address. Keep the app open during a session. Syncs to your cloud account when you're online.</Text>
+            <GText size={14} secondary>Your forms and responses stay on this phone. Participants on the same network join with its address. Keep the app open during a session. Syncs to your cloud account when you're online.</GText>
           </View>
         ) : null}
         <View style={{ gap: space[3] }}>
-          <TextField label={canHostOnPhone ? "Or connect to a host computer" : "Server address"} value={address} onChangeText={setAddress} placeholder="192.168.1.20:5174" autoCapitalize="none" autoCorrect={false} keyboardType="url" error={serverError} onSubmitEditing={() => run("connect", () => connectServer(address))} autoFocus={!canHostOnPhone} />
+          <AuthField label={canHostOnPhone ? "Or connect to a host computer" : "Server address"} value={address} onChangeText={setAddress} placeholder="192.168.1.20:5174" autoCapitalize="none" autoCorrect={false} keyboardType="url" error={serverError} onSubmitEditing={() => run("connect", () => connectServer(address))} autoFocus={!canHostOnPhone} />
           <Button label="Connect" variant={canHostOnPhone ? "secondary" : "primary"} fullWidth loading={busy === "connect"} disabled={!address.trim()} onPress={() => run("connect", () => connectServer(address))} />
         </View>
       </View>
@@ -90,7 +95,7 @@ export default function HostLogin() {
   const { changeServer } = useAuthActions();
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
-  const [fieldError, setFieldError] = useState<string | null>(null);
+  const [fieldError, setFieldError] = useState<{ password?: string; code?: string }>({});
   const { show, toggle } = useReveal();
 
   // Wait for the initial /api/auth/me check so a fresh install doesn't flash the login form.
@@ -99,28 +104,30 @@ export default function HostLogin() {
   if (needsSetup) return <HostSetup />;
 
   async function submit() {
-    if (!password) return setFieldError("Password is required.");
-    if (remoteLoginRequired && !/^\d{6}$/.test(code)) return setFieldError("Enter the 6-digit authenticator code.");
-    setFieldError(null);
+    if (!password) return setFieldError({ password: "Enter your server password." });
+    if (remoteLoginRequired && !/^\d{6}$/.test(code)) return setFieldError({ code: "Enter the 6-digit authenticator code." });
+    setFieldError({});
     if (await login(password, code)) router.replace("/dashboard");
   }
 
   return (
     <AuthCard
-      title="Log in as host"
-      subtitle={remoteLoginRequired ? "Manage this server remotely with your password and authenticator code." : "Manage your forms, sessions, and results."}
+      kind="host"
+      eyebrow={remoteLoginRequired ? "Remote access" : "Host sign in"}
+      title={remoteLoginRequired ? "Secure access to your server." : "Pick up where you left off."}
+      subtitle={remoteLoginRequired ? "Use your server password and authenticator code to manage forms remotely." : "Sign in to manage your forms, sessions and results on this server."}
       footer={
         <View style={{ gap: space[2] }}>
-          <Text variant="small" tone="secondary">Answering a form instead? <AuthLink href="/respondent/login">Join as a respondent</AuthLink></Text>
-          {serverUrl ? <Text variant="small" tone="tertiary">Server: {serverUrl} · <Text variant="small" tone="secondary" onPress={changeServer}>Change</Text></Text> : null}
+          <GText size={14} secondary>Here to respond? <AuthLink href="/respondent/login">Join a session</AuthLink></GText>
+          {serverUrl ? <GText size={14} secondary>Server: {serverUrl} · <GText size={14} secondary onPress={changeServer}>Change</GText></GText> : null}
         </View>
       }
     >
       <View style={{ gap: space[3] }}>
-        {remoteLoginRequired && !remoteAdminEnabled ? <Text tone="danger">Remote admin is off. Enable it in Settings on the host computer.</Text> : null}
-        <PasswordField label="Server password" value={password} onChangeText={setPassword} show={show} onToggle={toggle} autoComplete="current-password" placeholder="Enter your password" error={fieldError ?? serverError} onSubmitEditing={submit} autoFocus />
-        {remoteLoginRequired ? <TextField label="Authenticator code" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} autoComplete="one-time-code" onSubmitEditing={submit} /> : <AuthLink href="/host/recover">Forgot password?</AuthLink>}
-        <Button label="Log in" variant="primary" fullWidth loading={isSubmitting} disabled={remoteLoginRequired && !remoteAdminEnabled} onPress={submit} />
+        {remoteLoginRequired && !remoteAdminEnabled ? <Notice tone="warning">Remote administration is off. Enable it in Settings on the host computer.</Notice> : null}
+        <PasswordField label="Server password" value={password} onChangeText={(v) => { setPassword(v); setFieldError((e) => ({ ...e, password: undefined })); }} show={show} onToggle={toggle} autoComplete="current-password" placeholder="Your host password" error={fieldError.password ?? (!remoteLoginRequired ? serverError : null)} onSubmitEditing={submit} autoFocus />
+        {remoteLoginRequired ? <AuthField label="Authenticator code" value={code} onChangeText={(v) => { setCode(v); setFieldError((e) => ({ ...e, code: undefined })); }} keyboardType="number-pad" maxLength={6} autoComplete="one-time-code" error={fieldError.code ?? serverError} onSubmitEditing={submit} /> : <AuthLink href="/host/recover">Forgot your password?</AuthLink>}
+        <Button label={remoteLoginRequired ? "Verify and sign in" : "Sign in"} variant="primary" fullWidth loading={isSubmitting} disabled={remoteLoginRequired && !remoteAdminEnabled} onPress={submit} />
       </View>
     </AuthCard>
   );

@@ -11,7 +11,7 @@ import { useFormActions, useFormStore } from "../../../../lib/formStore";
 export default function FormLayout() {
   const { formId } = useLocalSearchParams<{ formId: string }>();
   const loadedId = useFormStore((s) => s.formId);
-  const { loadForm } = useFormActions();
+  const { loadForm, setQuestionDefaults } = useFormActions();
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
 
@@ -25,6 +25,8 @@ export default function FormLayout() {
         if (cancelled) return;
         loadForm(form);
         setStatus("ready");
+        // Not needed to show the editor, so a failure here just leaves the built-in defaults.
+        formsApi.getDefaults().then((d: { question: { required: boolean; points: number } }) => { if (!cancelled) setQuestionDefaults(d.question); }).catch(() => {});
       })
       .catch((err: Error & { status?: number }) => {
         if (cancelled) return;
@@ -34,7 +36,7 @@ export default function FormLayout() {
     return () => {
       cancelled = true;
     };
-  }, [formId, loadForm]);
+  }, [formId, loadForm, setQuestionDefaults]);
 
   if (status === "error") return <EmptyState icon={FileText} title="Couldn't open this form" body={error ?? undefined} />;
   // Also guards the render between the fetch resolving and the store finishing its update.

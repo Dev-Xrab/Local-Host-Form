@@ -23,11 +23,11 @@ export function Button({ label, variant = "secondary", icon, loading, compact, f
   const inactive = disabled || loading;
 
   const palettes = {
-    primary: { bg: colors.primary, hover: colors.primaryHover, fg: colors.primaryText, border: dark ? "#3ECF8E66" : colors.primary },
-    success: { bg: colors.primary, hover: colors.primaryHover, fg: colors.primaryText, border: dark ? "#3ECF8E66" : colors.primary },
+    primary: { bg: colors.primary, hover: colors.primaryHover, fg: colors.primaryText, border: colors.primary },
+    success: { bg: colors.primary, hover: colors.primaryHover, fg: colors.primaryText, border: colors.primary },
     secondary: { bg: colors.surfaceMuted, hover: colors.pressed, fg: colors.text, border: colors.borderStrong },
     ghost: { bg: "transparent", hover: colors.hover, fg: colors.text, border: "transparent" },
-    danger: { bg: colors.danger, hover: colors.danger, fg: "#FFFFFF", border: "transparent" },
+    danger: { bg: colors.danger, hover: colors.danger, fg: dark ? "#1B1722" : "#FFFFFF", border: "transparent" },
   }[variant];
 
   return (
@@ -41,7 +41,7 @@ export function Button({ label, variant = "secondary", icon, loading, compact, f
       style={(state) => [
         styles.base,
         {
-          minHeight: compact ? 26 : size.control,
+          minHeight: compact ? size.controlSm : size.control,
           backgroundColor: (state as { hovered?: boolean }).hovered || state.pressed ? palettes.hover : palettes.bg,
           borderColor: palettes.border,
           opacity: inactive ? 0.5 : 1,
@@ -53,13 +53,13 @@ export function Button({ label, variant = "secondary", icon, loading, compact, f
     >
       <View style={styles.row}>
         {loading ? <ActivityIndicator size="small" color={palettes.fg} /> : icon ? <Icon icon={icon} size={14} color={palettes.fg} /> : null}
-        <Text variant="small" style={{ color: palettes.fg, fontWeight: "500" }} numberOfLines={1}>{label}</Text>
+        <Text variant="small" style={{ color: palettes.fg, fontWeight: "500", letterSpacing: 0.25 }} numberOfLines={1}>{label}</Text>
       </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  base: { borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 10, alignItems: "center", justifyContent: "center", alignSelf: "flex-start" },
+  base: { borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 12, alignItems: "center", justifyContent: "center", alignSelf: "flex-start" },
   row: { flexDirection: "row", alignItems: "center", gap: space[2] },
 });

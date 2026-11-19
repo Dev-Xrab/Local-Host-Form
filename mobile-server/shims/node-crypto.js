@@ -4,6 +4,8 @@
 import { Buffer } from "buffer";
 import { scrypt } from "@noble/hashes/scrypt.js";
 import { sha256 } from "@noble/hashes/sha2.js";
+import { sha1 } from "@noble/hashes/legacy.js";
+import { hmac } from "@noble/hashes/hmac.js";
 
 const toBytes = (v) => (typeof v === "string" ? new Uint8Array(Buffer.from(v, "utf8")) : new Uint8Array(v));
 
@@ -78,4 +80,19 @@ export function createHash(algorithm) {
   };
 }
 
-export default { randomBytes, randomUUID, randomInt, scryptSync, timingSafeEqual, createHash };
+export function createHmac(algorithm, key) {
+  if (String(algorithm).toLowerCase() !== "sha1") throw new Error(`Unsupported HMAC algorithm: ${algorithm}`);
+  const chunks = [];
+  return {
+    update(data) {
+      chunks.push(toBytes(data));
+      return this;
+    },
+    digest(encoding) {
+      const output = Buffer.from(hmac(sha1, toBytes(key), Buffer.concat(chunks.map((part) => Buffer.from(part)))));
+      return encoding ? output.toString(encoding) : output;
+    },
+  };
+}
+
+export default { randomBytes, randomUUID, randomInt, scryptSync, timingSafeEqual, createHash, createHmac };

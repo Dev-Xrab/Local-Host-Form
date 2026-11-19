@@ -73,16 +73,16 @@ export function RosterManager({ students, onChanged }: { students: Student[]; on
 
   return (
     <View style={{ gap: space[2] }}>
-      <Text variant="small" tone="secondary">One student per line: name, then optionally a student ID and email, separated by commas, e.g. "Juan Dela Cruz, 2021-0456, juan@school.edu". The table updates as you type; a student removed from this list is removed from the roster.</Text>
-      <TextField accessibilityLabel="Roster" value={text} onChangeText={change} onBlur={blur} multiline rows={5} placeholder={"Juan Dela Cruz, 2021-0456, juan@school.edu\nMaria Santos, 2021-0457"} />
+      <Text variant="small" tone="secondary">One participant per line: name, then optionally an ID and email, separated by commas. The table updates as you type; removing a participant from this list removes their match in the results matrix.</Text>
+      <TextField accessibilityLabel="Participant list" value={text} onChangeText={change} onBlur={blur} multiline rows={5} placeholder={"Alex Morgan, A-001, alex@example.com\nSam Lee, A-002"} />
       {status === "saving" ? <Text variant="small" tone="secondary">Saving…</Text> : null}
-      {status === "saved" ? <Text variant="small" tone="success">{`Saved. ${students.length} student${students.length === 1 ? "" : "s"} on the roster.`}</Text> : null}
+      {status === "saved" ? <Text variant="small" tone="success">{`Saved. ${students.length} participant${students.length === 1 ? "" : "s"} on the list.`}</Text> : null}
       {error ? <Notice tone="danger">{error}</Notice> : null}
       <ConfirmDialog
         visible={pendingClear}
-        title="Clear roster"
-        confirmLabel="Clear roster"
-        message={`The roster box is empty. This will remove all ${students.length} student${students.length === 1 ? "" : "s"} from the roster.`}
+        title="Clear participant list"
+        confirmLabel="Clear list"
+        message={`The participant list is empty. This will remove all ${students.length} participant${students.length === 1 ? "" : "s"} from the list.`}
         onCancel={() => { setPendingClear(false); edited.current = false; setText(rosterToText(students)); }}
         onConfirm={async () => { setPendingClear(false); await run(""); }}
       />

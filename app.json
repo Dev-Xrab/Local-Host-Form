@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Self Host Form",
+    "name": "Self-Host Form",
     "slug": "self-host-form",
     "scheme": "selfhostform",
-    "version": "1.2.1",
+    "version": "1.3.0",
     "orientation": "default",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
     "plugins": [
       "expo-router",
       "expo-secure-store",
@@ -23,7 +23,7 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 176,
           "resizeMode": "contain",
-          "backgroundColor": "#0D0E10"
+          "backgroundColor": "#FAFAF9"
         }
       ],
       "expo-sqlite",
@@ -39,14 +39,14 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "monochromeImage": "./assets/adaptive-icon-monochrome.png",
-        "backgroundColor": "#0D0E10"
+        "backgroundColor": "#FAFAF9"
       }
     },
     "web": {
       "bundler": "metro",
       "output": "single",
       "favicon": "./public/favicon.png",
-      "backgroundColor": "#0D0E10"
+      "backgroundColor": "#FAFAF9"
     },
     "icon": "./assets/icon.png",
     "ios": {}

@@ -1,4 +1,5 @@
 import express from "express";
+import { repinAllActiveSessions } from "./forms/snapshots.js";
 import { startAutoSave } from "./cloud/autosave.js";
 import helmet from "helmet";
 import { networkInterfaces } from "node:os";
@@ -39,6 +40,7 @@ export function createApp({ port, mountWebUi } = {}) {
   backfillFormsWithoutSubject();
   ensureDeviceId();
   encryptLegacyTokens();
+  repinAllActiveSessions();
 
   const app = express();
 

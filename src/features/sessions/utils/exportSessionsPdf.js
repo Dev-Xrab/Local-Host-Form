@@ -139,7 +139,7 @@ export async function exportSessionsToPdf(sessionExports, { matrix, includeAnswe
       ...TABLE_STYLE,
       startY: y,
       margin: { left: MARGIN, right: MARGIN },
-      head: [["Respondent", "Student ID", ...matrix.sessions.map((s) => s.name || s.formTitle)]],
+      head: [["Respondent", "Participant ID", ...matrix.sessions.map((s) => s.name || s.formTitle)]],
       body: matrix.rows.map((row) => [
         row.matched ? row.name : `${row.name} (not on roster)`,
         row.studentId || "",

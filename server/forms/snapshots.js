@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { db } from "../db/index.js";
-import { getForm } from "./repository.js";
+import { getForm, onFormUpdated } from "./repository.js";
 
 const insertStmt = db.prepare(`
   INSERT OR IGNORE INTO form_snapshots (id, form_id, content_hash, definition, created_at)
@@ -78,3 +78,31 @@ export function formForResponse(response) {
   if (!snapshot) throw new Error("Assessment definition is missing");
   return snapshot.form;
 }
+
+// A session that is running follows its form: when the host saves an edit, everyone still answering
+// gets the new questions on their next load instead of the definition pinned when the session
+// started. Submitted responses stay on the definition they were answered against, so past results
+// are unaffected, and ended or not-yet-started sessions are left alone.
+const activeSessionIdsStmt = db.prepare("SELECT id, form_snapshot_id FROM sessions WHERE form_id = ? AND status = 'active'");
+const repinSessionStmt = db.prepare("UPDATE sessions SET form_snapshot_id = ? WHERE id = ?");
+const repinResponsesStmt = db.prepare(
+  "UPDATE responses SET form_snapshot_id = ? WHERE session_id = ? AND status = 'in_progress' AND form_snapshot_id IS NOT ?"
+);
+
+export function repinActiveSessions(formId) {
+  const sessions = activeSessionIdsStmt.all(formId);
+  if (sessions.length === 0 || !getForm(formId)) return;
+  const snapshotId = createFormSnapshot(formId);
+  for (const session of sessions) {
+    if (session.form_snapshot_id !== snapshotId) repinSessionStmt.run(snapshotId, session.id);
+    repinResponsesStmt.run(snapshotId, session.id, snapshotId);
+  }
+}
+
+/** Catches edits that never went through a save here (made while the server was off, or synced in). */
+export function repinAllActiveSessions() {
+  const formIds = db.prepare("SELECT DISTINCT form_id FROM sessions WHERE status = 'active'").all();
+  for (const { form_id } of formIds) repinActiveSessions(form_id);
+}
+
+onFormUpdated(repinActiveSessions);

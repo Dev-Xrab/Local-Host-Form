@@ -3,12 +3,13 @@
 // section, or the end of the list) belongs to that page. Questions before the first
 // section marker become a leading, untitled page. A form with no sections at all comes
 // back as a single page — so a simple form keeps today's one-screen behavior.
+// `next` is the section's "After section" target (see src/lib/sectionFlow.js).
 export function groupIntoPages(questions) {
-  const pages = [{ id: "page-0", title: "", description: "", questions: [] }];
+  const pages = [{ id: "page-0", title: "", description: "", next: null, questions: [] }];
 
   for (const q of questions) {
     if (q.type === "section") {
-      pages.push({ id: q.id, title: q.title || "", description: q.description || "", questions: [] });
+      pages.push({ id: q.id, title: q.title || "", description: q.description || "", next: q.navigation?.next ?? null, questions: [] });
     } else {
       pages[pages.length - 1].questions.push(q);
     }

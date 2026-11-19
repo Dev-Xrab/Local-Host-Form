@@ -34,7 +34,7 @@ export function JoinPanel({ code, shareUrl, publicUrl, inline }: { code: string;
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space[4], justifyContent: "center" }}>
         <View style={{ width: 250, alignItems: "center", gap: space[2] }}>
           <Text style={{ fontWeight: "600" }}>Local network</Text>
-          <Text variant="small" tone="secondary" style={{ textAlign: "center" }}>Use when the student is connected to the same Wi-Fi or network as this server.</Text>
+          <Text variant="small" tone="secondary" style={{ textAlign: "center" }}>Use when the participant is connected to the same network as this server.</Text>
           <QrCode value={shareUrl} size={190} />
           <Text variant="small" selectable style={{ textAlign: "center" }}>{shareUrl}</Text>
         </View>
@@ -54,7 +54,7 @@ export function JoinPanel({ code, shareUrl, publicUrl, inline }: { code: string;
     </View>
   );
   if (inline) {
-    // Keep both destinations visible so the host can share the right link for each student.
+    // Keep both destinations visible so the host can share the right link for each participant.
     return (
       <>
       <View style={{ flexDirection: "row", alignItems: "flex-start", gap: space[4], flexWrap: "wrap" }}>

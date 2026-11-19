@@ -11,7 +11,7 @@ import { useFocusRing } from "./interactive";
 
 export interface SearchOption { value: string; label: string; meta?: string }
 
-/** Select with a search box, for long lists (forms, students). Opens a dialog, a bottom sheet on phones. */
+/** Select with a search box for long lists. Opens a dialog, a bottom sheet on phones. */
 export function SearchSelect({ label, value, options, onChange, placeholder = "Select…", searchPlaceholder = "Search", emptyText = "Nothing found." }: {
   label?: string; value: string | null; options: SearchOption[]; onChange: (v: string) => void; placeholder?: string; searchPlaceholder?: string; emptyText?: string;
 }) {

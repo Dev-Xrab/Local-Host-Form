@@ -7,6 +7,7 @@ import { importResponses } from "../responses/repository.js";
 import { createEndedSession } from "../sessions/repository.js";
 import { validateImageSource } from "../security/uploads.js";
 import { saveFormSnapshotDefinition } from "./snapshots.js";
+import { getDefaults, setDefaults, validateDefaults } from "./defaults.js";
 
 const MAX_TITLE_LENGTH = 500;
 const MAX_DESCRIPTION_LENGTH = 20_000;
@@ -29,7 +30,21 @@ const QUESTION_TYPES = new Set([
   "section",
 ]);
 
+const MAX_TARGET_LENGTH = 100;
+const validTarget = (t) => t === null || (typeof t === "string" && t.length <= MAX_TARGET_LENGTH);
+
 const optionalString = (value, max) => value === undefined || value === null || (typeof value === "string" && value.length <= max);
+
+function validateNavigation(navigation) {
+  if (navigation === undefined || navigation === null) return null;
+  if (typeof navigation !== "object" || Array.isArray(navigation)) return "question navigation must be an object";
+  if (navigation.next !== undefined && !validTarget(navigation.next)) return "section link target is invalid";
+  const { options } = navigation;
+  if (options !== undefined && (!Array.isArray(options) || options.length > MAX_OPTIONS || !options.every(validTarget))) {
+    return "answer link targets are invalid";
+  }
+  return null;
+}
 
 function validateQuestions(questions) {
   if (!Array.isArray(questions)) return "questions must be an array";
@@ -53,6 +68,8 @@ function validateQuestions(questions) {
     }
     const imageError = validateImageSource(q.imageUrl);
     if (imageError) return imageError;
+    const navigationError = validateNavigation(q.navigation);
+    if (navigationError) return navigationError;
   }
   return null;
 }
@@ -75,6 +92,15 @@ formsRouter.get("/", (req, res) => {
   res.json(repo.listForms());
 });
 
+// Registered before "/:id" so "defaults" isn't read as a form id.
+formsRouter.get("/defaults", (req, res) => res.json(getDefaults()));
+
+formsRouter.put("/defaults", (req, res) => {
+  const error = validateDefaults(req.body);
+  if (error) return res.status(400).json({ error });
+  res.json(setDefaults(req.body));
+});
+
 formsRouter.post("/", (req, res) => {
   const { title, description, subjectId } = req.body || {};
   const metaError = validateFormMeta({ title, description });
@@ -82,7 +108,7 @@ formsRouter.post("/", (req, res) => {
   if (subjectId != null && (typeof subjectId !== "string" || !getSubject(subjectId))) {
     return res.status(400).json({ error: "subjectId does not refer to an existing subject" });
   }
-  const form = repo.createForm({ title, description, subjectId: subjectId || null });
+  const form = repo.createForm({ title, description, subjectId: subjectId || null, settings: getDefaults().form });
   scheduleAutoSave(form.id);
   res.status(201).json(form);
 });
@@ -153,9 +179,9 @@ formsRouter.post("/import", (req, res) => {
       const idMap = new Map(questions.map((q, i) => [q.id, form.questions[i]?.id]));
       const assessmentMaps = new Map();
       for (const definition of assessmentDefinitions || []) {
+        for (const q of definition.questions) if (!idMap.has(q.id)) idMap.set(q.id, randomUUID());
         const mappedQuestions = definition.questions.map((q) => {
-          if (!idMap.has(q.id)) idMap.set(q.id, randomUUID());
-          return { ...q, id: idMap.get(q.id) };
+          return { ...q, id: idMap.get(q.id), navigation: repo.remapNavigation(q.navigation, idMap) };
         });
         const snapshotId = saveFormSnapshotDefinition(form.id, {
           title: definition.title,
@@ -191,6 +217,9 @@ formsRouter.put("/:id", (req, res) => {
   if (metaError) return res.status(400).json({ error: metaError });
   if (settings !== undefined && (typeof settings !== "object" || settings === null || Array.isArray(settings))) {
     return res.status(400).json({ error: "settings must be an object" });
+  }
+  if (typeof settings?.confirmationMessage === "string" && settings.confirmationMessage.length > 2000) {
+    return res.status(400).json({ error: "confirmation message is too long" });
   }
   if (questions !== undefined) {
     const error = validateQuestions(questions);

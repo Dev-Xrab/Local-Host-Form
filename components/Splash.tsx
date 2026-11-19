@@ -7,7 +7,7 @@ const FADE_OUT_MS = 520;
 const RINGS = [0, 1, 2];
 
 /**
- * Launch splash: soft green rings ripple out from the logo while it blooms in, the wordmark rises
+ * Launch splash: soft monochrome rings ripple out from the logo while it blooms in, the wordmark rises
  * under it and a thin bar fills. Stays for at least MIN_VISIBLE_MS and until `ready` (the first
  * session check), then fades away and unmounts. Skipped entirely under reduced motion.
  */
@@ -76,7 +76,7 @@ export function Splash({ ready }: { ready: boolean }) {
 
       <Animated.View style={{ alignItems: "center", gap: 6, opacity: word, transform: [{ translateY: word.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }] }}>
         <Text variant="display" style={{ letterSpacing: 0.4 }}>Self Host Form</Text>
-        <Text tone="tertiary" style={{ letterSpacing: 1.2, textTransform: "uppercase", fontSize: 11 }}>Build · Host · Own your data</Text>
+        <Text variant="small" tone="secondary">Build forms · Run sessions · Own your data</Text>
       </Animated.View>
 
       <View style={[styles.track, { backgroundColor: colors.border }]}>

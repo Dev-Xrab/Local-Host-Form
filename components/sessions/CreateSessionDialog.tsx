@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { DURATION_DEFAULT_SECONDS, durationPartsToSeconds } from "../../src/features/sessions/utils/time";
 import { sessionsApi } from "../../src/features/sessions/services/sessionsApi";
@@ -7,8 +7,9 @@ import type { FormSummary } from "../../lib/domain";
 
 const EMPTY = { name: "", formId: "", durationMinutes: "", responsesEditable: false, fullscreenEnabled: false, refocusLock: false, refocusValue: String(DURATION_DEFAULT_SECONDS), refocusUnit: "seconds" };
 
-export function CreateSessionDialog({ visible, forms, onClose, onCreated }: { visible: boolean; forms: FormSummary[]; onClose: () => void; onCreated: () => void | Promise<unknown> }) {
-  const [f, setF] = useState(EMPTY);
+export function CreateSessionDialog({ visible, forms, initialFormId, onClose, onCreated }: { visible: boolean; forms: FormSummary[]; initialFormId?: string; onClose: () => void; onCreated: () => void | Promise<unknown> }) {
+  const [f, setF] = useState({ ...EMPTY, formId: initialFormId || "" });
+  useEffect(() => { if (visible && initialFormId) setF((p) => ({ ...p, formId: initialFormId })); }, [visible, initialFormId]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const set = <K extends keyof typeof EMPTY>(k: K, v: (typeof EMPTY)[K]) => setF((p) => ({ ...p, [k]: v }));
@@ -43,7 +44,7 @@ export function CreateSessionDialog({ visible, forms, onClose, onCreated }: { vi
       width={500}
       footer={<><Button label="Cancel" variant="ghost" onPress={onClose} /><Button label="Create session" variant="primary" disabled={!f.name.trim() || !f.formId} loading={busy} onPress={submit} /></>}
     >
-      <TextField label="Session name" value={f.name} onChangeText={(v) => set("name", v)} placeholder="e.g. Midterm examination" autoFocus />
+      <TextField label="Session name" value={f.name} onChangeText={(v) => set("name", v)} placeholder="e.g. Quarterly feedback" autoFocus />
       <SearchSelect label="Form" value={f.formId || null} placeholder="Choose a form" searchPlaceholder="Search forms" emptyText="No forms found." onChange={(v) => set("formId", v)} options={forms.map((x) => ({ value: x.id, label: x.title || "Untitled form", meta: `${x.questionCount} question${x.questionCount === 1 ? "" : "s"}` }))} />
       <TextField label="Time limit per respondent (minutes, optional)" value={f.durationMinutes} onChangeText={(v) => set("durationMinutes", v.replace(/\D/g, ""))} keyboardType="numeric" placeholder="No limit" />
       <Checkbox label="Allow respondents to edit their answer after submitting" checked={f.responsesEditable} onChange={(v) => set("responsesEditable", v)} />

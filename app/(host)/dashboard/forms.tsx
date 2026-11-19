@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { useRouter } from "expo-router";
-import { Cloud, FileInput, FileText, Plus, Upload } from "lucide-react-native";
+import { Pressable, ScrollView, View } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { ChevronDown, Cloud, FileInput, Upload } from "lucide-react-native";
 import { formsApi } from "../../../src/features/forms/services/formsApi";
 import { cloudApi } from "../../../src/features/cloud/services/cloudApi";
 import { describeCloudError } from "../../../src/features/cloud/utils/describeCloudError";
 import { groupBySubjects } from "../../../src/features/subjects/utils/groupBySubjects";
-import { Button, EmptyState, Notice, Page, PageHeader, SearchField, Section, Skeleton, Surface, TableHeader, useToast } from "../../../ui";
+import { Button, Dialog, Icon, Notice, SearchField, Skeleton, TableHeader, Text, space, useLayout, useTheme, useToast } from "../../../ui";
+import { useFocusRing } from "../../../ui/interactive";
 import { useCloudAccount, useForms, useSubjects } from "../../../lib/data";
 import { pickJsonText } from "../../../lib/platform";
 import type { FormSummary, Subject } from "../../../lib/domain";
@@ -18,8 +20,39 @@ import { GoogleFormsImportDialog } from "../../../components/forms/GoogleFormsIm
 import { GoogleAuthRequiredDialog } from "../../../components/forms/CloudDialogs";
 import { DeleteFormDialog } from "../../../components/forms/DeleteFormDialog";
 
+function FolderGroup({ group, connected, exporter, publishingId, onPublish, onDelete }: {
+  group: { subject: Subject | null; items: FormSummary[] };
+  connected: boolean;
+  exporter: ReturnType<typeof useFormExport>;
+  publishingId: string | null;
+  onPublish: (form: FormSummary) => Promise<void>;
+  onDelete: (form: FormSummary) => void;
+}) {
+  const { colors } = useTheme();
+  const { ring, onFocus, onBlur } = useFocusRing(colors);
+  const [open, setOpen] = useState(true);
+  const name = group.subject?.name ?? "General";
+  return (
+    <View style={{ borderTopWidth: 1, borderBottomWidth: open ? 1 : 0, borderColor: colors.border }}>
+      <Pressable accessibilityRole="button" accessibilityLabel={`${name} folder, ${group.items.length} forms`} accessibilityState={{ expanded: open }} onPress={() => setOpen((value) => !value)} onFocus={onFocus} onBlur={onBlur}
+        style={(state) => [{ minHeight: 56, flexDirection: "row", alignItems: "center", gap: space[2], backgroundColor: (state as { hovered?: boolean }).hovered ? colors.hover : "transparent", paddingHorizontal: space[2] }, ring]}>
+        <View style={{ transform: [{ rotate: open ? "0deg" : "-90deg" }] }}><Icon icon={ChevronDown} size={18} color={colors.textSecondary} /></View>
+        <Text variant="title" style={{ flex: 1 }}>{name}</Text>
+        <Text variant="small" tone="tertiary">{group.items.length} {group.items.length === 1 ? "form" : "forms"}</Text>
+      </Pressable>
+      {open ? <View style={{ borderTopWidth: 1, borderTopColor: colors.border }}>
+        <TableHeader columns={[{ label: "", width: 18 }, { label: "Name" }, { label: "Location", width: 120 }, { label: "Activity", width: 150 }, { label: "Updated", width: 96 }, { label: "", width: FORM_ACTIONS_WIDTH }]} />
+        {group.items.map((form, index) => <FormRow key={form.id} form={form} last={index === group.items.length - 1} a={{ cloudConnected: connected, exporting: exporter.exportingId === form.id, publishing: publishingId === form.id, onExport: exporter.request, onPublish, onDelete }} />)}
+      </View> : null}
+    </View>
+  );
+}
+
 export default function FormsPage() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const { isDesktop } = useLayout();
+  const { create, import: importRequested } = useLocalSearchParams<{ create?: string; import?: string }>();
   const toast = useToast();
   const { forms, loading, error, refresh } = useForms();
   const { subjects } = useSubjects();
@@ -27,7 +60,8 @@ export default function FormsPage() {
   const { account, connected, login, logout } = useCloudAccount();
 
   const [query, setQuery] = useState("");
-  const [showCreate, setShowCreate] = useState(false);
+  const [showCreate, setShowCreate] = useState(create === "1");
+  const [showImportMenu, setShowImportMenu] = useState(importRequested === "1");
   const [deleteTarget, setDeleteTarget] = useState<FormSummary | null>(null);
   const [importing, setImporting] = useState(false);
   const [publishingId, setPublishingId] = useState<string | null>(null);
@@ -42,6 +76,8 @@ export default function FormsPage() {
   const [showGoogleForms, setShowGoogleForms] = useState(false);
   // Which dialog a request made while signed out should open once sign-in completes.
   const [pendingTarget, setPendingTarget] = useState<"drive" | "forms">("drive");
+
+  useEffect(() => { if (importRequested === "1") setShowImportMenu(true); }, [importRequested]);
 
   useEffect(() => {
     if (!connected || !pending) return;
@@ -122,57 +158,36 @@ export default function FormsPage() {
   const groups = groupBySubjects(filtered, subjects, (f: FormSummary) => f.subjectId) as { subject: Subject | null; items: FormSummary[] }[];
 
   return (
-    <Page>
-      <PageHeader
-        title="Forms"
-        subtitle="Every form on this server, grouped by folder."
-        actions={
-          <>
-            <Button label={importing ? "Importing…" : "Import file"} icon={Upload} disabled={importing} onPress={importFile} />
-            <Button label={pending ? "Waiting for sign-in…" : "From Drive"} icon={Cloud} disabled={pending} onPress={() => requireCloudThen("drive")} />
-            <Button label="From Google Forms" icon={FileInput} disabled={pending} onPress={() => requireCloudThen("forms")} />
-            <Button label="New form" icon={Plus} variant="primary" onPress={() => setShowCreate(true)} />
-          </>
-        }
-      />
+    <View style={{ flex: 1 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ maxWidth: 1400, width: "100%", alignSelf: "center", padding: isDesktop ? space[6] : space[4], gap: space[6] }}>
+        <View style={{ flexDirection: isDesktop ? "row" : "column", alignItems: isDesktop ? "flex-end" : "stretch", justifyContent: "space-between", gap: space[4], borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: space[5] }}>
+          <View style={{ gap: space[2], flexShrink: 1 }}>
+            <Text variant="label" tone="accent">Form library</Text>
+            <Text accessibilityRole="header" style={{ fontSize: 28, lineHeight: 36, fontWeight: "400", color: colors.text }}>Build once. Use it again.</Text>
+            <Text tone="secondary">Create reusable forms for feedback, registration, assessments and more. {forms.length} on this server.</Text>
+          </View>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space[2] }}>
+            <Button label="Import" icon={Upload} disabled={importing || pending} onPress={() => setShowImportMenu(true)} />
+          </View>
+        </View>
 
-      <TemplateGallery onBlank={() => setShowCreate(true)} onPick={createFromTemplate} />
+        <TemplateGallery onBlank={() => setShowCreate(true)} onPick={createFromTemplate} />
+        {notice ? <Notice tone="danger" actionLabel="Dismiss" onAction={() => setNotice(null)}>{notice}</Notice> : null}
+        {forms.length > 0 || query ? <View style={{ maxWidth: 440 }}><SearchField value={query} onChangeText={setQuery} placeholder="Find a form" /></View> : null}
 
-      {notice ? <Notice tone="danger" actionLabel="Dismiss" onAction={() => setNotice(null)}>{notice}</Notice> : null}
-      <SearchField value={query} onChangeText={setQuery} placeholder="Search forms" />
-
-      {loading && forms.length === 0 ? (
-        <Surface><Skeleton height={16} width="40%" /><Skeleton height={16} /><Skeleton height={16} width="70%" /></Surface>
-      ) : error ? (
-        <Notice tone="danger" actionLabel="Retry" onAction={refresh}>{`Couldn't load forms: ${error}`}</Notice>
-      ) : filtered.length === 0 ? (
-        <Surface><EmptyState icon={FileText} title={query ? "No forms match your search" : "No forms yet"} body={query ? undefined : "Start from a template above, import a file, or create a blank form."} actionLabel={query ? "Clear search" : "New form"} onAction={query ? () => setQuery("") : () => setShowCreate(true)} /></Surface>
-      ) : (
-        groups.map((g) => (
-          <Section key={g.subject?.id ?? "unsorted"} title={g.subject?.name ?? "General"} description={`${g.items.length} form${g.items.length === 1 ? "" : "s"}`}>
-            <Surface padded={false}>
-              <TableHeader columns={[{ label: "", width: 18 }, { label: "Name" }, { label: "Location", width: 120 }, { label: "Activity", width: 150 }, { label: "Updated", width: 96 }, { label: "", width: FORM_ACTIONS_WIDTH }]} />
-              {g.items.map((f, i) => (
-                <FormRow
-                  key={f.id}
-                  form={f}
-                  last={i === g.items.length - 1}
-                  a={{
-                    cloudConnected: connected,
-                    exporting: exporter.exportingId === f.id,
-                    publishing: publishingId === f.id,
-                    onExport: exporter.request,
-                    onPublish: publish,
-                    onDelete: setDeleteTarget,
-                  }}
-                />
-              ))}
-            </Surface>
-          </Section>
-        ))
-      )}
+        {loading && forms.length === 0 ? <View style={{ gap: space[3] }}><Skeleton height={20} width="40%" /><Skeleton height={48} /><Skeleton height={48} /></View> : error ? (
+          <Notice tone="danger" actionLabel="Retry" onAction={refresh}>{`Couldn't load forms: ${error}`}</Notice>
+        ) : filtered.length === 0 ? (
+          query ? <View style={{ gap: space[2], paddingVertical: space[4], borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.border }}><Text variant="bodyStrong">No forms match</Text><Text tone="secondary">Try another title or clear the search.</Text><Button label="Clear search" variant="ghost" onPress={() => setQuery("")} /></View> : null
+        ) : groups.map((group) => <FolderGroup key={group.subject?.id ?? "unsorted"} group={group} connected={connected} exporter={exporter} publishingId={publishingId} onPublish={publish} onDelete={setDeleteTarget} />)}
+      </ScrollView>
 
       <CreateFormDialog visible={showCreate} subjects={subjects} onClose={() => setShowCreate(false)} onCreate={createBlank} />
+      <Dialog visible={showImportMenu} title="Import a form" onClose={() => setShowImportMenu(false)}>
+        <Button label="From JSON file" icon={Upload} fullWidth onPress={() => { setShowImportMenu(false); void importFile(); }} />
+        <Button label="From Google Drive" icon={Cloud} fullWidth onPress={() => { setShowImportMenu(false); requireCloudThen("drive"); }} />
+        <Button label="From Google Forms" icon={FileInput} fullWidth onPress={() => { setShowImportMenu(false); requireCloudThen("forms"); }} />
+      </Dialog>
 
       {exporter.dialog}
 
@@ -198,6 +213,6 @@ export default function FormsPage() {
         onReconnect={async () => { setShowGoogleForms(false); await logout(); setPendingTarget("forms"); setPending(true); await login(); }}
       />
       <CloudImportDialog visible={showCloud} forms={forms} onClose={() => setShowCloud(false)} onOpenForm={open} onChanged={refresh} />
-    </Page>
+    </View>
   );
 }

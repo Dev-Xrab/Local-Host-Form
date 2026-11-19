@@ -25,8 +25,8 @@ export function IconButton({ icon, label, tone = "default", disabled, ...rest }:
       {...rest}
       style={(state) => [
         {
-          width: size.touch - 4,
-          height: size.touch - 4,
+          width: size.touch,
+          height: size.touch,
           borderRadius: radius.md,
           alignItems: "center",
           justifyContent: "center",

@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { useMemo, useState, type DragEvent } from "react";
+import { Platform, Pressable, ScrollView, View } from "react-native";
 import { Paperclip } from "lucide-react-native";
 import { MAX_UPLOAD_BYTES, isAllowedUploadType } from "../../src/lib/fileTypes";
 import { getMatrixMissingRows, isMatrixMultiSelect } from "../../src/lib/matrixQuestions";
-import { Button, Checkbox, Icon, Radio, Select, Text, TextField, radius, space, useLayout, useTheme } from "../../ui";
+import { Select, Text, radius, space, useLayout } from "../../ui";
+import { GButton, GChoice, GLineInput, GMark, GText, useGF } from "../../ui/gforms";
 import type { MatrixColumn, Question } from "../../lib/formStore";
 import { pickFileDataUri } from "../../lib/platform";
 import { DateTimeInput } from "./DateTimeInput";
@@ -16,17 +17,17 @@ export interface FieldProps<T = unknown> {
   error?: string;
 }
 
-const ShortAnswerField = ({ value, onChange, disabled }: FieldProps<string | undefined>) => (
-  <TextField value={value ?? ""} onChangeText={onChange} editable={!disabled} placeholder="Your answer" accessibilityLabel="Your answer" />
+const ShortAnswerField = ({ value, onChange, disabled, error }: FieldProps<string | undefined>) => (
+  <GLineInput value={value ?? ""} onChangeText={onChange} editable={!disabled} invalid={!!error} placeholder="Your answer" accessibilityLabel="Your answer" width="60%" />
 );
 
-const ParagraphField = ({ value, onChange, disabled }: FieldProps<string | undefined>) => (
-  <TextField value={value ?? ""} onChangeText={onChange} editable={!disabled} placeholder="Your answer" multiline rows={4} accessibilityLabel="Your answer" />
+const ParagraphField = ({ value, onChange, disabled, error }: FieldProps<string | undefined>) => (
+  <GLineInput value={value ?? ""} onChangeText={onChange} editable={!disabled} invalid={!!error} placeholder="Your answer" autoGrow accessibilityLabel="Your answer" />
 );
 
 const MultipleChoiceField = ({ question, value, onChange, disabled }: FieldProps<number | undefined>) => (
-  <View accessibilityRole="radiogroup">
-    {(question.options as string[]).map((opt, i) => <Radio key={i} label={opt} checked={value === i} disabled={disabled} onChange={() => onChange(i)} />)}
+  <View accessibilityRole="radiogroup" style={{ gap: 2 }}>
+    {(question.options as string[]).map((opt, i) => <GChoice key={i} shape="radio" label={opt} checked={value === i} disabled={disabled} onPress={() => onChange(i)} />)}
   </View>
 );
 
@@ -35,7 +36,7 @@ const CheckboxesField = ({ question, value, onChange, disabled }: FieldProps<num
   return (
     <View>
       {(question.options as string[]).map((opt, i) => (
-        <Checkbox key={i} label={opt} checked={selected.includes(i)} disabled={disabled} onChange={() => onChange(selected.includes(i) ? selected.filter((v) => v !== i) : [...selected, i])} />
+        <GChoice key={i} shape="check" label={opt} checked={selected.includes(i)} disabled={disabled} onPress={() => onChange(selected.includes(i) ? selected.filter((v) => v !== i) : [...selected, i])} />
       ))}
     </View>
   );
@@ -53,35 +54,22 @@ const DropdownField = ({ question, value, onChange, disabled }: FieldProps<numbe
 );
 
 function LinearScaleField({ question, value, onChange, disabled }: FieldProps<number | undefined>) {
-  const { colors } = useTheme();
+  const g = useGF();
   const { min, max, minLabel, maxLabel } = question.scale;
   const numbers = Array.from({ length: max - min + 1 }, (_, i) => min + i);
   return (
-    <View style={{ gap: space[2] }}>
-      <View accessibilityRole="radiogroup" style={{ flexDirection: "row", flexWrap: "wrap", gap: space[2] }}>
-        {numbers.map((n) => {
-          const on = value === n;
-          return (
-            <Pressable
-              key={n}
-              accessibilityRole="radio"
-              accessibilityLabel={String(n)}
-              accessibilityState={{ checked: on, disabled }}
-              disabled={disabled}
-              onPress={() => onChange(n)}
-              style={{ width: 44, height: 44, borderRadius: radius.pill, alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: on ? colors.primary : colors.borderStrong, backgroundColor: on ? colors.primary : colors.surface }}
-            >
-              <Text variant="label" style={{ color: on ? colors.primaryText : colors.text }}>{n}</Text>
-            </Pressable>
-          );
-        })}
+    <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 12, flexWrap: "wrap" }}>
+      {minLabel ? <GText size={14} secondary style={{ paddingBottom: 8 }}>{minLabel}</GText> : null}
+      <View accessibilityRole="radiogroup" style={{ flexDirection: "row", flexWrap: "wrap", gap: 4 }}>
+        {numbers.map((n) => (
+          <Pressable key={n} accessibilityRole="radio" accessibilityLabel={String(n)} accessibilityState={{ checked: value === n, disabled }} disabled={disabled} onPress={() => onChange(n)}
+            style={(s) => [{ minWidth: 44, alignItems: "center", gap: 8, paddingVertical: 4, borderRadius: 4, backgroundColor: (s as { hovered?: boolean }).hovered ? g.hover : "transparent" }]}>
+            <GText size={14} secondary>{n}</GText>
+            <GMark shape="radio" checked={value === n} size={22} />
+          </Pressable>
+        ))}
       </View>
-      {minLabel || maxLabel ? (
-        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-          <Text variant="small" tone="secondary">{minLabel}</Text>
-          <Text variant="small" tone="secondary">{maxLabel}</Text>
-        </View>
-      ) : null}
+      {maxLabel ? <GText size={14} secondary style={{ paddingBottom: 8 }}>{maxLabel}</GText> : null}
     </View>
   );
 }
@@ -90,8 +78,32 @@ const DateField = ({ value, onChange, disabled }: FieldProps<string | undefined>
 const TimeField = ({ value, onChange, disabled }: FieldProps<string | undefined>) => <DateTimeInput kind="time" value={value ?? ""} onChange={onChange} disabled={disabled} />;
 
 function FileUploadField({ value, onChange, disabled }: FieldProps<string | null | undefined>) {
+  const g = useGF();
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [preparing, setPreparing] = useState(false);
+
+  const dropped = async (event: DragEvent<HTMLElement>) => {
+    event.preventDefault();
+    if (disabled) return;
+    const file = event.dataTransfer.files?.[0];
+    if (!file) return;
+    if (file.size > MAX_UPLOAD_BYTES) return setError("File is too large (max 5 MB).");
+    if (!isAllowedUploadType(file.type)) return setError("This file type is not supported. Use an image, PDF, document, audio, video or text file.");
+    setError(null);
+    setPreparing(true);
+    try {
+      const dataUri = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error("Could not read this file. Try choosing it again."));
+        reader.readAsDataURL(file);
+      });
+      setName(file.name);
+      onChange(dataUri);
+    } catch (cause) { setError((cause as Error).message); }
+    finally { setPreparing(false); }
+  };
 
   const choose = async () => {
     setError(null);
@@ -110,45 +122,40 @@ function FileUploadField({ value, onChange, disabled }: FieldProps<string | null
   };
 
   return (
-    <View style={{ gap: space[2], alignItems: "flex-start" }}>
+    <View style={{ gap: space[2] }}>
       {value ? (
         <View style={{ flexDirection: "row", alignItems: "center", gap: space[2] }}>
-          <Icon icon={Paperclip} size={16} />
-          <Text>{name || "1 file attached"}</Text>
-          <Button label="Remove" variant="ghost" compact disabled={disabled} onPress={() => { setName(""); setError(null); onChange(null); }} />
+          <Paperclip size={16} color={g.textSecondary} />
+          <GText>{name || "1 file attached"}</GText>
+          <GButton label="Replace" disabled={disabled} onPress={choose} />
+          <GButton label="Remove" disabled={disabled} onPress={() => { setName(""); setError(null); onChange(null); }} />
         </View>
       ) : (
-        <Button label="Add file" icon={Paperclip} disabled={disabled} onPress={choose} />
+        <View {...(Platform.OS === "web" ? { onDragOver: (event: DragEvent<HTMLElement>) => event.preventDefault(), onDrop: dropped } : {})} style={{ minHeight: 128, borderWidth: 1, borderStyle: "dashed", borderColor: g.borderStrong, borderRadius: 8, alignItems: "center", justifyContent: "center", padding: space[4], gap: space[2] }}>
+          <Text variant="small" tone="secondary">Drop a file here, or choose one (up to 5 MB)</Text>
+          <GButton variant="outlined" label={preparing ? "Preparing file…" : "Add file"} icon={<Paperclip size={16} color={g.accent} />} loading={preparing} disabled={disabled} onPress={choose} />
+          <Text variant="small" tone="secondary">Image, PDF, document, audio, video or text</Text>
+        </View>
       )}
-      {error ? <Text variant="small" tone="danger" accessibilityRole="alert">{error}</Text> : null}
+      {error ? <GText size={12} color={g.error} accessibilityRole="alert">{error}</GText> : null}
     </View>
   );
 }
 
 function MarkCell({ checked, multiple, label, onPress, disabled }: { checked: boolean; multiple: boolean; label: string; onPress: () => void; disabled?: boolean }) {
-  const { colors } = useTheme();
   return (
-    <Pressable
-      accessibilityRole={multiple ? "checkbox" : "radio"}
-      accessibilityLabel={label}
-      accessibilityState={{ checked, disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      hitSlop={6}
-      style={{ width: 22, height: 22, borderRadius: multiple ? 4 : radius.pill, borderWidth: 1.5, borderColor: checked ? colors.primary : colors.borderStrong, backgroundColor: checked ? colors.primary : colors.surface, alignItems: "center", justifyContent: "center" }}
-    >
-      {checked ? <View style={{ width: multiple ? 10 : 8, height: multiple ? 10 : 8, borderRadius: multiple ? 2 : radius.pill, backgroundColor: colors.primaryText }} /> : null}
+    <Pressable accessibilityRole={multiple ? "checkbox" : "radio"} accessibilityLabel={label} accessibilityState={{ checked, disabled }} disabled={disabled} onPress={onPress} hitSlop={10}>
+      <GMark shape={multiple ? "check" : "radio"} checked={checked} size={22} />
     </Pressable>
   );
 }
 
 /**
  * One grid, never separate per-row questions: rows share one column list. Wide screens get a real
- * table; a phone with few columns restacks into one option list per row; a phone with many columns
- * (say a 1-10 rating) scrolls the table sideways instead of stacking ten options per row.
+ * table; phones stack each row into its own option group so no sideways scrolling is required.
  */
 function MatrixGridField({ question, value, onChange, disabled, error }: FieldProps<Record<string, string | string[]> | undefined>) {
-  const { colors } = useTheme();
+  const g = useGF();
   const { isPhone } = useLayout();
   const rows = question.rows || [];
   const columns = question.options as MatrixColumn[];
@@ -165,15 +172,15 @@ function MatrixGridField({ question, value, onChange, disabled, error }: FieldPr
     } else onChange({ ...answers, [rowId]: colId });
   };
 
-  if (isPhone && columns.length <= 4) {
+  if (isPhone) {
     return (
       <View style={{ gap: space[4] }}>
         {rows.map((row) => (
-          <View key={row.id} style={{ gap: space[1] }}>
-            <Text variant="bodyStrong" tone={missing?.has(row.id) ? "danger" : "default"}>{row.label}{missing?.has(row.id) ? " (required)" : ""}</Text>
+          <View key={row.id} style={{ gap: space[1], padding: space[3], borderWidth: 1, borderColor: missing?.has(row.id) ? g.error : g.border, borderRadius: 8 }}>
+            <GText weight="500" color={missing?.has(row.id) ? g.error : undefined}>{row.label}{missing?.has(row.id) ? " (required)" : ""}</GText>
             {columns.map((col) => {
               const props = { label: col.label, checked: isChecked(row.id, col.id), disabled, onChange: () => toggle(row.id, col.id) };
-              return multiple ? <Checkbox key={col.id} {...props} /> : <Radio key={col.id} {...props} />;
+              return <GChoice key={col.id} shape={multiple ? "check" : "radio"} label={props.label} checked={props.checked} disabled={disabled} onPress={props.onChange} />;
             })}
           </View>
         ))}
@@ -186,15 +193,15 @@ function MatrixGridField({ question, value, onChange, disabled, error }: FieldPr
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={{ flexGrow: 1 }}>
       <View accessibilityRole="none" style={{ minWidth: "100%" }}>
-        <View style={{ flexDirection: "row", alignItems: "flex-end", borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: space[2] }}>
+        <View style={{ flexDirection: "row", alignItems: "flex-end", borderBottomWidth: 1, borderBottomColor: g.border, paddingBottom: space[2] }}>
           <View style={{ width: labelWidth }} />
-          {columns.map((c) => <Text key={c.id} variant="caption" tone="secondary" align="center" style={{ width: cellWidth }}>{c.label}</Text>)}
+          {columns.map((c) => <GText key={c.id} size={13} secondary style={{ width: cellWidth, textAlign: "center" }}>{c.label}</GText>)}
         </View>
         {rows.map((row) => (
-          <View key={row.id} style={{ flexDirection: "row", alignItems: "center", minHeight: 48, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: missing?.has(row.id) ? colors.dangerSoft : undefined }}>
-            <View style={{ width: labelWidth, paddingRight: space[2] }}>
-              <Text variant="small">{row.label}</Text>
-              {missing?.has(row.id) ? <Text variant="caption" tone="danger">Required</Text> : null}
+          <View key={row.id} style={{ flexDirection: "row", alignItems: "center", minHeight: 48, borderBottomWidth: 1, borderBottomColor: g.border, backgroundColor: missing?.has(row.id) ? g.errorSoft : undefined }}>
+            <View nativeID={`matrix-label-${row.id}`} style={{ width: labelWidth, paddingRight: space[2], backgroundColor: g.card }}>
+              <GText size={14}>{row.label}</GText>
+              {missing?.has(row.id) ? <GText size={12} color={g.error}>Required</GText> : null}
             </View>
             {columns.map((c) => (
               <View key={c.id} style={{ width: cellWidth, alignItems: "center" }}>

@@ -8,14 +8,14 @@ export type ThemeMode = "dark" | "light" | "system";
 const STORAGE_KEY = "selfhostform_theme";
 
 interface Theme { colors: Colors; dark: boolean; mode: ThemeMode; setMode: (m: ThemeMode) => void }
-const ThemeContext = createContext<Theme>({ colors: palette.dark, dark: true, mode: "dark", setMode: () => {} });
+const ThemeContext = createContext<Theme>({ colors: palette.light, dark: false, mode: "system", setMode: () => {} });
 
 function readMode(): ThemeMode {
   const v = getItem(STORAGE_KEY);
-  return v === "light" || v === "system" || v === "dark" ? v : "dark";
+  return v === "light" || v === "system" || v === "dark" ? v : "system";
 }
 
-/** Dark by default (the product's identity); light and follow-system are a setting. */
+/** New installations follow the device appearance; saved theme preferences remain in effect. */
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const system = useColorScheme();
   const [mode, setModeState] = useState<ThemeMode>(readMode);

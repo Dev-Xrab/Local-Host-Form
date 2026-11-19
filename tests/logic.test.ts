@@ -6,6 +6,9 @@ import { parseRosterText, rosterToText } from "../lib/roster";
 import { QUESTION_TYPES, createQuestionDefaults, getQuestionType } from "../src/lib/questionTypes";
 import { getMatrixMissingRows } from "../src/lib/matrixQuestions";
 import { groupIntoPages } from "../src/features/responses/utils/groupIntoPages";
+import { SUBMIT, computePath, listSections, nextPage, questionsOnPath } from "../src/lib/sectionFlow";
+import { questionsOnPath as serverQuestionsOnPath } from "../server/responses/sectionFlow.js";
+import { formatDuration, mostMissed, overviewStats, questionAccuracy } from "../src/features/forms/utils/summaryStats";
 import { percentOf } from "../src/features/forms/utils/responseAnalytics";
 
 describe("roster text", () => {
@@ -98,5 +101,111 @@ describe("paging and analytics", () => {
   it("rounds percentages to one decimal and guards a zero total", () => {
     expect(percentOf(1, 3)).toBe(33.3);
     expect(percentOf(0, 0)).toBe(0);
+  });
+});
+
+describe("section links", () => {
+  // Page 1 asks who the respondent is; "Student" jumps to section C, "Teacher" to section B, and
+  // "Guest" submits. Section B ends by sending respondents straight to submit.
+  const choice = { id: "who", type: "multiple_choice", options: ["Student", "Teacher", "Guest", "Other"], navigation: { options: ["c", "b", "submit", null] } };
+  const form = [
+    choice,
+    { id: "b", type: "section", title: "B", navigation: { next: "submit" } },
+    { id: "qb", type: "short_answer", required: true },
+    { id: "c", type: "section", title: "C" },
+    { id: "qc", type: "short_answer", required: true },
+  ];
+  const pages = groupIntoPages(form);
+
+  it("sends a respondent to the section their answer links to", () => {
+    expect(nextPage(pages, 0, { who: 0 })).toBe(2);
+    expect(nextPage(pages, 0, { who: 1 })).toBe(1);
+    expect(nextPage(pages, 0, { who: 2 })).toBe(SUBMIT);
+  });
+
+  it("continues to the next section for an unlinked or missing answer", () => {
+    expect(nextPage(pages, 0, { who: 3 })).toBe(1);
+    expect(nextPage(pages, 0, {})).toBe(1);
+  });
+
+  it("follows 'after section' when the section has no answer-based question", () => {
+    expect(nextPage(pages, 1, {})).toBe(SUBMIT);
+    expect(nextPage(pages, 2, {})).toBe(SUBMIT);
+  });
+
+  it("ignores a section's own link when it holds an answer-based question", () => {
+    const own = groupIntoPages([{ id: "s", type: "section" }, { ...choice, navigation: { options: [null, null, null, null] } }, { id: "t", type: "section" }, { id: "u", type: "section" }]);
+    own[0].next = "u";
+    expect(nextPage(own, 0, { who: 0 })).toBe(1);
+  });
+
+  it("only walks the pages an answer leads through, and stops on a loop", () => {
+    expect(computePath(pages, { who: 0 })).toEqual([0, 2]);
+    expect(computePath(pages, { who: 1 })).toEqual([0, 1]);
+    const loop = groupIntoPages([{ id: "a", type: "section", navigation: { next: "b" } }, { id: "b", type: "section", navigation: { next: "a" } }]);
+    expect(computePath(loop, {})).toEqual([0, 1]);
+  });
+
+  it("treats a link to a deleted section as 'continue'", () => {
+    const dangling = groupIntoPages([{ ...choice, navigation: { options: ["gone", null, null, null] } }, { id: "b", type: "section" }]);
+    expect(nextPage(dangling, 0, { who: 0 })).toBe(1);
+  });
+
+  it("numbers sections the way the editor does", () => {
+    expect(listSections([{ id: "q", type: "short_answer" }, { id: "s1", type: "section", title: "A" }]).map((s: { number: number }) => s.number)).toEqual([2]);
+    expect(listSections([{ id: "s1", type: "section" }, { id: "s2", type: "section" }]).map((s: { number: number }) => s.number)).toEqual([1, 2]);
+  });
+
+  it("agrees with the server's copy of the walk", () => {
+    for (const answers of [{ who: 0 }, { who: 1 }, { who: 2 }, { who: 3 }, {}]) {
+      const ids = (qs: { id: string }[]) => qs.map((q) => q.id);
+      expect(ids(serverQuestionsOnPath(form, answers))).toEqual(ids(questionsOnPath(pages, answers)));
+    }
+  });
+});
+
+describe("results summary", () => {
+  const at = (day: number, h = 10) => new Date(2026, 10, day, h, 0, 0).toISOString();
+  const rs = [
+    { id: "1", startedAt: at(1, 10), submittedAt: new Date(2026, 10, 1, 10, 2, 0).toISOString(), score: 5, maxScore: 5, breakdown: [{ questionId: "a", gradable: true, correct: true, submittedAnswer: "x" }, { questionId: "b", gradable: true, correct: true, submittedAnswer: "y" }] },
+    { id: "2", startedAt: at(1, 11), submittedAt: new Date(2026, 10, 1, 11, 4, 0).toISOString(), score: 0, maxScore: 5, breakdown: [{ questionId: "a", gradable: true, correct: false, submittedAnswer: "z" }, { questionId: "b", gradable: true, correct: true, submittedAnswer: "y" }] },
+    { id: "3", startedAt: at(4, 9), submittedAt: new Date(2026, 10, 4, 9, 3, 0).toISOString(), score: 4, maxScore: 5, breakdown: [{ questionId: "a", gradable: true, correct: false, submittedAnswer: "" }] },
+  ];
+
+  it("counts responses, averages completion time and finds the latest", () => {
+    const s = overviewStats(rs);
+    expect(s.count).toBe(3);
+    expect(s.avgSeconds).toBe(Math.round((120 + 240 + 180) / 3));
+    expect(s.lastAt).toBe(rs[2].submittedAt);
+  });
+
+  it("summarises scores as percentages and buckets a perfect score with 90-100", () => {
+    const { scored } = overviewStats(rs);
+    expect(scored).toMatchObject({ count: 3, average: 60, median: 80, lowest: 0, highest: 100 });
+    expect(scored!.bins[9].count).toBe(1);
+    expect(scored!.bins[8].count).toBe(1);
+    expect(scored!.bins[0].count).toBe(1);
+  });
+
+  it("fills in days with no responses between the first and last", () => {
+    expect(overviewStats(rs).perDay.map((d: { count: number }) => d.count)).toEqual([2, 0, 0, 1]);
+  });
+
+  it("has no scores or days for an empty or unscored set", () => {
+    expect(overviewStats([])).toMatchObject({ count: 0, avgSeconds: null, lastAt: null, scored: null, perDay: [] });
+    expect(overviewStats([{ submittedAt: at(1) }]).scored).toBeNull();
+  });
+
+  it("measures how many got a question right, ignoring blanks", () => {
+    expect(questionAccuracy({ id: "a" }, rs)).toEqual({ answered: 2, correct: 1, percent: 50 });
+    expect(questionAccuracy({ id: "none" }, rs)).toBeNull();
+    expect(mostMissed([{ id: "a" }, { id: "b" }], rs).map((m: { question: { id: string } }) => m.question.id)).toEqual(["a"]);
+  });
+
+  it("formats durations", () => {
+    expect(formatDuration(null)).toBe("—");
+    expect(formatDuration(45)).toBe("45s");
+    expect(formatDuration(125)).toBe("2m 5s");
+    expect(formatDuration(3720)).toBe("1h 2m");
   });
 });

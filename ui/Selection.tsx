@@ -25,11 +25,11 @@ function Row({ role, shape, label, checked, onChange, disabled, description, ind
       onPress={() => onChange(role === "radio" ? true : !checked)}
       onFocus={onFocus}
       onBlur={onBlur}
-      style={[styles.row, { opacity: disabled ? 0.5 : 1 }, ring]}
+      style={(state) => [styles.row, { opacity: disabled ? 0.5 : 1, backgroundColor: (state as { hovered?: boolean }).hovered ? colors.hover : checked && shape !== "switch" ? colors.surfaceMuted : "transparent" }, ring]}
     >
       {shape === "switch" ? (
         <View style={[styles.track, { backgroundColor: checked ? colors.accent : colors.borderStrong }]}>
-          <View style={[styles.thumb, { backgroundColor: "#fff", transform: [{ translateX: checked ? 16 : 0 }] }]} />
+          <View style={[styles.thumb, { backgroundColor: checked ? colors.primaryText : colors.surface, transform: [{ translateX: checked ? 16 : 0 }] }]} />
         </View>
       ) : (
         <View
@@ -59,7 +59,7 @@ export const Radio = (p: Base) => <Row {...p} role="radio" shape="circle" />;
 export const Switch = (p: Base) => <Row {...p} role="switch" shape="switch" />;
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", gap: space[3], minHeight: 36, paddingVertical: 4, borderRadius: radius.sm },
+  row: { flexDirection: "row", alignItems: "center", gap: space[3], minHeight: 48, paddingVertical: 8, paddingHorizontal: space[3], borderRadius: radius.sm },
   mark: { width: 18, height: 18, borderWidth: 1.5, alignItems: "center", justifyContent: "center" },
   dot: { width: 8, height: 8, borderRadius: radius.pill },
   track: { width: 36, height: 20, borderRadius: radius.pill, padding: 2, justifyContent: "center" },

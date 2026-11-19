@@ -122,7 +122,7 @@ function Leaderboard({ respondents, onOpen }: { respondents: Respondent[]; onOpe
   const medal = (rank: number) => (rank === 1 ? colors.warning : rank === 2 ? colors.textSecondary : rank === 3 ? colors.accent : colors.textTertiary);
 
   if (ranked.length === 0) {
-    return <Surface><EmptyState icon={Trophy} title="No scores yet" body="The leaderboard fills in as respondents submit a form that has scored questions." /></Surface>;
+    return <Surface><EmptyState icon={Trophy} title="No scores yet" body="The ranking fills in as respondents submit a form with scored questions." /></Surface>;
   }
   return (
     <Surface padded={false}>
@@ -178,7 +178,7 @@ export default function SessionDetail() {
   const [detail, setDetail] = useState<RespondentDetail | null>(null);
   const [showExport, setShowExport] = useState(false);
   const [confirm, setConfirm] = useState<Confirm>(null);
-  const [tab, setTab] = useState<"respondents" | "leaderboard" | "settings">("respondents");
+  const [tab, setTab] = useState<"overview" | "respondents" | "leaderboard" | "settings">("overview");
   // Draft of the name / time limit fields; saved explicitly with the "Save changes" button.
   const [general, setGeneral] = useState({ name: "", durationMinutes: "" });
   const [generalError, setGeneralError] = useState<string | null>(null);
@@ -330,31 +330,34 @@ export default function SessionDetail() {
 
       {error ? <Notice tone="danger" actionLabel="Dismiss" onAction={() => setError(null)}>{error}</Notice> : null}
 
-      <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "stretch", gap: space[3] }}>
-        {[
+      <Tabs<"overview" | "respondents" | "leaderboard" | "settings"> value={tab} onChange={setTab} options={[{ value: "overview", label: "Overview" }, { value: "respondents", label: "Respondents", count: respondents.length }, { value: "leaderboard", label: "Ranking" }, { value: "settings", label: "Settings" }]} />
+
+      {tab === "overview" ? <View style={{ gap: space[5] }}>
+        <View style={{ gap: space[2] }}><Text variant="title" accessibilityRole="header">{isEnded ? "Session summary" : "Share and monitor"}</Text><Text tone="secondary">{isDraft ? "Start this session when you are ready, then share its code or local link." : isActive ? "Respondents appear here as they join. Counts refresh every five seconds." : "This session has ended. Review answers in Respondents or compare scores in Ranking."}</Text></View>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "stretch", borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.border }}>
+          {[
           { label: "Respondents", value: String(respondents.length), sub: "joined" },
           { label: "Submitted", value: `${submitted.length} / ${respondents.length}`, sub: "finished" },
           { label: "In progress", value: String(inProgress.length), sub: isActive ? "answering now" : "not finished" },
           { label: "Average score", value: avg != null ? `${avg}%` : "—", sub: avg != null ? `${scored.length} graded` : "no grades yet" },
-        ].map((t) => (
-          <Surface key={t.label} style={{ flexGrow: 1, flexBasis: 130, maxWidth: isDesktop ? 170 : undefined, justifyContent: "center", gap: 0 }}>
+          ].map((t) => (
+          <View key={t.label} style={{ flexGrow: 1, flexBasis: 140, padding: space[3], justifyContent: "center" }}>
             <Stat label={t.label} value={t.value} sub={t.sub} />
-          </Surface>
+          </View>
         ))}
+        </View>
         {!isEnded ? (
-          <Surface style={{ flexGrow: 4, flexBasis: 440, justifyContent: "center" }}>
+          <Surface style={{ justifyContent: "center", borderRadius: 0, backgroundColor: colors.bg }}>
             <JoinPanel inline code={session.code} shareUrl={shareUrl} publicUrl={publicUrl} />
           </Surface>
         ) : null}
-      </View>
-
-      <Tabs<"respondents" | "leaderboard" | "settings"> value={tab} onChange={setTab} options={[{ value: "respondents", label: "Respondents", count: respondents.length }, { value: "leaderboard", label: "Leaderboard" }, { value: "settings", label: "Settings" }]} />
+      </View> : null}
 
       {tab === "leaderboard" ? (
         <Leaderboard respondents={respondents} onOpen={setOpenId} />
       ) : tab === "settings" ? (
         <View style={{ gap: space[4] }}>
-          <Surface padded={false}>
+          <Surface padded={false} style={{ borderRadius: 0, backgroundColor: colors.bg }}>
             <SettingRow label="Form" description="The form this session collects answers for. It is fixed when the session is created so existing responses always match its questions.">
               <Button label={session.formTitle || "Untitled form"} icon={ExternalLink} onPress={() => router.push(`/forms/${session.formId}` as never)} />
             </SettingRow>
@@ -364,14 +367,15 @@ export default function SessionDetail() {
             <SettingRow label="Time limit per respondent" description={isActive ? "Minutes. Applies to people who join from now on; anyone already answering keeps their current deadline." : "Minutes. Leave empty for no limit."}>
               <View style={{ width: isDesktop ? 280 : undefined }}><TextField value={general.durationMinutes} onChangeText={(v) => setGeneral((g) => ({ ...g, durationMinutes: v.replace(/\D/g, "") }))} keyboardType="numeric" placeholder="No limit" accessibilityLabel="Time limit in minutes" /></View>
             </SettingRow>
+            {generalError ? <View style={{ padding: space[3], paddingBottom: 0 }}><Notice tone="danger">{generalError}</Notice></View> : null}
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space[3], padding: space[3] }}>
-              <Text variant="small" tone={generalError ? "danger" : "tertiary"} style={{ flex: 1 }}>{generalError ?? `Started ${formatDateTime(session.startedAt)} · Ended ${formatDateTime(session.endedAt)}`}</Text>
+              <Text variant="small" tone="tertiary" style={{ flex: 1 }}>{`Session settings · Started ${formatDateTime(session.startedAt)} · Ended ${formatDateTime(session.endedAt)}`}</Text>
               <Button label="Discard" variant="ghost" compact disabled={!generalDirty || working} onPress={() => { setGeneral({ name: session.name, durationMinutes: session.durationMinutes ? String(session.durationMinutes) : "" }); setGeneralError(null); }} />
               <Button label="Save changes" variant="primary" compact disabled={!generalDirty} loading={working} onPress={saveGeneral} />
             </View>
           </Surface>
 
-          <Surface padded={false}>
+          <Surface padded={false} style={{ borderRadius: 0, backgroundColor: colors.bg }}>
             <SettingRow label="Allow editing after submitting" description={`Respondents can change their answer with their edit code${session.responsesEditable && !isActive ? ". Only takes effect while the session is active" : ""}.`}>
               <Switch label={session.responsesEditable ? "On" : "Off"} checked={session.responsesEditable} disabled={working} onChange={() => act(() => sessionsApi.setEditable(session.id, !session.responsesEditable))} />
             </SettingRow>
@@ -391,14 +395,14 @@ export default function SessionDetail() {
             </SettingRow>
           </Surface>
         </View>
-      ) : (
+      ) : tab === "respondents" ? (
         <View style={{ gap: space[3] }}>
           <View style={{ flexDirection: isDesktop ? "row" : "column", gap: space[3], alignItems: isDesktop ? "center" : "stretch", justifyContent: "space-between" }}>
             <SegmentedControl<Filter> value={filter} onChange={setFilter} options={[{ value: "all", label: "All", count: respondents.length }, { value: "submitted", label: "Submitted", count: submitted.length }, { value: "in_progress", label: "In progress", count: inProgress.length }]} />
             <View style={{ flex: isDesktop ? 1 : undefined, maxWidth: isDesktop ? 320 : undefined }}><SearchField value={query} onChangeText={setQuery} placeholder="Search respondents" /></View>
           </View>
           <Text variant="small" tone="secondary">{isActive ? "Live, refreshes every 5 seconds. " : ""}{!isEnded ? "Scores and answers are viewable as soon as a respondent submits; everyone else's once the session has ended." : ""}</Text>
-          <Surface padded={false}>
+          <Surface padded={false} style={{ borderRadius: 0, backgroundColor: colors.bg }}>
             {shown.length === 0 ? (
               <EmptyState
                 icon={Users}
@@ -413,7 +417,7 @@ export default function SessionDetail() {
             )}
           </Surface>
         </View>
-      )}
+      ) : null}
 
       <ExportDialog
         visible={showExport}

@@ -153,7 +153,7 @@ export function BulkExportScreen() {
   };
 
   const picker = (
-    <Surface padded={false}>
+    <Surface padded={false} style={{ borderRadius: 0, backgroundColor: colors.bg }}>
       <View style={{ padding: space[3], gap: space[2] }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           <View><Text variant="title">Sessions</Text><Text variant="small" tone="secondary">{chosen.length} of {ended.length} selected</Text></View>
@@ -190,17 +190,17 @@ export function BulkExportScreen() {
   );
 
   const renderResults = (full: boolean) => (
-    <Surface padded={false} style={full ? { borderRadius: 0, borderWidth: 0 } : undefined}>
+    <Surface padded={false} style={full ? { borderRadius: 0, borderWidth: 0 } : { borderRadius: 0, backgroundColor: colors.bg }}>
       <View style={{ padding: space[3], gap: space[3], flexDirection: isPhone ? "column" : "row", alignItems: isPhone ? "stretch" : "center", justifyContent: "space-between" }}>
         <View style={{ flex: isPhone ? undefined : 1, maxWidth: isPhone ? undefined : 300 }}><SearchField value={respondentQuery} onChangeText={setRespondentQuery} placeholder="Search respondents" /></View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: space[3], flexWrap: "wrap" }}>
-          {hasRoster ? <Checkbox label="Include non-roster respondents" checked={includeNonRoster} onChange={setIncludeNonRoster} /> : null}
+          {hasRoster ? <Checkbox label="Include respondents outside the participant list" checked={includeNonRoster} onChange={setIncludeNonRoster} /> : null}
           {!full && !isPhone ? <IconButton icon={Maximize2} label="Full view" onPress={() => setFullView(true)} /> : null}
           <Button label={`Export ${plural(chosen.length, "session")}`} icon={Download} variant="primary" onPress={() => setShowExport(true)} />
         </View>
       </View>
       {fetching && Object.keys(bySession).length === 0 ? <Spinner label="Loading responses" /> : visible.length === 0 ? (
-        <EmptyState title={respondentQuery ? `No respondents match "${respondentQuery}"` : hasRoster && !includeNonRoster ? "No submitted respondents match the roster" : "No submitted responses yet"} body={hasRoster && !includeNonRoster && !respondentQuery ? "Turn on non-roster respondents to see everyone who submitted." : undefined} />
+        <EmptyState title={respondentQuery ? `No respondents match "${respondentQuery}"` : hasRoster && !includeNonRoster ? "No submitted respondents match the participant list" : "No submitted responses yet"} body={hasRoster && !includeNonRoster && !respondentQuery ? "Include respondents outside the participant list to see everyone who submitted." : undefined} />
       ) : isPhone ? (
         visible.map((row) => {
           const open = expanded?.rowKey === row.key;
@@ -210,7 +210,7 @@ export function BulkExportScreen() {
                 <View style={{ flexDirection: "row", alignItems: "center", gap: space[2] }}>
                   <View style={{ transform: [{ rotate: open ? "90deg" : "0deg" }] }}><Icon icon={ChevronRight} size={16} /></View>
                   <Text variant="bodyStrong" style={{ flex: 1 }}>{row.name}</Text>
-                  {hasRoster && !row.matched ? <Badge label="Not on roster" tone="warning" /> : null}
+                  {hasRoster && !row.matched ? <Badge label="Not on list" tone="warning" /> : null}
                 </View>
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space[2], paddingLeft: space[5] }}>
                   {chosen.map((s) => <View key={s.id} style={{ gap: 2 }}><Text variant="caption" tone="tertiary" numberOfLines={1} style={{ maxWidth: 140 }}>{s.name || "Untitled"}</Text>{chip(row, s)}</View>)}
@@ -240,7 +240,7 @@ export function BulkExportScreen() {
                         <Text variant="bodyStrong" numberOfLines={1}>{row.name}</Text>
                         {row.studentId ? <Text variant="caption" tone="tertiary">{row.studentId}</Text> : null}
                       </View>
-                      {hasRoster && !row.matched ? <Badge label="Off roster" tone="warning" /> : null}
+                      {hasRoster && !row.matched ? <Badge label="Not on list" tone="warning" /> : null}
                     </Pressable>
                     {chosen.map((s) => <View key={s.id} style={{ width: 150, padding: space[3] }}>{chip(row, s)}</View>)}
                     <View style={{ width: 110, padding: space[3] }}><Text variant="small" tone="secondary">{done}/{chosen.length}</Text></View>
@@ -257,25 +257,25 @@ export function BulkExportScreen() {
 
   return (
     <Page maxWidth={1240}>
-      <PageHeader title="Bulk export" subtitle="Choose ended sessions, see who responded to each, read anyone's answers, and export it all to one Excel workbook." />
+      <PageHeader title="Results matrix" subtitle="Compare respondents across sessions, inspect answers and export results." />
       <View style={{ flexDirection: isDesktop ? "row" : "column", gap: space[4], alignItems: "flex-start" }}>
         <View style={{ width: isDesktop ? 340 : undefined, alignSelf: isDesktop ? "flex-start" : "stretch" }}>{picker}</View>
         <View style={{ flex: 1, alignSelf: "stretch", gap: space[4], minWidth: 0 }}>
-          <Surface padded={false}>
-            <Pressable accessibilityRole="button" accessibilityState={{ expanded: rosterOpen ?? !hasRoster }} onPress={() => setRosterOpen(!(rosterOpen ?? !hasRoster))} style={{ flexDirection: "row", alignItems: "center", gap: space[2], padding: space[3] }}>
-              <View style={{ transform: [{ rotate: (rosterOpen ?? !hasRoster) ? "90deg" : "0deg" }] }}><Icon icon={ChevronRight} size={16} /></View>
+          <Surface padded={false} style={{ borderRadius: 0, backgroundColor: colors.bg }}>
+            <Pressable accessibilityRole="button" accessibilityState={{ expanded: rosterOpen ?? false }} onPress={() => setRosterOpen(!(rosterOpen ?? false))} style={{ flexDirection: "row", alignItems: "center", gap: space[2], padding: space[3] }}>
+              <View style={{ transform: [{ rotate: (rosterOpen ?? false) ? "90deg" : "0deg" }] }}><Icon icon={ChevronRight} size={16} /></View>
               <Icon icon={Users} size={16} />
-              <Text variant="bodyStrong" style={{ flex: 1 }}>Roster</Text>
-              <Badge label={plural(students.length, "student")} />
+              <Text variant="bodyStrong" style={{ flex: 1 }}>Participant list</Text>
+              <Badge label={plural(students.length, "participant")} />
             </Pressable>
-            {(rosterOpen ?? !hasRoster) ? <View style={{ padding: space[3], paddingTop: 0 }}><RosterManager students={students} onChanged={refreshRoster} /></View> : null}
+            {(rosterOpen ?? false) ? <View style={{ padding: space[3], paddingTop: 0 }}><RosterManager students={students} onChanged={refreshRoster} /></View> : null}
           </Surface>
 
           {chosen.length === 0 ? (
-            <Surface><EmptyState icon={Download} title="Pick sessions to get started" body="Tick one or more sessions. You'll see every respondent, whether they responded to each session, and can open anyone's answers right here." /></Surface>
+            <Surface><EmptyState icon={Download} title="Select sessions to compare" body="Choose one or more ended sessions. Each respondent will have a row, with their result for each selected session." /></Surface>
           ) : (
             <>
-              <Surface style={{ flexDirection: "row", flexWrap: "wrap", gap: space[4] }}>
+              <Surface style={{ flexDirection: "row", flexWrap: "wrap", gap: space[4], borderRadius: 0, borderWidth: 0, borderTopWidth: 1, borderBottomWidth: 1, backgroundColor: colors.bg, paddingHorizontal: 0 }}>
                 {[["Respondents", String(rows.length)], ["Sessions", String(chosen.length)], ["Responses", String(responseCount)], ["Response rate", `${rate}%`]].map(([l, v]) => (
                   <View key={l} style={{ flex: 1, minWidth: 100, gap: 2 }}><Text variant="caption" tone="tertiary">{l}</Text><Text variant="heading" style={{ fontVariant: ["tabular-nums"] }}>{v}</Text></View>
                 ))}

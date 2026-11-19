@@ -15,7 +15,7 @@ if (Platform.OS === "web" && typeof window !== "undefined") {
 export function useFocusRing(colors: Colors) {
   const [focused, setFocused] = useState(false);
   const ring = (focused
-    ? { outlineWidth: 2, outlineStyle: "solid", outlineColor: colors.focus, outlineOffset: 1 }
+    ? { outlineWidth: 2, outlineStyle: "solid", outlineColor: colors.focus, outlineOffset: 2 }
     : {}) as ViewStyle;
   return {
     ring,

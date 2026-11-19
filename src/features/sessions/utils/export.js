@@ -220,7 +220,7 @@ export async function exportSessionsToWorkbook(sessionExports, { matrix } = {}) 
   ];
 
   if (matrix && matrix.rows.length > 0) {
-    const matrixHeader = ["Respondent", "Student ID", "Roster Status", ...matrix.sessions.map((s) => s.name || s.formTitle)];
+    const matrixHeader = ["Respondent", "Participant ID", "List status", ...matrix.sessions.map((s) => s.name || s.formTitle)];
     const matrixRows = matrix.rows.map((row) => [
       row.name,
       row.studentId || "",

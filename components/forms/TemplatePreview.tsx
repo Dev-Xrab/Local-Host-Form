@@ -68,7 +68,7 @@ function Card({ t, rect, onHoverIn, onHoverOut }: { t: PreviewTemplate; rect: Re
         pos,
       ]}
     >
-      <View style={{ height: 6, backgroundColor: t.accent }} />
+      <View style={{ height: 4, backgroundColor: colors.textTertiary }} />
       <ScrollView style={{ maxHeight: 414 }} contentContainerStyle={{ padding: space[3], gap: space[2] }} showsVerticalScrollIndicator>
         <View style={{ gap: 2 }}>
           <Text variant="title" numberOfLines={1}>{t.title}</Text>

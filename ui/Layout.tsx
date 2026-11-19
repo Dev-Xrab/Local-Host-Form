@@ -3,7 +3,6 @@ import { ScrollView, StyleSheet, View, type ViewStyle } from "react-native";
 import { radius, size, space } from "./tokens";
 import { useLayout, useTheme } from "./theme";
 import { Text } from "./Text";
-import { FadeIn } from "./FadeIn";
 
 /**
  * Scrolling page. A <PageHeader> child is lifted out into a full-width band with a hairline under
@@ -19,14 +18,10 @@ export function Page({ children, maxWidth = size.contentMax }: { children: React
   const gutter = isPhone ? space[4] : space[6];
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, alignItems: "center" }} keyboardShouldPersistTaps="handled">
-      {header ? (
-        <View style={{ alignSelf: "stretch", alignItems: "center", borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.bg }}>
-          <FadeIn distance={6} duration={420} style={{ width: "100%", maxWidth }}><View style={{ paddingHorizontal: gutter, paddingVertical: isPhone ? space[4] : space[5] }}>{header}</View></FadeIn>
-        </View>
-      ) : null}
-      <FadeIn delay={60} style={{ width: "100%", maxWidth }}>
-        <View style={{ paddingHorizontal: gutter, paddingVertical: isPhone ? space[4] : space[5], gap: space[5] }}>{rest}</View>
-      </FadeIn>
+      <View style={{ width: "100%", maxWidth, paddingHorizontal: gutter, paddingTop: isPhone ? space[5] : space[6], paddingBottom: space[7], gap: space[6] }}>
+        {header ? <View style={{ borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: space[5] }}>{header}</View> : null}
+        {rest}
+      </View>
     </ScrollView>
   );
 }
@@ -35,10 +30,10 @@ export function Page({ children, maxWidth = size.contentMax }: { children: React
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
   const { isPhone } = useLayout();
   return (
-    <View style={{ flexDirection: isPhone ? "column" : "row", alignItems: isPhone ? "stretch" : "center", justifyContent: "space-between", gap: space[3] }}>
-      <View style={{ flexShrink: 1, gap: 2 }}>
-        <Text variant="heading" accessibilityRole="header">{title}</Text>
-        {subtitle ? <Text tone="secondary">{subtitle}</Text> : null}
+    <View style={{ flexDirection: isPhone ? "column" : "row", alignItems: isPhone ? "stretch" : "flex-end", justifyContent: "space-between", gap: space[4] }}>
+      <View style={{ flexShrink: 1, gap: space[2] }}>
+        <Text accessibilityRole="header" style={{ fontSize: isPhone ? 24 : 28, lineHeight: isPhone ? 32 : 36, fontWeight: "400" }}>{title}</Text>
+        {subtitle ? <Text tone="secondary" style={{ maxWidth: 680 }}>{subtitle}</Text> : null}
       </View>
       {actions ? <View style={{ flexDirection: "row", gap: space[2], flexWrap: "wrap" }}>{actions}</View> : null}
     </View>
@@ -54,7 +49,7 @@ export function TableHeader({ columns, right = space[2] }: { columns: { label: s
     <View style={{ flexDirection: "row", alignItems: "center", gap: space[3], height: 32, paddingLeft: space[4], paddingRight: right, backgroundColor: colors.surfaceMuted, borderBottomWidth: 1, borderBottomColor: colors.border }}>
       {columns.map((c, i) => (
         <View key={i} style={c.width ? { width: c.width } : { flex: c.flex ?? 1 }}>
-          <Text variant="caption" tone="tertiary" style={{ textTransform: "uppercase", letterSpacing: 0.6 }}>{c.label}</Text>
+          <Text variant="caption" tone="tertiary">{c.label}</Text>
         </View>
       ))}
     </View>

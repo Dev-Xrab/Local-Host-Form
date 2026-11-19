@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useRouter } from "expo-router";
-import { View } from "react-native";
 import { responsesApi } from "../../src/features/responses/services/responsesApi";
 import { getDeviceId } from "../../src/features/responses/utils/deviceId";
-import { AuthCard, AuthLink } from "../../components/AuthCard";
-import { Button, Text, TextField, space } from "../../ui";
+import { AuthCard, AuthField, AuthLink, Button } from "../../components/AuthCard";
+import { GText } from "../../ui/gforms";
 
 const NAME_STORAGE_KEY = "stonearch_respondent_name";
 
@@ -51,25 +50,15 @@ export default function RespondentLogin() {
 
   return (
     <AuthCard
-      title="Join a session"
-      subtitle="Enter your details to continue to the form."
-      footer={<Text variant="small" tone="secondary">Hosting a form instead? <AuthLink href="/host/login">Log in as host</AuthLink></Text>}
+      kind="respondent"
+      eyebrow="Join a session"
+      title="Enter your session code."
+      subtitle="Use the code you received and the name or identifier the host will recognize."
+      footer={<GText size={14} secondary>Hosting a form? <AuthLink href="/host/login">Host sign in</AuthLink></GText>}
     >
-      <View style={{ gap: space[3] }}>
-        <TextField label="Identifier" value={identifier} onChangeText={setIdentifier} placeholder="Name, email, or N/A" autoComplete="name" error={errors.identifier} />
-        <TextField
-          label="Session code"
-          value={code}
-          onChangeText={(v) => setCode(v.toUpperCase())}
-          placeholder="e.g. AB12CD"
-          autoCapitalize="characters"
-          autoComplete="off"
-          maxLength={32}
-          error={errors.code}
-          onSubmitEditing={submit}
-        />
-        <Button label="Continue" variant="primary" fullWidth loading={submitting} onPress={submit} />
-      </View>
+      <AuthField label="Your name or identifier" value={identifier} onChangeText={(v) => { setIdentifier(v); setErrors((e) => ({ ...e, identifier: undefined })); }} placeholder="Name, email, or N/A" autoComplete="name" error={errors.identifier} autoFocus />
+      <AuthField label="Session code" value={code} onChangeText={(v) => { setCode(v.toUpperCase()); setErrors((e) => ({ ...e, code: undefined })); }} placeholder="e.g. AB12CD" autoCapitalize="characters" autoComplete="off" maxLength={32} error={errors.code} onSubmitEditing={submit} />
+      <Button label="Find session" loading={submitting} onPress={submit} />
     </AuthCard>
   );
 }

@@ -11,6 +11,8 @@ import { useCloudAccount, useTunnel } from "../../lib/data";
 import { copyText } from "../../lib/platform";
 import { useServerOrigin } from "../../lib/useServerOrigin";
 import { QrCode } from "../QrCode";
+import { SettingGroup } from "./SettingGroup";
+import { DefaultsGroups } from "./DefaultsGroups";
 
 const CLEAR_CONFIRM = "DELETE";
 const MONO = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"; // addresses stay monospace so they copy and read exactly
@@ -26,33 +28,25 @@ function AddressBox({ value, label }: { value: string; label: string }) {
   );
 }
 
-function AppearanceSection() {
+function AppearancePanel() {
   const { mode, setMode } = useTheme();
   return (
-    <Section split title="Appearance" description="Choose how the interface looks on this device.">
-      <Surface padded={false}>
-        <SettingRow last label="Theme" description="Dark is the default. System follows your device.">
-          <SegmentedControl value={mode} onChange={setMode} options={[{ value: "dark", label: "Dark" }, { value: "light", label: "Light" }, { value: "system", label: "System" }]} />
-        </SettingRow>
-      </Surface>
-    </Section>
+    <SettingRow last label="Theme" description="System follows your device and is the default.">
+      <SegmentedControl value={mode} onChange={setMode} options={[{ value: "dark", label: "Dark" }, { value: "light", label: "Light" }, { value: "system", label: "System" }]} />
+    </SettingRow>
   );
 }
 
-function ServerSection() {
+function ServerPanel() {
   const origin = useServerOrigin();
   return (
-    <Section split title="Local server" description="For students on the same network.">
-      <Surface padded={false}>
-        <SettingRow last label="Local server address" description="Share this with students on the same network.">
-          <AddressBox value={origin} label="Copy address" />
-        </SettingRow>
-      </Surface>
-    </Section>
+    <SettingRow last label="Local server address" description="Share this with participants on the same network.">
+      <AddressBox value={origin} label="Copy address" />
+    </SettingRow>
   );
 }
 
-function RemoteAdminSection() {
+function RemoteAdminPanel() {
   const hostingOnPhone = useAuthStore((s) => s.hostingOnPhone);
   const tunnel = useTunnel();
   const [enabled, setEnabled] = useState<boolean | null>(null);
@@ -74,7 +68,7 @@ function RemoteAdminSection() {
     try { await fn(); } catch (reason) { setError((reason as Error).message); } finally { setBusy(false); }
   };
 
-  if (hostingOnPhone) return <Section split title="Remote access" description="Reach this server over the internet."><Surface><Text tone="secondary">Remote access needs the desktop app running on a computer.</Text></Surface></Section>;
+  if (hostingOnPhone) return <View style={{ padding: space[4] }}><Text tone="secondary">Remote access needs the desktop app running on a computer.</Text></View>;
 
   const startAccess = async () => {
     if (tunnel.allowedEmails.length > 0) await tunnel.saveAccess([]);
@@ -82,8 +76,8 @@ function RemoteAdminSection() {
   };
 
   return (
-    <Section split title="Remote access" description="Share forms and manage this server from another network.">
-      <Surface style={{ gap: space[3] }}>
+    <View style={{ padding: space[4], gap: space[3] }}>
+      <>
         <Text tone="secondary">Cloudflare creates a temporary public link. It changes each time you start access and works only while this app stays open.</Text>
         {enabled === null ? <Text tone="secondary">{error || "Checking remote access…"}</Text> : setup ? (
           <View style={{ gap: space[3], maxWidth: 420 }}>
@@ -99,10 +93,10 @@ function RemoteAdminSection() {
           <>
             <Text style={{ fontWeight: "600" }}>1. Admin protection is on</Text>
             <Text tone="secondary">Admin sign-in requires your server password and a 6-digit authenticator code.</Text>
-            {tunnel.allowedEmails.length > 0 ? <Notice tone="danger">The old email PIN list cannot be used with Quick Tunnels. Starting access will clear that list and create a public student link. Admin sign-in will still require your password and authenticator code.</Notice> : null}
+            {tunnel.allowedEmails.length > 0 ? <Notice tone="danger">The old email PIN list cannot be used with Quick Tunnels. Starting access will clear that list and create a public participant link. Admin sign-in will still require your password and authenticator code.</Notice> : null}
             <Text style={{ fontWeight: "600" }}>2. Start the public link</Text>
             {tunnel.status === "connected" ? <Button label="Stop remote access" variant="danger" loading={busy} onPress={() => run(tunnel.stop)} /> : tunnel.status === "error" ? <Button label="Reset remote access" variant="secondary" loading={busy} onPress={() => run(tunnel.stop)} /> : <Button label={tunnel.status === "installing" ? "Setting up…" : tunnel.status === "starting" ? "Connecting…" : "Start remote access"} icon={Globe} variant="primary" loading={busy || tunnel.status === "installing" || tunnel.status === "starting"} onPress={() => run(startAccess)} />}
-            {tunnel.status === "connected" && tunnel.url ? <><Text style={{ fontWeight: "600" }}>3. Copy the right link</Text><Text variant="small" tone="secondary">Student link</Text><AddressBox value={tunnel.url} label="Copy student link" /><Text variant="small" tone="secondary">Admin link</Text><AddressBox value={`${tunnel.url}/host/login`} label="Copy admin link" /></> : null}
+            {tunnel.status === "connected" && tunnel.url ? <><Text style={{ fontWeight: "600" }}>3. Copy the right link</Text><Text variant="small" tone="secondary">Participant link</Text><AddressBox value={tunnel.url} label="Copy participant link" /><Text variant="small" tone="secondary">Admin link</Text><AddressBox value={`${tunnel.url}/host/login`} label="Copy admin link" /></> : null}
             {tunnel.status === "error" && tunnel.error ? <Notice tone="danger">{tunnel.error}</Notice> : null}
             <View style={{ gap: space[2], maxWidth: 420 }}>
               <TextField label="Server password" value={password} onChangeText={setPassword} secureTextEntry autoComplete="current-password" />
@@ -115,32 +109,33 @@ function RemoteAdminSection() {
           <View style={{ gap: space[3], maxWidth: 420 }}>
             <Text style={{ fontWeight: "600" }}>1. Protect admin sign-in</Text>
             <Text tone="secondary">Enter your server password, then pair an authenticator app. The public link will start after you confirm its code.</Text>
-            {tunnel.allowedEmails.length > 0 ? <Notice tone="danger">Starting a Quick Tunnel will clear the saved email PIN list because Cloudflare's email sign-in is failing. The student link will be public. Admin sign-in will require your password and authenticator code.</Notice> : null}
+            {tunnel.allowedEmails.length > 0 ? <Notice tone="danger">Starting a Quick Tunnel will clear the saved email PIN list because Cloudflare's email sign-in is failing. The participant link will be public. Admin sign-in will require your password and authenticator code.</Notice> : null}
             <TextField label="Server password" hint="Enter the password you use to sign in to this server." value={password} onChangeText={setPassword} secureTextEntry autoComplete="current-password" />
             <Button label="Set up and start remote access" variant="primary" loading={busy} onPress={() => {
               if (!password.trim()) { setError("Enter your server password above to continue."); return; }
               run(async () => { setSetup(await authApi.beginRemoteAdmin(password)); setStartAfterSetup(true); setPassword(""); });
             }} />
-            <Text variant="small" tone="tertiary">Need a student link only? Start one without admin access.</Text>
-            {tunnel.status === "connected" ? <><AddressBox value={tunnel.url!} label="Copy student link" /><Button label="Stop student link" variant="secondary" onPress={() => run(tunnel.stop)} /></> : <Button label="Start student link only" variant="secondary" loading={busy || tunnel.status === "installing" || tunnel.status === "starting"} onPress={() => run(startAccess)} />}
+            <Text variant="small" tone="tertiary">Need a participant link only? Start one without admin access.</Text>
+            {tunnel.status === "connected" ? <><AddressBox value={tunnel.url!} label="Copy participant link" /><Button label="Stop participant link" variant="secondary" onPress={() => run(tunnel.stop)} /></> : <Button label="Start participant link only" variant="secondary" loading={busy || tunnel.status === "installing" || tunnel.status === "starting"} onPress={() => run(startAccess)} />}
             {tunnel.status === "error" ? <><Notice tone="danger">{tunnel.error || "Could not start the link."}</Notice><Button label="Reset remote access" variant="secondary" onPress={() => run(tunnel.stop)} /></> : null}
           </View>
         )}
         {enabled !== null && error ? <Notice tone="danger">{error}</Notice> : null}
-      </Surface>
-    </Section>
+      </>
+    </View>
   );
 }
 
-function CloudSection() {
+function CloudPanel() {
   const { account, connected, loading, login, logout } = useCloudAccount();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [autoSave, setAutoSave] = useState<boolean | null>(null);
+  const [autoSaveError, setAutoSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!connected) return;
-    cloudApi.getAutoSave().then((r: { enabled: boolean }) => setAutoSave(r.enabled)).catch(() => setAutoSave(null));
+    cloudApi.getAutoSave().then((r: { enabled: boolean; error?: string | null }) => { setAutoSave(r.enabled); setAutoSaveError(r.error ?? null); }).catch(() => setAutoSave(null));
   }, [connected]);
 
   const toggleAutoSave = async (next: boolean) => {
@@ -158,8 +153,8 @@ function CloudSection() {
     try { await fn(); } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   };
   return (
-    <Section split title="Cloud account" description="Connect Google to sync forms and responses through your own Google Drive.">
-      <Surface padded={false}>
+    <View>
+      <>
         {loading ? (
           <View style={{ padding: space[4] }}><Text tone="secondary">Checking cloud connection…</Text></View>
         ) : connected && account ? (
@@ -170,15 +165,21 @@ function CloudSection() {
             <SettingRow last label="Save to Drive automatically" description="Saves new and changed forms, and responses as they come in, whenever you're online. Anything that couldn't go up is retried when the connection is back.">
               <Switch label={autoSave ? "On" : "Off"} checked={!!autoSave} disabled={autoSave === null} onChange={toggleAutoSave} />
             </SettingRow>
+            {autoSaveError ? (
+              <View style={{ padding: space[4], paddingTop: 0, gap: space[2], alignItems: "flex-start" }}>
+                <Notice tone="warning">{`The last automatic save failed: ${autoSaveError}. If it says Unauthorized, Google has expired this sign-in. Sign in again to resume saving.`}</Notice>
+                <Button label={busy ? "Opening browser…" : "Sign in again"} icon={Cloud} loading={busy} onPress={() => run(login)} />
+              </View>
+            ) : null}
           </>
         ) : (
           <SettingRow last label="Not connected" description="Sign in with Google to sync forms and responses between your devices. They are stored in a private folder in your own Google Drive, not on our servers.">
             <Button label={busy ? "Opening browser…" : "Sign in with Google"} icon={Cloud} variant="primary" loading={busy} onPress={() => run(login)} />
           </SettingRow>
         )}
-      </Surface>
-      {error ? <Notice tone="danger">{error}</Notice> : null}
-    </Section>
+      </>
+      {error ? <View style={{ padding: space[4], paddingTop: 0 }}><Notice tone="danger">{error}</Notice></View> : null}
+    </View>
   );
 }
 
@@ -277,6 +278,7 @@ export function SettingsScreen() {
   const router = useRouter();
   const toast = useToast();
   const { colors } = useTheme();
+  const flat = { borderRadius: 0, backgroundColor: "transparent" } as const;
   const [confirmClear, setConfirmClear] = useState(false);
   const [text, setText] = useState("");
   const [clearing, setClearing] = useState(false);
@@ -302,20 +304,29 @@ export function SettingsScreen() {
   return (
     <Page maxWidth={820}>
       <PageHeader title="Settings" subtitle="Configure how this server and your account behave." />
-      <AppearanceSection />
-      <ServerSection />
-      <RemoteAdminSection />
-      <CloudSection />
-      <Section split title="Security" description="Your server password and recovery question.">
-        <Surface padded={false}>
-          <PasswordForm />
-          <View style={{ height: 1, backgroundColor: colors.border }} />
-          <RecoveryForm />
+      <Section title="Settings">
+        <Surface padded={false} style={flat}>
+          <SettingGroup title="Appearance" description="Choose how the interface looks on this device"><AppearancePanel /></SettingGroup>
+          <SettingGroup title="Local server" description="For participants on the same network"><ServerPanel /></SettingGroup>
+          <SettingGroup title="Remote access" description="Share forms and manage this server from another network"><RemoteAdminPanel /></SettingGroup>
+          <SettingGroup title="Cloud account" description="Connect Google to sync forms and responses through your own Google Drive"><CloudPanel /></SettingGroup>
+          <SettingGroup title="Security" description="Your server password and recovery question" last>
+            <PasswordForm />
+            <View style={{ height: 1, backgroundColor: colors.border }} />
+            <RecoveryForm />
+          </SettingGroup>
         </Surface>
       </Section>
-      <Section split title="Danger zone" description="Irreversible actions. Check twice.">
-        <Surface padded={false}>
-          <SettingRow last label="Clear all local data" description="Removes quizzes, folders, and forms from this server.">
+
+      <Section title="Defaults">
+        <Surface padded={false} style={flat}>
+          <DefaultsGroups />
+        </Surface>
+      </Section>
+
+      <Section title="Danger zone" description="Irreversible actions. Check twice.">
+        <Surface padded={false} style={flat}>
+          <SettingRow last label="Clear all local data" description="Removes forms, sessions and responses from this server.">
             <Button label="Clear data" icon={Trash2} variant="danger" onPress={() => setConfirmClear(true)} />
           </SettingRow>
         </Surface>
@@ -327,7 +338,7 @@ export function SettingsScreen() {
         onClose={close}
         footer={<><Button label="Cancel" variant="ghost" onPress={close} /><Button label="Clear all data" variant="danger" disabled={text !== CLEAR_CONFIRM} loading={clearing} onPress={clear} /></>}
       >
-        <Text tone="secondary">This permanently deletes every quiz, form, question, session, and response on this server, along with every folder except "General". This can't be undone.</Text>
+        <Text tone="secondary">This permanently deletes every form, question, session and response on this server, along with every folder except "General". This can't be undone.</Text>
         <TextField label={`Type ${CLEAR_CONFIRM} to confirm`} value={text} onChangeText={setText} autoFocus autoComplete="off" autoCapitalize="characters" onSubmitEditing={clear} />
         {clearError ? <Notice tone="danger">{clearError}</Notice> : null}
       </Dialog>

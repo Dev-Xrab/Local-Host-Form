@@ -47,6 +47,13 @@ export function findMissingRequiredQuestions(questions, answers) {
   );
 }
 
+// Whether the form is a quiz: the host's explicit choice, or for forms saved before that setting
+// existed, whether any question carries an answer key.
+export function isQuizForm(form) {
+  if (typeof form.settings?.isQuiz === "boolean") return form.settings.isQuiz;
+  return (form.questions || []).some((q) => !q.removedAt && isGradable(q));
+}
+
 function isGradable(question) {
   if (CHOICE_TYPES.has(question.type)) return question.correctAnswerIndex?.length > 0;
   if (question.type === "checkboxes") return question.correctAnswerIndex?.length > 0;
@@ -134,12 +141,13 @@ function submittedAnswerText(question, value) {
 // (including an uploaded image's raw data: URI, and the question's own reference image if it
 // had one, so both can be shown back to them for context), plus correct/incorrect and the
 // accepted answer for questions that are actually gradable.
-export function buildAnswerReview(questions, answers) {
+export function buildAnswerReview(questions, answers, { showCorrect = true, showMissed = true, showPoints = false } = {}) {
   return questions
     .filter((q) => q.type !== "section")
     .map((q) => {
       const gradable = isGradable(q);
       const value = answers[q.id];
+      const right = gradable ? isCorrect(q, value) : null;
       return {
         questionId: q.id,
         title: q.title,
@@ -147,8 +155,12 @@ export function buildAnswerReview(questions, answers) {
         submittedAnswer: submittedAnswerText(q, value),
         fileUrl: fileUrlOf(q, value),
         gradable,
-        correct: gradable ? isCorrect(q, value) : null,
-        correctAnswer: gradable ? correctAnswerText(q) : null,
+        // What the respondent may learn is a host choice: which questions were missed, the right
+        // answers, and the point values are each released separately.
+        correct: gradable && (showMissed || showCorrect) ? right : null,
+        correctAnswer: gradable && showCorrect ? correctAnswerText(q) : null,
+        points: gradable && showPoints ? pointsOf(q) : null,
+        pointsEarned: gradable && showPoints ? (right ? pointsOf(q) : 0) : null,
       };
     });
 }

@@ -10,8 +10,11 @@ import { assessmentGroups } from "./assessmentGroups";
 // export.
 function buildResponsesGrid(form, responses) {
   const questions = (form.questions || []).filter((q) => q.type !== "section");
+  // Only forms that ask for an email address get the column.
+  const withEmail = responses.some((r) => r.respondentEmail);
   const header = [
     "Respondent",
+    ...(withEmail ? ["Email"] : []),
     "Session",
     "Submitted",
     "Score",
@@ -20,6 +23,7 @@ function buildResponsesGrid(form, responses) {
 
   const rows = responses.map((r) => [
     r.respondentName || "Anonymous",
+    ...(withEmail ? [r.respondentEmail || ""] : []),
     r.sessionName || "Untitled session",
     r.submittedAt ? new Date(r.submittedAt).toLocaleString() : "",
     r.maxScore != null ? `${r.score}/${r.maxScore}` : "",

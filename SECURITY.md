@@ -1,6 +1,6 @@
 # Security Policy
 
-Self Host Form handles student data and exam responses, so we take security seriously.
+Self-Host Form handles participant data and form responses, so we take security seriously.
 
 ## Reporting a vulnerability
 

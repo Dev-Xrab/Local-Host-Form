@@ -8,10 +8,12 @@ import { useSubjects } from "../../lib/data";
 import { canExportResponses, exportFormResponses } from "../../lib/exportFormResponses";
 import { RespondentDialog, type RespondentDetail } from "../sessions/RespondentDialog";
 import { oneLine } from "../../lib/text";
+import { isQuiz } from "../../src/lib/quiz";
+import { ResponseSummary, type SummaryResponse } from "./ResponseSummary";
 
 interface Response extends RespondentDetail { id: string; sessionId: string; sessionName?: string; answers?: Record<string, unknown>; respondentName?: string; formSnapshotId?: string | null }
-interface FormFull { id: string; subjectId: string | null; questions: Q[] }
-interface Q { id: string; type: string; title: string; removedAt?: string | null }
+interface FormFull { id: string; subjectId: string | null; settings?: { isQuiz?: boolean | null }; questions: Q[] }
+interface Q { id: string; type: string; title: string; removedAt?: string | null; options?: unknown[]; scale?: { min: number; max: number }; correctAnswerIndex?: number[]; correctAnswers?: string[] }
 interface AssessmentDefinition { id: string; title: string; questions: Q[]; provenance: "pinned" | "legacy_current_definition"; responseCount: number }
 
 // Bar length and label share one number (count / total), so a 40% option is a 40%-long bar, not
@@ -45,7 +47,7 @@ function QuestionBlock({ question, responses }: { question: Q; responses: Respon
   const { kind, total } = result;
 
   return (
-    <Surface style={{ gap: space[3] }}>
+    <Surface style={{ gap: space[4], borderWidth: 0, borderBottomWidth: 1, borderRadius: 0, backgroundColor: "transparent", paddingHorizontal: 0, paddingVertical: space[5] }}>
       <View style={{ gap: 2 }}>
         <Text variant="title">{question.title || "Untitled question"}</Text>
         <Text variant="small" tone="secondary">{total} response{total === 1 ? "" : "s"}{question.type === "checkboxes" ? " · % of respondents, can add up to more than 100%" : ""}</Text>
@@ -85,6 +87,7 @@ function QuestionBlock({ question, responses }: { question: Q; responses: Respon
 }
 
 export function ResponsesScreen({ formId }: { formId: string }) {
+  const { colors } = useTheme();
   const { isPhone } = useLayout();
   const { subjects } = useSubjects();
   const [form, setForm] = useState<FormFull | null>(null);
@@ -92,7 +95,7 @@ export function ResponsesScreen({ formId }: { formId: string }) {
   const [definitions, setDefinitions] = useState<AssessmentDefinition[]>([]);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
-  const [view, setView] = useState<"respondent" | "question">("respondent");
+  const [view, setView] = useState<"summary" | "respondent" | "question">("summary");
   const [query, setQuery] = useState("");
   const [sessionFilter, setSessionFilter] = useState("all");
   const [definitionFilter, setDefinitionFilter] = useState("");
@@ -144,8 +147,8 @@ export function ResponsesScreen({ formId }: { formId: string }) {
   return (
     <Page maxWidth={900}>
       <PageHeader
-        title="All responses"
-        subtitle={sessionFilter === "all" ? `${responses.length} response${responses.length === 1 ? "" : "s"} across every session for this form.` : `${inSession.length} response${inSession.length === 1 ? "" : "s"} from "${selectedName}".`}
+        title="Results for this form"
+        subtitle={sessionFilter === "all" ? `${responses.length} response${responses.length === 1 ? "" : "s"} across every session for this form.` : `${inSession.length} response${inSession.length === 1 ? "" : "s"} from "${selectedName}". Assessment versions are kept separate.`}
         actions={
           <>
             <Button label="Export" icon={Download} disabled={inSession.length === 0} onPress={() => setShowExport(true)} />
@@ -153,8 +156,14 @@ export function ResponsesScreen({ formId }: { formId: string }) {
         }
       />
 
+      <View style={{ flexDirection: isPhone ? "column" : "row", gap: space[5], borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.border, paddingVertical: space[4] }}>
+        <View style={{ flex: 1 }}><Text variant="caption" tone="tertiary">Submissions</Text><Text variant="heading">{inSession.length}</Text></View>
+        <View style={{ flex: 1 }}><Text variant="caption" tone="tertiary">Sessions</Text><Text variant="heading">{sessions.length}</Text></View>
+        <View style={{ flex: 1 }}><Text variant="caption" tone="tertiary">Question versions</Text><Text variant="heading">{definitions.length}</Text></View>
+      </View>
+
       <View style={{ flexDirection: isPhone ? "column" : "row", gap: space[3], alignItems: isPhone ? "stretch" : "center", justifyContent: "space-between" }}>
-        <SegmentedControl value={view} onChange={setView} options={[{ value: "respondent", label: "By respondent" }, { value: "question", label: "By question" }]} />
+        <SegmentedControl value={view} onChange={setView} options={[{ value: "summary", label: "Summary" }, { value: "respondent", label: "By respondent" }, { value: "question", label: "By question" }]} />
         {sessions.length > 0 ? (
           <View style={{ width: isPhone ? undefined : 280 }}>
             <Select value={sessionFilter} onChange={setSessionFilter} options={[{ value: "all", label: `All sessions (${responses.length})` }, ...sessions.map((s) => ({ value: s.id, label: `${s.name} (${s.count})` }))]} />
@@ -169,7 +178,7 @@ export function ResponsesScreen({ formId }: { formId: string }) {
       ) : view === "respondent" ? (
         <>
           <SearchField value={query} onChangeText={setQuery} placeholder="Search respondents" />
-          <Surface padded={false}>
+          <Surface padded={false} style={{ borderRadius: 0, backgroundColor: colors.bg }}>
             {filtered.length === 0 ? <EmptyState title={`No respondents match "${query}"`} /> : filtered.map((r, i) => (
               <ListRow
                 key={r.id}
@@ -187,9 +196,9 @@ export function ResponsesScreen({ formId }: { formId: string }) {
           {visibleDefinitions.length > 1 ? (
             <Select value={selectedDefinition?.id || ""} onChange={setDefinitionFilter} options={visibleDefinitions.map((d, i) => ({ value: d.id, label: `${d.title || "Untitled assessment"} · version ${i + 1} (${inSession.filter((r) => (r.formSnapshotId || "legacy") === d.id).length})` }))} />
           ) : null}
-          {selectedDefinition?.provenance === "legacy_current_definition" ? <Notice tone="warning">Older responses have no saved question version. These charts use the current form and may not match what students originally saw.</Notice> : null}
-          {live.length === 0 ? <Surface><EmptyState title="This assessment has no answerable questions" /></Surface> : live.map((q) => <QuestionBlock key={q.id} question={q} responses={versionResponses} />)}
-          {removed.length > 0 ? (
+          {selectedDefinition?.provenance === "legacy_current_definition" ? <Notice tone="warning">Older responses have no saved question version. These charts use the current form and may not match what respondents originally saw.</Notice> : null}
+          {live.length === 0 ? <Surface><EmptyState title="This assessment has no answerable questions" /></Surface> : view === "summary" ? <ResponseSummary questions={live} responses={versionResponses as SummaryResponse[]} quiz={isQuiz(form.settings, selectedDefinition?.questions ?? [])} /> : live.map((q) => <QuestionBlock key={q.id} question={q} responses={versionResponses} />)}
+          {view === "question" && removed.length > 0 ? (
             <View style={{ gap: space[3] }}>
               <Text variant="label" tone="secondary">{`${removed.length} removed question${removed.length === 1 ? "" : "s"}, still shown historically`}</Text>
               {removed.map((q) => <QuestionBlock key={q.id} question={q} responses={versionResponses} />)}

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { formsApi } from '../src/features/forms/services/formsApi';
 import { getQuestionType, createQuestionDefaults } from '../src/lib/questionTypes';
 import { createMatrixRow, createMatrixColumn, buildPresetColumns, DEFAULT_MATRIX_SETTINGS } from '../src/lib/matrixQuestions';
+import { supportsAnswerNavigation } from '../src/lib/sectionFlow';
 
 let fallbackId = 0;
 const nextId = () =>
@@ -9,20 +10,22 @@ const nextId = () =>
     ? crypto.randomUUID()
     : `question-${Date.now()}-${fallbackId++}`;
 
-const createQuestion = (type) => ({
+const DEFAULT_QUESTION_DEFAULTS = { required: false, points: 1 };
+
+const createQuestion = (type, defaults = DEFAULT_QUESTION_DEFAULTS) => ({
   id: nextId(),
   type,
   title: "",
   description: "",
   showDescription: false,
   showImage: false,
-  required: false,
+  required: !!defaults.required,
   rows: [],
   ...createQuestionDefaults(type),
   imageUrl: null,
   correctAnswerIndex: [],
   correctAnswers: [],
-  points: 1,
+  points: defaults.points,
 });
 
 const createSection = () => ({
@@ -31,6 +34,17 @@ const createSection = () => ({
   title: "",
   description: "",
 });
+
+// Section links point at a section by id, so removing a section must unlink everything aimed at
+// it. Those targets fall back to "continue to next section" (null), as in Google Forms.
+const unlinkSection = (questions, sectionId) =>
+  questions.map((q) => {
+    const nav = q.navigation;
+    if (!nav) return q;
+    const next = nav.next === sectionId ? null : nav.next;
+    const options = Array.isArray(nav.options) ? nav.options.map((t) => (t === sectionId ? null : t)) : nav.options;
+    return next === nav.next && options === nav.options ? q : { ...q, navigation: { ...nav, next, options } };
+  });
 
 // Timer/session-code policy now lives on the session itself, not the form — a form only
 // carries grading-disclosure and retake policy.
@@ -41,7 +55,26 @@ const DEFAULT_FORM_SETTINGS = {
   blurOnDisconnect: false,
   restrictCopying: false,
   shuffleQuestions: false,
+  isQuiz: null,
+  showMissedQuestions: false,
+  showPointValues: false,
+  collectEmail: false,
+  allowDownloadCopy: true,
+  allowResponseEditing: false,
+  showProgressBar: true,
+  showSubmitAnother: false,
+  confirmationMessage: "",
+  disableAutosave: false,
 };
+
+const signature = (form) => JSON.stringify({
+  title: form.formTitle,
+  description: form.formDescription,
+  bannerImage: form.bannerImage,
+  settings: form.formSettings,
+  questions: form.questions,
+  subjectId: form.subjectId,
+});
 
 const useFormStore = create((set, get) => ({
   // 1. Raw State
@@ -55,13 +88,16 @@ const useFormStore = create((set, get) => ({
   formSettings: DEFAULT_FORM_SETTINGS,
   saveStatus: "idle", // idle | saving | saved | error
   saveError: null,
+  savedSignature: null,
   // True when this form is linked to the cloud and has edits the cloud copy doesn't have yet.
   cloudUnsaved: false,
+  // Server-wide "Question defaults"; filled in by the editor when it opens (see forms/[formId]/_layout.tsx).
+  questionDefaults: DEFAULT_QUESTION_DEFAULTS,
 
   // 2. Grouped Actions (Cleaner to import and call in components)
   actions: {
-    loadForm: (form) =>
-      set({
+    loadForm: (form) => {
+      const next = {
         formId: form.id,
         formTitle: form.title,
         formDescription: form.description,
@@ -77,9 +113,13 @@ const useFormStore = create((set, get) => ({
         saveStatus: "idle",
         saveError: null,
         cloudUnsaved: !!form.hasUnsavedCloudChanges,
-      }),
+      };
+      set({ ...next, savedSignature: signature(next) });
+    },
 
     setCloudUnsaved: (cloudUnsaved) => set({ cloudUnsaved }),
+
+    setQuestionDefaults: (patch) => set((state) => ({ questionDefaults: { ...state.questionDefaults, ...patch } })),
 
     setSubjectId: (subjectId) => {
       if (get().mode === "view") return;
@@ -89,6 +129,7 @@ const useFormStore = create((set, get) => ({
     saveForm: async () => {
       const { formId, formTitle, formDescription, bannerImage, formSettings, questions, subjectId, mode } = get();
       if (!formId || mode === "view") return;
+      const submittedSignature = signature(get());
       set({ saveStatus: "saving", saveError: null });
       try {
         const saved = await formsApi.update(formId, {
@@ -101,6 +142,7 @@ const useFormStore = create((set, get) => ({
         });
         set({
           saveStatus: "saved",
+          savedSignature: submittedSignature,
           cloudUnsaved: !!saved.hasUnsavedCloudChanges,
         });
       } catch (err) {
@@ -108,14 +150,32 @@ const useFormStore = create((set, get) => ({
       }
     },
 
-    addQuestion: (type) => {
-      if (get().mode === "view") return;
-      set((state) => ({ questions: [...state.questions, createQuestion(type)] }));
+    // Like Google Forms, a new item lands right after the selected one (or at the end).
+    // Returns the new id so the editor can select it.
+    addQuestion: (type, afterId) => {
+      if (get().mode === "view") return null;
+      const item = createQuestion(type, get().questionDefaults);
+      set((state) => {
+        // The form header sits above every question, so adding "after" it means at the very top.
+        const i = afterId === "form-header" ? -2 : afterId ? state.questions.findIndex((q) => q.id === afterId) : -1;
+        const questions = [...state.questions];
+        questions.splice(i === -1 ? questions.length : i + 1, 0, item);
+        return { questions };
+      });
+      return item.id;
     },
 
-    addSection: () => {
-      if (get().mode === "view") return;
-      set((state) => ({ questions: [...state.questions, createSection()] }));
+    addSection: (afterId) => {
+      if (get().mode === "view") return null;
+      const item = createSection();
+      set((state) => {
+        // The form header sits above every question, so adding "after" it means at the very top.
+        const i = afterId === "form-header" ? -2 : afterId ? state.questions.findIndex((q) => q.id === afterId) : -1;
+        const questions = [...state.questions];
+        questions.splice(i === -1 ? questions.length : i + 1, 0, item);
+        return { questions };
+      });
+      return item.id;
     },
 
     updateQuestion: (id, patch) => {
@@ -144,19 +204,22 @@ const useFormStore = create((set, get) => ({
 
           if (isGrid && !wasGrid) {
             const defaults = createQuestionDefaults(type);
-            return { ...q, type, ...defaults, correctAnswerIndex: [], correctAnswers: [] };
+            return { ...q, type, ...defaults, correctAnswerIndex: [], correctAnswers: [], navigation: undefined };
           }
 
           if (!isGrid && wasGrid) {
             const defaults = createQuestionDefaults(type);
-            return { ...q, type, ...defaults, correctAnswerIndex: [], correctAnswers: [] };
+            return { ...q, type, ...defaults, correctAnswerIndex: [], correctAnswers: [], navigation: undefined };
           }
 
           const needsOptions = !!def?.isOptionBased;
           const isSingleSelect = !!def?.isSingleSelect;
+          // Only multiple choice and dropdown can send a respondent to a section by their answer.
+          const keepsNavigation = supportsAnswerNavigation(type) && Array.isArray(q.navigation?.options);
           return {
             ...q,
             type,
+            navigation: keepsNavigation ? q.navigation : undefined,
             options: needsOptions ? (q.options.length ? q.options : ["Option 1"]) : q.options,
             correctAnswerIndex: needsOptions
               ? (isSingleSelect ? q.correctAnswerIndex.slice(0, 1) : q.correctAnswerIndex)
@@ -169,7 +232,37 @@ const useFormStore = create((set, get) => ({
 
     deleteQuestion: (id) => {
       if (get().mode === "view") return;
-      set((state) => ({ questions: state.questions.filter((q) => q.id !== id) }));
+      set((state) => ({ questions: unlinkSection(state.questions.filter((q) => q.id !== id), id) }));
+    },
+
+    // "After section": where a section goes once the respondent finishes it (null = next section).
+    setSectionNext: (id, target) => {
+      if (get().mode === "view") return;
+      set((state) => ({
+        questions: state.questions.map((q) => (q.id === id ? { ...q, navigation: { ...q.navigation, next: target } } : q)),
+      }));
+    },
+
+    // "Go to section based on answer" on a multiple choice / dropdown question: one target per option.
+    setAnswerNavigation: (id, enabled) => {
+      if (get().mode === "view") return;
+      set((state) => ({
+        questions: state.questions.map((q) => {
+          if (q.id !== id || !supportsAnswerNavigation(q.type)) return q;
+          const { options: _drop, ...rest } = q.navigation || {};
+          return { ...q, navigation: enabled ? { ...rest, options: q.options.map(() => null) } : rest };
+        }),
+      }));
+    },
+
+    setOptionTarget: (id, index, target) => {
+      if (get().mode === "view") return;
+      set((state) => ({
+        questions: state.questions.map((q) => {
+          if (q.id !== id || !Array.isArray(q.navigation?.options)) return q;
+          return { ...q, navigation: { ...q.navigation, options: q.navigation.options.map((t, i) => (i === index ? target : t)) } };
+        }),
+      }));
     },
 
     duplicateQuestion: (id) => {
@@ -196,11 +289,36 @@ const useFormStore = create((set, get) => ({
       });
     },
 
+    // Drag-and-drop move: `toIndex` is the position in the current list to insert before. A section
+    // brings the questions under it along, so a whole section moves as one block.
+    moveItem: (id, toIndex) => {
+      if (get().mode === "view") return;
+      set((state) => {
+        const from = state.questions.findIndex((q) => q.id === id);
+        if (from === -1) return state;
+        let end = from + 1;
+        if (state.questions[from].type === "section") {
+          while (end < state.questions.length && state.questions[end].type !== "section") end++;
+        }
+        if (toIndex >= from && toIndex <= end) return state;
+        const block = state.questions.slice(from, end);
+        const rest = [...state.questions.slice(0, from), ...state.questions.slice(end)];
+        const at = toIndex > from ? toIndex - block.length : toIndex;
+        return { questions: [...rest.slice(0, at), ...block, ...rest.slice(at)] };
+      });
+    },
+
     addOption: (id) => {
       if (get().mode === "view") return;
       set((state) => ({
         questions: state.questions.map((q) =>
-          q.id === id ? { ...q, options: [...q.options, `Option ${q.options.length + 1}`] } : q
+          q.id === id
+            ? {
+                ...q,
+                options: [...q.options, `Option ${q.options.length + 1}`],
+                ...(Array.isArray(q.navigation?.options) ? { navigation: { ...q.navigation, options: [...q.navigation.options, null] } } : null),
+              }
+            : q
         ),
       }));
     },
@@ -228,6 +346,7 @@ const useFormStore = create((set, get) => ({
             ...q,
             options: q.options.filter((_, i) => i !== index),
             correctAnswerIndex,
+            ...(Array.isArray(q.navigation?.options) ? { navigation: { ...q.navigation, options: q.navigation.options.filter((_, i) => i !== index) } } : null),
           };
         }),
       }));

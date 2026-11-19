@@ -10,8 +10,8 @@ export interface TextProps extends RNTextProps {
   align?: TextStyle["textAlign"];
 }
 
-const toneColor = (c: Colors, tone: TextTone) =>
-  ({ default: c.text, secondary: c.textSecondary, tertiary: c.textTertiary, danger: c.danger, success: c.success, warning: c.warning, accent: c.accent, inverse: c.primaryText })[tone];
+const toneColor = (c: Colors, tone: TextTone, variant: TypeVariant) =>
+  ({ default: variant === "body" || variant === "small" || variant === "caption" ? c.textBody : c.text, secondary: c.textSecondary, tertiary: c.textTertiary, danger: c.danger, success: c.success, warning: c.warning, accent: c.accent, inverse: c.primaryText })[tone];
 
 export function Text({ variant = "body", tone = "default", align, style, ...rest }: TextProps) {
   const { colors } = useTheme();
@@ -19,7 +19,7 @@ export function Text({ variant = "body", tone = "default", align, style, ...rest
   return (
     <RNText
       {...rest}
-      style={[{ fontFamily, fontSize: v.fontSize, lineHeight: v.lineHeight, fontWeight: v.fontWeight as TextStyle["fontWeight"], color: toneColor(colors, tone), textAlign: align }, style]}
+      style={[{ fontFamily, fontSize: v.fontSize, lineHeight: v.lineHeight, fontWeight: v.fontWeight as TextStyle["fontWeight"], color: toneColor(colors, tone, variant), textAlign: align }, style]}
     />
   );
 }

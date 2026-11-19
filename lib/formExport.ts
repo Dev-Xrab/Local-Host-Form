@@ -1,6 +1,6 @@
 interface ExportQuestion {
   id: string; type: string; title?: string; description?: string; showDescription?: boolean; showImage?: boolean; required?: boolean;
-  options?: unknown[]; scale?: object; rows?: unknown[]; imageUrl?: string | null; correctAnswerIndex?: unknown[]; correctAnswers?: unknown[]; points?: number;
+  options?: unknown[]; scale?: object; rows?: unknown[]; imageUrl?: string | null; correctAnswerIndex?: unknown[]; correctAnswers?: unknown[]; points?: number; navigation?: object;
 }
 interface ExportResponse {
   respondentName?: string; sessionName?: string; startedAt?: string | null; submittedAt?: string | null; score?: number | null; maxScore?: number | null; answers?: object;
@@ -37,6 +37,7 @@ export function buildFormExport(form: FullForm, responses?: ExportResponse[], de
       correctAnswerIndex: q.correctAnswerIndex || [],
       correctAnswers: q.correctAnswers || [],
       points: q.points ?? 1,
+      navigation: q.navigation || {},
     })),
   };
   if (responses) {

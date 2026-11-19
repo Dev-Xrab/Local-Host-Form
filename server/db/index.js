@@ -164,6 +164,8 @@ ensureColumn("sessions", "duration_minutes", "INTEGER");
 ensureColumn("sessions", "ends_at", "TEXT");
 ensureColumn("sessions", "created_at", "TEXT");
 ensureColumn("responses", "respondent_name", "TEXT NOT NULL DEFAULT ''");
+// Filled in only when the form asks respondents for an email address (Settings > Responses).
+ensureColumn("responses", "respondent_email", "TEXT NOT NULL DEFAULT ''");
 ensureColumn("responses", "status", "TEXT NOT NULL DEFAULT 'in_progress'");
 ensureColumn("responses", "started_at", "TEXT");
 ensureColumn("responses", "deadline_at", "TEXT");
@@ -295,6 +297,11 @@ db.exec("CREATE INDEX IF NOT EXISTS idx_responses_edit_code ON responses(session
 // way, but keeping the row (with its last-known title/type/options) is what lets analytics still
 // show a removed question's historical answers, labeled instead of just vanishing.
 ensureColumn("questions", "removed_at", "TEXT");
+
+// navigation: JSON section links. A section holds { next } ("After section N"); a multiple choice or
+// dropdown question holds { options } (one target per option, "Go to section based on answer"). A
+// target is null (continue to the next section), "submit", or a section's question id.
+ensureColumn("questions", "navigation", "TEXT NOT NULL DEFAULT '{}'");
 
 // New sessions pin a form definition at start. Existing sessions/responses intentionally keep
 // NULL: their historical definition cannot be reconstructed from the current mutable form.

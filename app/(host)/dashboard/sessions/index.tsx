@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { ClipboardList, Plus } from "lucide-react-native";
 import { STATUS_LABEL } from "../../../../src/features/sessions/utils/time";
 import { Badge, Button, EmptyState, Icon, ListRow, Notice, Page, PageHeader, SearchField, SegmentedControl, Skeleton, Surface, TableHeader, Text, space, useLayout, useTheme } from "../../../../ui";
@@ -18,7 +18,7 @@ function DesktopRow({ s, last, onOpen }: { s: SessionSummary; last: boolean; onO
   const { ring, onFocus, onBlur } = useFocusRing(colors);
   return (
     <Pressable accessibilityRole="link" accessibilityLabel={`Open ${s.name || "Untitled session"}`} onPress={onOpen} onFocus={onFocus} onBlur={onBlur}
-      style={(st) => [{ flexDirection: "row", alignItems: "center", gap: space[3], minHeight: 56, paddingHorizontal: space[4], borderBottomWidth: last ? 0 : 1, borderBottomColor: colors.border }, (st as { hovered?: boolean }).hovered && { backgroundColor: colors.hover }, ring]}>
+      style={(st) => [{ flexDirection: "row", alignItems: "center", gap: space[3], minHeight: 72, paddingHorizontal: space[3], borderBottomWidth: last ? 0 : 1, borderBottomColor: colors.border }, (st as { hovered?: boolean }).hovered && { backgroundColor: colors.hover }, ring]}>
       <Icon icon={ClipboardList} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text variant="bodyStrong" numberOfLines={1}>{s.name || "Untitled session"}</Text>
@@ -33,12 +33,16 @@ function DesktopRow({ s, last, onOpen }: { s: SessionSummary; last: boolean; onO
 
 export default function SessionsPage() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const { create, formId } = useLocalSearchParams<{ create?: string; formId?: string }>();
   const { isPhone } = useLayout();
   const { sessions, loading, error, refresh } = useSessions();
   const { forms } = useForms();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState(create === "1");
+
+  useEffect(() => { if (create === "1") setCreating(true); }, [create]);
 
   useEffect(() => {
     const t = setInterval(refresh, 5000);
@@ -53,7 +57,13 @@ export default function SessionsPage() {
 
   return (
     <Page>
-      <PageHeader title="Sessions" subtitle="Create and run form sessions, and monitor them while they're live." actions={<Button label="Create session" icon={Plus} variant="primary" onPress={() => setCreating(true)} />} />
+      <PageHeader title="Sessions" subtitle="Prepare, share and follow live sessions from one place." actions={<Button label="New session" icon={Plus} variant="primary" onPress={() => setCreating(true)} />} />
+
+      <View style={{ flexDirection: "row", gap: isPhone ? space[2] : space[5], paddingVertical: space[4], borderBottomWidth: 1, borderColor: colors.border }}>
+        <View style={{ flex: 1, minWidth: 0 }}><Text variant="caption" tone="tertiary">{isPhone ? "Live" : "Live now"}</Text><Text variant="heading">{sessions.filter((s) => s.status === "active").length}</Text></View>
+        <View style={{ flex: 1, minWidth: 0 }}><Text variant="caption" tone="tertiary">{isPhone ? "Draft" : "Ready to start"}</Text><Text variant="heading">{sessions.filter((s) => s.status === "draft").length}</Text></View>
+        <View style={{ flex: 1, minWidth: 0 }}><Text variant="caption" tone="tertiary">Finished</Text><Text variant="heading">{sessions.filter((s) => s.status === "ended").length}</Text></View>
+      </View>
 
       <View style={{ flexDirection: isPhone ? "column" : "row", gap: space[3], alignItems: isPhone ? "stretch" : "center", justifyContent: "space-between" }}>
         <SegmentedControl<Filter> value={filter} onChange={setFilter} options={(["all", "draft", "active", "ended"] as Filter[]).map((f) => ({ value: f, label: f === "all" ? "All" : STATUS_LABEL[f], count: count(f) }))} />
@@ -65,9 +75,9 @@ export default function SessionsPage() {
       ) : error ? (
         <Notice tone="danger" actionLabel="Retry" onAction={refresh}>{`Couldn't load sessions: ${error}`}</Notice>
       ) : shown.length === 0 ? (
-        <Surface><EmptyState icon={ClipboardList} title={searched.length === 0 ? "No sessions yet" : "No sessions match"} body={searched.length === 0 ? "Create one from a form to start collecting responses." : "Try a different search or filter."} actionLabel={searched.length === 0 ? "Create session" : undefined} onAction={searched.length === 0 ? () => setCreating(true) : undefined} /></Surface>
+        <Surface><EmptyState icon={ClipboardList} title={searched.length === 0 ? "No sessions yet" : "No sessions match"} body={searched.length === 0 ? "Choose New session above when you are ready to collect responses." : "Try a different search or filter."} /></Surface>
       ) : (
-        <Surface padded={false}>
+        <View style={{ borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.border }}>
           <TableHeader right={space[4]} columns={[{ label: "", width: 18 }, { label: "Session" }, { label: "Status", width: 90 }, { label: "Participants", width: 190 }, { label: "Time limit", width: 90 }]} />
           {shown.map((s, i) =>
             isPhone ? (
@@ -76,10 +86,10 @@ export default function SessionsPage() {
               <DesktopRow key={s.id} s={s} last={i === shown.length - 1} onOpen={() => open(s.id)} />
             )
           )}
-        </Surface>
+        </View>
       )}
 
-      <CreateSessionDialog visible={creating} forms={forms} onClose={() => setCreating(false)} onCreated={async () => { setCreating(false); await refresh(); }} />
+      <CreateSessionDialog visible={creating} forms={forms} initialFormId={formId} onClose={() => { setCreating(false); if (create === "1") router.replace("/dashboard/sessions" as never); }} onCreated={async () => { setCreating(false); await refresh(); if (create === "1") router.replace("/dashboard/sessions" as never); }} />
     </Page>
   );
 }

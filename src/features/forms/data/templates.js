@@ -34,7 +34,7 @@ export const TEMPLATE_CATEGORIES = [
         id: "contact-information",
         title: "Contact Information",
         description: "Collect a name, email and phone number.",
-        accent: "#dceee0",
+        accent: "#F5F5F4",
         questions: [
           shortAnswer("Name", { required: true }),
           shortAnswer("Email", { required: true }),
@@ -46,7 +46,7 @@ export const TEMPLATE_CATEGORIES = [
         id: "rsvp",
         title: "RSVP",
         description: "Find out who's coming and how many guests to expect.",
-        accent: "#f5e6d8",
+        accent: "#F5F5F4",
         questions: [
           shortAnswer("Name", { required: true }),
           shortAnswer("Email"),
@@ -58,7 +58,7 @@ export const TEMPLATE_CATEGORIES = [
         id: "party-invite",
         title: "Party Invite",
         description: "An RSVP with a few extra details for the host.",
-        accent: "#efe1ee",
+        accent: "#F5F5F4",
         questions: [
           shortAnswer("Name", { required: true }),
           shortAnswer("Email"),
@@ -71,7 +71,7 @@ export const TEMPLATE_CATEGORIES = [
         id: "t-shirt-sign-up",
         title: "T-Shirt Sign Up",
         description: "Collect sizes and a color preference.",
-        accent: "#e7e1f3",
+        accent: "#F5F5F4",
         questions: [
           shortAnswer("Name", { required: true }),
           shortAnswer("Email"),
@@ -83,7 +83,7 @@ export const TEMPLATE_CATEGORIES = [
         id: "event-registration",
         title: "Event Registration",
         description: "Register attendees and their session preferences.",
-        accent: "#f3e2df",
+        accent: "#F5F5F4",
         questions: [
           shortAnswer("Name", { required: true }),
           shortAnswer("Email", { required: true }),
@@ -102,7 +102,7 @@ export const TEMPLATE_CATEGORIES = [
         id: "event-feedback",
         title: "Event Feedback",
         description: "Gauge how an event landed with attendees.",
-        accent: "#dfe9e2",
+        accent: "#F5F5F4",
         questions: [
           linearScale("Overall, how would you rate this event?", { scale: { min: 1, max: 5, minLabel: "Poor", maxLabel: "Excellent" } }),
           paragraph("What did you like most?"),
@@ -114,7 +114,7 @@ export const TEMPLATE_CATEGORIES = [
         id: "order-form",
         title: "Order Form",
         description: "Take a simple product order with shipping details.",
-        accent: "#f6e3ea",
+        accent: "#F5F5F4",
         questions: [
           shortAnswer("Name", { required: true }),
           shortAnswer("Email", { required: true }),
@@ -127,7 +127,7 @@ export const TEMPLATE_CATEGORIES = [
         id: "job-application",
         title: "Job Application",
         description: "A starting point for screening candidates.",
-        accent: "#dcebe8",
+        accent: "#F5F5F4",
         questions: [
           shortAnswer("Full name", { required: true }),
           shortAnswer("Email", { required: true }),
@@ -141,7 +141,7 @@ export const TEMPLATE_CATEGORIES = [
         id: "time-off-request",
         title: "Time Off Request",
         description: "Route leave requests with dates and a reason.",
-        accent: "#e6e6f0",
+        accent: "#F5F5F4",
         questions: [
           shortAnswer("Name", { required: true }),
           dateField("Start date", { required: true }),
@@ -154,7 +154,7 @@ export const TEMPLATE_CATEGORIES = [
         id: "work-request",
         title: "Work Request",
         description: "Intake form for internal task or project requests.",
-        accent: "#e3ecdf",
+        accent: "#F5F5F4",
         questions: [
           shortAnswer("Requested by", { required: true }),
           dropdown("Department", ["Operations", "IT", "Marketing", "Facilities"]),
@@ -166,7 +166,7 @@ export const TEMPLATE_CATEGORIES = [
         id: "customer-feedback",
         title: "Customer Feedback",
         description: "A short survey to hear from customers.",
-        accent: "#dfe7ea",
+        accent: "#F5F5F4",
         questions: [
           linearScale("How satisfied are you with our product/service?", { scale: { min: 1, max: 5, minLabel: "Not satisfied", maxLabel: "Very satisfied" } }),
           checkboxes("What do you value most?", ["Price", "Quality", "Support", "Speed"]),
@@ -183,14 +183,14 @@ export const TEMPLATE_CATEGORIES = [
         id: "blank-quiz",
         title: "Blank Quiz",
         description: "One gradable question to build a quiz from.",
-        accent: "#eee3f2",
+        accent: "#F5F5F4",
         questions: [multipleChoice("Question 1", ["Option 1", "Option 2", "Option 3"], { required: true, points: 1 })],
       },
       {
         id: "exit-ticket",
         title: "Exit Ticket",
         description: "A quick check for understanding at the end of class.",
-        accent: "#dfeee2",
+        accent: "#F5F5F4",
         questions: [
           paragraph("What did you learn today?", { required: true }),
           linearScale("How well do you understand today's lesson?", { scale: { min: 1, max: 5, minLabel: "Not at all", maxLabel: "Very well" } }),
@@ -201,7 +201,7 @@ export const TEMPLATE_CATEGORIES = [
         id: "assessment",
         title: "Assessment",
         description: "A short, gradable assessment to build on.",
-        accent: "#f2e7dc",
+        accent: "#F5F5F4",
         questions: [
           shortAnswer("Name", { required: true }),
           multipleChoice("Question 1", ["Option 1", "Option 2", "Option 3", "Option 4"], { required: true, points: 1 }),
@@ -212,7 +212,7 @@ export const TEMPLATE_CATEGORIES = [
         id: "worksheet",
         title: "Worksheet",
         description: "Ungraded practice questions.",
-        accent: "#e2e6ea",
+        accent: "#F5F5F4",
         questions: [
           shortAnswer("Name", { required: true }),
           shortAnswer("Question 1"),
@@ -224,7 +224,7 @@ export const TEMPLATE_CATEGORIES = [
         id: "course-evaluation",
         title: "Course Evaluation",
         description: "End-of-course feedback on the instructor and material.",
-        accent: "#f1e2df",
+        accent: "#F5F5F4",
         questions: [
           shortAnswer("Course name"),
           linearScale("Rate the instructor", { scale: { min: 1, max: 5, minLabel: "Poor", maxLabel: "Excellent" } }),

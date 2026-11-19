@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from "react-native";
 import { X } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -25,20 +25,40 @@ export function Dialog({ visible, title, onClose, children, footer, width = 440 
   // A numeric cap: a percentage here would resolve against this auto-height wrapper, i.e. the panel itself.
   const { height: windowHeight } = useWindowDimensions();
   const maxHeight = Math.round(windowHeight * (isPhone ? 0.92 : 0.88));
+  const panelRef = useRef<View>(null);
+  const closeRef = useRef(onClose);
+  useEffect(() => { closeRef.current = onClose; }, [onClose]);
 
   useEffect(() => {
     if (!visible || Platform.OS !== "web") return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const previous = document.activeElement as HTMLElement | null;
+    const panel = panelRef.current as unknown as HTMLElement | null;
+    const focusable = () => Array.from(panel?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])') ?? []).filter((el) => el.getClientRects().length > 0);
+    const frame = requestAnimationFrame(() => {
+      if (!panel?.contains(document.activeElement)) focusable()[0]?.focus();
+    });
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { e.preventDefault(); closeRef.current(); return; }
+      if (e.key !== "Tab") return;
+      const items = focusable();
+      if (!items.length) { e.preventDefault(); return; }
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [visible, onClose]);
+    return () => { cancelAnimationFrame(frame); window.removeEventListener("keydown", onKey); previous?.focus(); };
+  }, [visible]);
 
   return (
     <Modal visible={visible} transparent animationType={isPhone ? "slide" : "fade"} onRequestClose={onClose} statusBarTranslucent>
       <Pressable accessibilityLabel="Close dialog" onPress={onClose} style={[styles.backdrop, { backgroundColor: colors.overlay, justifyContent: isPhone ? "flex-end" : "center" }]}>
         <SafeAreaView edges={["bottom"]} style={isPhone ? styles.sheetWrap : styles.centerWrap}>
           <Pressable
+            ref={panelRef}
             accessibilityRole="none"
+            accessibilityViewIsModal
             onPress={(e) => e.stopPropagation()}
             style={[
               styles.panel,

@@ -1,91 +1,35 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Platform, Pressable, ScrollView, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { usePathname, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft, Plus, Save } from "lucide-react-native";
+import { AlertCircle, ArrowLeft, Check, Eye, EyeOff, Play, Save } from "lucide-react-native";
 import { cloudApi } from "../../src/features/cloud/services/cloudApi";
 import { describeCloudError } from "../../src/features/cloud/utils/describeCloudError";
-import { Badge, Button, Dialog, Divider, Icon, IconButton, Notice, SegmentedControl, Tabs, Text, radius, space, useLayout, useTheme } from "../../ui";
-import { QUESTION_TYPES, useFormActions, useFormStore } from "../../lib/formStore";
-import { QUESTION_ICONS, SectionIcon } from "../../lib/questionIcons";
-import { useFocusRing } from "../../ui/interactive";
-
-const SAVE_LABEL = { idle: "Save", saving: "Saving…", saved: "Saved", error: "Retry save" } as const;
+import { Button, Dialog, Notice, Text, useLayout } from "../../ui";
+import { GButton, GIconButton, GLineInput, GText, useGF } from "../../ui/gforms";
+import { useFormActions, useFormStore } from "../../lib/formStore";
+import { EditorSelection } from "./EditorSelection";
 
 function useFormPaths(formId: string) {
   return [
     { value: `/forms/${formId}`, label: "Questions" },
-    { value: `/forms/${formId}/responses`, label: "Responses" },
+    { value: `/forms/${formId}/responses`, label: "Results" },
     { value: `/forms/${formId}/settings`, label: "Settings" },
   ];
 }
 
-function scrollToQuestion(id: string) {
-  if (Platform.OS !== "web") return;
-  document.getElementById(`question-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-}
-
-/** Palette used by the desktop sidebar and by the "Add question" dialog on smaller screens. */
-function PaletteItem({ label, icon, onPress, width }: { label: string; icon: typeof SectionIcon; onPress: () => void; width: `${number}%` }) {
-  const { colors } = useTheme();
-  const { ring, onFocus, onBlur } = useFocusRing(colors);
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Add ${label}`}
-      onPress={onPress}
-      onFocus={onFocus}
-      onBlur={onBlur}
-      style={(s) => [{ flexDirection: "row", alignItems: "center", gap: space[2], minHeight: 36, paddingHorizontal: space[2], borderRadius: radius.md, width }, (s as { hovered?: boolean }).hovered && { backgroundColor: colors.hover }, ring]}
-    >
-      <Icon icon={icon} size={16} />
-      <Text variant="small">{label}</Text>
-    </Pressable>
-  );
-}
-
-/** Palette used by the desktop sidebar and by the "Add question" dialog on smaller screens. */
-export function AddQuestionPalette({ onAdded, columns = 1 }: { onAdded?: () => void; columns?: number }) {
-  const { addQuestion, addSection } = useFormActions();
-  const width = `${100 / columns}%` as const;
-  return (
-    <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
-      {QUESTION_TYPES.map((t) => <PaletteItem key={t.id} width={width} label={t.label} icon={QUESTION_ICONS[t.icon]} onPress={() => { addQuestion(t.id); onAdded?.(); }} />)}
-      <PaletteItem width={width} label="Section" icon={SectionIcon} onPress={() => { addSection(); onAdded?.(); }} />
-    </View>
-  );
-}
-
-function Outline() {
-  const { colors } = useTheme();
-  const questions = useFormStore((s) => s.questions);
-  const [active, setActive] = useState<string | null>(null);
-  let n = 0;
-  return (
-    <View style={{ gap: 2 }}>
-      <Text variant="caption" tone="tertiary" style={{ textTransform: "uppercase", letterSpacing: 0.4, paddingHorizontal: space[2], paddingBottom: space[1] }}>Jump to · {questions.filter((q) => q.type !== "section").length} questions</Text>
-      {questions.length === 0 ? <Text variant="small" tone="tertiary" style={{ paddingHorizontal: space[2] }}>No questions yet</Text> : null}
-      {questions.map((q) => {
-        const section = q.type === "section";
-        if (!section) n += 1;
-        const isActive = active === q.id;
-        return (
-          <Pressable key={q.id} accessibilityRole="button" accessibilityLabel={`Go to ${q.title || "untitled"}`} onPress={() => { setActive(q.id); scrollToQuestion(q.id); }} style={(s) => [{ flexDirection: "row", gap: space[2], alignItems: "center", minHeight: 32, paddingHorizontal: space[2], marginTop: section ? space[2] : 0, borderRadius: radius.md }, isActive ? { backgroundColor: colors.pressed } : (s as { hovered?: boolean }).hovered && { backgroundColor: colors.hover }]}>
-            {section ? <Icon icon={SectionIcon} size={14} color={colors.accent} /> : <Text variant="caption" tone="tertiary" style={{ width: 18, textAlign: "right" }}>{n}</Text>}
-            <Text variant={section ? "label" : "small"} tone={section ? "accent" : "secondary"} numberOfLines={1} style={{ flex: 1 }}>{q.title || (section ? "Untitled section" : "Untitled question")}</Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
-
-function SaveArea({ formId, compact }: { formId: string; compact?: boolean }) {
+function SaveArea({ formId }: { formId: string }) {
+  const g = useGF();
   const { saveForm, setCloudUnsaved } = useFormActions();
   const saveStatus = useFormStore((s) => s.saveStatus);
   const saveError = useFormStore((s) => s.saveError);
   const mode = useFormStore((s) => s.mode);
   const cloudUnsaved = useFormStore((s) => s.cloudUnsaved);
+  const currentSignature = useFormStore((s) => JSON.stringify({ title: s.formTitle, description: s.formDescription, bannerImage: s.bannerImage, settings: s.formSettings, questions: s.questions, subjectId: s.subjectId }));
+  const savedSignature = useFormStore((s) => s.savedSignature);
+  const dirty = currentSignature !== savedSignature;
+  const statusLabel = saveStatus === "error" ? "Save failed" : saveStatus === "saving" ? "Saving…" : dirty ? "Unsaved" : "Saved";
+  const StatusIcon = saveStatus === "error" ? AlertCircle : dirty || saveStatus === "saving" ? Save : Check;
 
   // After a local save, a cloud-linked form that now differs from its cloud copy asks whether to
   // save there too. "Not now" leaves it flagged rather than silently diverging.
@@ -116,11 +60,15 @@ function SaveArea({ formId, compact }: { formId: string; compact?: boolean }) {
     }
   };
 
+  const bad = saveStatus === "error";
   return (
-    <View style={{ gap: space[2], alignItems: compact ? "flex-end" : "stretch" }}>
-      {saveStatus === "error" ? <Text variant="small" tone="danger" accessibilityRole="alert">Couldn't save. Check the server. {saveError ?? ""}</Text> : null}
-      {cloudUnsaved && saveStatus !== "saving" ? <Button label="Not saved to cloud" variant="ghost" compact onPress={() => setPrompt(true)} /> : null}
-      <Button label={SAVE_LABEL[saveStatus]} icon={Save} variant="primary" loading={saveStatus === "saving"} disabled={mode === "view"} fullWidth={!compact} onPress={saveForm} />
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+      <View accessibilityLiveRegion="polite" accessibilityRole={bad ? "alert" : undefined} accessibilityLabel={`${statusLabel}${saveError ? `. ${saveError}` : ""}`} style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8 }}>
+        <StatusIcon size={15} color={bad ? g.error : g.textSecondary} />
+        <GText size={13} color={bad ? g.error : g.textSecondary}>{statusLabel}</GText>
+      </View>
+      {cloudUnsaved && saveStatus !== "saving" ? <GButton label="Cloud pending" onPress={() => setPrompt(true)} /> : null}
+      <GButton variant="filled" label={saveStatus === "error" ? "Retry" : "Save"} loading={saveStatus === "saving"} disabled={mode === "view" || (!dirty && saveStatus === "saved")} onPress={saveForm} />
       <Dialog
         visible={prompt}
         title="Save changes to cloud?"
@@ -134,91 +82,80 @@ function SaveArea({ formId, compact }: { formId: string; compact?: boolean }) {
   );
 }
 
+function EditorTab({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  const g = useGF();
+  return (
+    <Pressable accessibilityRole="tab" accessibilityLabel={label} accessibilityState={{ selected: active }} onPress={onPress}
+      style={(s) => [{ height: 48, paddingHorizontal: 20, justifyContent: "center", borderBottomWidth: 3, borderBottomColor: active ? g.accent : "transparent", backgroundColor: (s as { hovered?: boolean }).hovered ? g.hover : "transparent" }]}>
+      <GText size={14} weight="500" color={active ? g.accent : g.textSecondary}>{label}</GText>
+    </Pressable>
+  );
+}
+
 export function FormShell({ formId, children }: { formId: string; children: ReactNode }) {
-  const { colors } = useTheme();
-  const { isDesktop } = useLayout();
+  const g = useGF();
+  const { width } = useLayout();
+  const wide = width >= 1000;
   const router = useRouter();
   const path = usePathname();
   const tabs = useFormPaths(formId);
   const title = useFormStore((s) => s.formTitle);
   const mode = useFormStore((s) => s.mode);
-  const { setMode } = useFormActions();
-  const [adding, setAdding] = useState(false);
+  const { setMode, setFormTitle } = useFormActions();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const onQuestions = path === `/forms/${formId}`;
   const current = tabs.find((t) => t.value === path)?.value ?? tabs[0].value;
   const go = (href: string) => router.push(href as never);
+  const previewing = onQuestions && mode === "view";
+  const saveStatus = useFormStore((st) => st.saveStatus);
+  const saveError = useFormStore((st) => st.saveError);
+  const { saveForm } = useFormActions();
 
-  const modeControl = onQuestions ? (
-    <SegmentedControl value={mode} onChange={setMode} options={[{ value: "edit", label: "Edit" }, { value: "view", label: "Preview" }]} />
-  ) : null;
-
-  if (isDesktop) {
-    const showRail = onQuestions && mode === "edit";
-    return (
-      <View style={{ flex: 1 }}>
-        <View style={{ height: 48, flexDirection: "row", alignItems: "center", gap: space[4], paddingHorizontal: space[4], backgroundColor: colors.bg, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: space[2], flex: 1, minWidth: 0 }}>
-            <IconButton icon={ArrowLeft} label="Back to all forms" onPress={() => go("/dashboard/forms")} />
-            <Text variant="title" numberOfLines={1} style={{ flexShrink: 1 }}>{title || "Untitled form"}</Text>
-          </View>
-          <View accessibilityRole="tablist" style={{ flexDirection: "row", gap: 2 }}>
-            {tabs.map((t) => {
-              const active = t.value === current;
-              return (
-                <Pressable key={t.value} accessibilityRole="tab" accessibilityState={{ selected: active }} onPress={() => go(t.value)} style={(st) => [{ height: 48, justifyContent: "center", paddingHorizontal: space[3], borderBottomWidth: 2, borderBottomColor: active ? colors.accent : "transparent" }, !active && (st as { hovered?: boolean }).hovered && { backgroundColor: colors.hover }]}>
-                  <Text variant="small" tone={active ? "default" : "secondary"} style={{ fontWeight: "500" }}>{t.label}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-          <View style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: space[3] }}>
-            {modeControl}
-            <SaveArea formId={formId} compact />
-          </View>
-        </View>
-        <View style={{ flex: 1, flexDirection: "row" }}>
-          {showRail ? (
-            <View style={{ width: 264, backgroundColor: colors.bg, borderRightWidth: 1, borderRightColor: colors.border }}>
-              <ScrollView contentContainerStyle={{ padding: space[3], gap: space[4] }}>
-                <View style={{ gap: space[1] }}>
-                  <Text variant="caption" tone="tertiary" style={{ textTransform: "uppercase", letterSpacing: 0.4, paddingHorizontal: space[2] }}>Add question</Text>
-                  <AddQuestionPalette columns={2} />
-                </View>
-                <Divider />
-                <Outline />
-              </ScrollView>
-            </View>
-          ) : null}
-          <View style={{ flex: 1 }}>{children}</View>
-        </View>
+  const titleBlock = (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flex: wide ? undefined : 1, width: wide ? 300 : undefined, minWidth: 0 }}>
+      <GIconButton label="Back to all forms" onPress={() => go("/dashboard/forms")}><ArrowLeft size={20} color={g.textSecondary} /></GIconButton>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <GText size={11} secondary>Form editor</GText>
+        <GLineInput quiet fontSize={16} weight="500" placeholder="Untitled form" value={title} onChangeText={setFormTitle} numberOfLines={1} />
       </View>
-    );
-  }
+    </View>
+  );
+  const tabBar = <View accessibilityRole="tablist" style={{ flexDirection: "row", justifyContent: "center" }}>{tabs.map((t) => <EditorTab key={t.value} label={t.label} active={t.value === current} onPress={() => go(t.value)} />)}</View>;
+  const actions = (
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
+      {onQuestions ? <GButton variant={previewing ? "filled" : "outlined"} label={previewing ? "Edit" : "Preview"} icon={previewing ? <EyeOff size={16} color={g.accentText} /> : <Eye size={16} color={g.accent} />} onPress={() => setMode(previewing ? "edit" : "view")} /> : null}
+      {onQuestions ? <GButton variant="outlined" label="Create session" icon={<Play size={14} color={g.accent} />} onPress={() => go(`/dashboard/sessions?create=1&formId=${formId}`)} /> : null}
+      <SaveArea formId={formId} />
+    </View>
+  );
 
   return (
-    <SafeAreaView edges={["top"]} style={{ flex: 1 }}>
-      <View style={{ backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border, paddingHorizontal: space[3], paddingTop: space[2], gap: space[1] }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: space[2] }}>
-          <IconButton icon={ArrowLeft} label="Back to forms" onPress={() => go("/dashboard/forms")} />
-          <Text variant="title" numberOfLines={1} style={{ flex: 1 }}>{title || "Untitled form"}</Text>
-          <SaveArea formId={formId} compact />
+    <EditorSelection.Provider value={{ selectedId, setSelectedId }}>
+      <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: g.canvas }}>
+        <View style={{ backgroundColor: g.topbar, borderBottomWidth: 1, borderBottomColor: g.border, paddingHorizontal: 12, zIndex: 20 }}>
+          {wide ? (
+            <View style={{ flexDirection: "row", alignItems: "center", minHeight: 64 }}>
+              {titleBlock}
+              <View style={{ flex: 1 }}>{tabBar}</View>
+              {actions}
+            </View>
+          ) : (
+            <>
+              <View style={{ minHeight: 56, justifyContent: "center" }}>{titleBlock}</View>
+              {tabBar}
+              <View style={{ paddingVertical: 8 }}>{actions}</View>
+            </>
+          )}
         </View>
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space[2] }}>
-          <View style={{ flex: 1 }}><Tabs value={current} onChange={go} options={tabs} /></View>
-        </View>
-        {modeControl ? <View style={{ paddingVertical: space[2] }}>{modeControl}</View> : null}
-      </View>
-      <View style={{ flex: 1 }}>{children}</View>
-      {onQuestions && mode === "edit" ? (
-        <SafeAreaView edges={["bottom"]} style={{ backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border, padding: space[2] }}>
-          <Button label="Add question" icon={Plus} variant="primary" fullWidth onPress={() => setAdding(true)} />
-        </SafeAreaView>
-      ) : null}
-      <Dialog visible={adding} title="Add question" onClose={() => setAdding(false)}>
-        <AddQuestionPalette columns={2} onAdded={() => setAdding(false)} />
-        <Divider />
-        <Badge label="New questions are added at the end" />
-      </Dialog>
-    </SafeAreaView>
+        {saveStatus === "error" ? (
+          <View accessibilityRole="alert" style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 44, paddingHorizontal: 16, paddingVertical: 6, backgroundColor: g.errorSoft, borderBottomWidth: 1, borderBottomColor: g.error }}>
+            <AlertCircle size={18} color={g.error} />
+            <GText size={13} color={g.error} style={{ flex: 1 }}>{`Your changes were not saved${saveError ? `: ${saveError}` : "."}`}</GText>
+            <GButton label="Retry" onPress={saveForm} />
+          </View>
+        ) : null}
+        <View style={{ flex: 1, minWidth: 0 }}>{children}</View>
+      </SafeAreaView>
+    </EditorSelection.Provider>
   );
 }

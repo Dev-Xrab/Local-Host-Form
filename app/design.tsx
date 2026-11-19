@@ -44,7 +44,7 @@ export default function Gallery() {
       <Section title="Selection">
         <Surface>
           <Checkbox label="Shuffle questions" checked={checked} onChange={setChecked} />
-          <Radio label="One response per student" checked={!on} onChange={() => setOn(false)} />
+          <Radio label="One response per participant" checked={!on} onChange={() => setOn(false)} />
           <Radio label="Allow retakes" checked={on} onChange={() => setOn(true)} />
           <Switch label="Restrict copying" description="Blocks copy and paste while answering." checked={on} onChange={setOn} />
         </Surface>

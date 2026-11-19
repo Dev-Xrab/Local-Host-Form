@@ -27,9 +27,31 @@ const DEFAULT_SETTINGS = {
   // Each respondent sees the questions inside every section in their own random order (see
   // features/responses/utils/shuffle.js). Order only: scoring and answers are untouched.
   shuffleQuestions: false,
+  // Google-Forms-style settings (see components/editor/FormSettingsScreen.tsx). `isQuiz` null means
+  // "decide from the questions": a form that already has answer keys keeps behaving as a quiz.
+  isQuiz: null,
+  showMissedQuestions: false,
+  showPointValues: false,
+  collectEmail: false,
+  allowDownloadCopy: true,
+  allowResponseEditing: false,
+  showProgressBar: true,
+  showSubmitAnother: false,
+  confirmationMessage: "",
+  disableAutosave: false,
 };
 
 const now = () => new Date().toISOString();
+
+/** Rewrites a question's section links through `idMap` (old id -> new id); unknown targets unlink. */
+export function remapNavigation(navigation, idMap) {
+  if (!navigation) return {};
+  const map = (t) => (t === null || t === undefined || t === "submit" ? t ?? null : idMap.get(t) ?? null);
+  const out = {};
+  if (navigation.next !== undefined) out.next = map(navigation.next);
+  if (Array.isArray(navigation.options)) out.options = navigation.options.map(map);
+  return out;
+}
 
 function rowToQuestion(row) {
   return {
@@ -48,6 +70,7 @@ function rowToQuestion(row) {
     correctAnswers: JSON.parse(row.correct_answers),
     points: row.points,
     removedAt: row.removed_at || null,
+    navigation: JSON.parse(row.navigation || "{}"),
   };
 }
 
@@ -125,13 +148,13 @@ export function getForm(id) {
   return { ...rowToFormMeta(row), questions, unsavedResponseCount: countLocalOnlyResponses(id) };
 }
 
-export function createForm({ title = "", description = "", subjectId = null } = {}) {
+export function createForm({ title = "", description = "", subjectId = null, settings = {} } = {}) {
   const id = randomUUID();
   const timestamp = now();
   db.prepare(
     `INSERT INTO forms (id, title, description, status, settings, subject_id, created_at, updated_at)
      VALUES (?, ?, ?, 'draft', ?, ?, ?, ?)`
-  ).run(id, title, description, JSON.stringify(DEFAULT_SETTINGS), resolveSubjectId(subjectId), timestamp, timestamp);
+  ).run(id, title, description, JSON.stringify({ ...DEFAULT_SETTINGS, ...settings }), resolveSubjectId(subjectId), timestamp, timestamp);
   return getForm(id);
 }
 
@@ -140,8 +163,8 @@ const insertQuestionStmt = db.prepare(`
   INSERT INTO questions (
     id, form_id, order_index, type, title, description, show_description, show_image,
     required, options, scale, rows, image_url, correct_answer_index, correct_answers, points,
-    removed_at
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    removed_at, navigation
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
 const updateFormMetaStmt = db.prepare(`
   UPDATE forms SET title = ?, description = ?, settings = ?, subject_id = ?, banner_image = ?, updated_at = ? WHERE id = ?
@@ -206,7 +229,8 @@ export function updateForm(id, { title, description, settings, questions, subjec
           JSON.stringify(q.correctAnswerIndex || []),
           JSON.stringify(q.correctAnswers || []),
           Number.isFinite(q.points) && q.points >= 0 ? q.points : 1,
-          q.removedAt || null
+          q.removedAt || null,
+          JSON.stringify(q.navigation || {})
         );
       });
     }
@@ -216,7 +240,16 @@ export function updateForm(id, { title, description, settings, questions, subjec
     throw err;
   }
 
-  return getForm(id);
+  const updated = getForm(id);
+  for (const listener of formUpdatedListeners) listener(id);
+  return updated;
+}
+
+// Lets modules that depend on this one (see forms/snapshots.js) react to a saved edit without this
+// file importing them back.
+const formUpdatedListeners = [];
+export function onFormUpdated(listener) {
+  formUpdatedListeners.push(listener);
 }
 
 // Recreates a form from a previously-exported definition (a JSON file, or a form fetched from
@@ -258,9 +291,12 @@ export function importForm({
        VALUES (?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(id, title, description, JSON.stringify(nextSettings), resolveSubjectId(subjectId), timestamp, timestamp, remoteFormId, remoteVersion, remoteFormId ? timestamp : null, ownerUserId, googleFormId, bannerImage);
 
+    // Section links name a section by id, so when questions get fresh ids the links follow them.
+    const newIds = (questions || []).map((q) => (preserveQuestionIds && q.id ? q.id : randomUUID()));
+    const idMap = new Map((questions || []).map((q, i) => [q.id, newIds[i]]));
     (questions || []).forEach((q, index) => {
       insertQuestionStmt.run(
-        preserveQuestionIds && q.id ? q.id : randomUUID(),
+        newIds[index],
         id,
         index,
         q.type,
@@ -276,7 +312,8 @@ export function importForm({
         JSON.stringify(q.correctAnswerIndex || []),
         JSON.stringify(q.correctAnswers || []),
         Number.isFinite(q.points) && q.points >= 0 ? q.points : 1,
-        q.removedAt || null
+        q.removedAt || null,
+        JSON.stringify(remapNavigation(q.navigation, idMap))
       );
     });
     db.exec("COMMIT");

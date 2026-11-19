@@ -41,7 +41,8 @@ export const InlineInput = forwardRef<TextInput, InlineInputProps>(function Inli
           fontFamily, fontSize: v.fontSize, lineHeight: v.lineHeight, fontWeight: v.fontWeight as "400",
           color: colors.text, paddingVertical: 6, paddingHorizontal: 0,
           borderBottomWidth: 1, borderBottomColor: focused ? colors.focus : editable ? colors.border : "transparent",
-          outlineStyle: "none", ...(grow ? { overflow: "hidden", resize: "none" } : null), ...(grow && height ? { height: Math.max(height, v.lineHeight + 12) } : null),
+          outlineWidth: focused ? 2 : 0, outlineStyle: "solid", outlineColor: colors.focus, outlineOffset: 2,
+          ...(grow ? { overflow: "hidden", resize: "none" } : null), ...(grow && height ? { height: Math.max(height, v.lineHeight + 12) } : null),
         } as object,
       ]}
     />

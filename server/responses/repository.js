@@ -34,6 +34,7 @@ function rowToResponseSummary(row) {
     sessionId: row.session_id,
     deviceId: row.device_id,
     respondentName: row.respondent_name,
+    respondentEmail: row.respondent_email || "",
     status: row.status,
     score: row.score,
     maxScore: row.max_score,
@@ -113,16 +114,16 @@ export function findResponseByEditCode(sessionId, editCode) {
 // Each respondent gets their own deadline computed the moment THEY join — not a shared
 // session-wide clock — so someone who joins late still gets the full time limit, and
 // nobody's countdown is affected by when anyone else started.
-export function createInProgressResponse({ formId, sessionId, deviceId, respondentName, durationMinutes, formSnapshotId = null }) {
+export function createInProgressResponse({ formId, sessionId, deviceId, respondentName, respondentEmail = "", durationMinutes, formSnapshotId = null }) {
   const id = randomUUID();
   const startedAt = now();
   const deadlineAt = durationMinutes
     ? new Date(Date.now() + durationMinutes * 60 * 1000).toISOString()
     : null;
   db.prepare(
-    `INSERT INTO responses (id, form_id, session_id, device_id, respondent_name, status, started_at, deadline_at, form_snapshot_id)
-     VALUES (?, ?, ?, ?, ?, 'in_progress', ?, ?, ?)`
-  ).run(id, formId, sessionId, deviceId || null, respondentName || "", startedAt, deadlineAt, formSnapshotId);
+    `INSERT INTO responses (id, form_id, session_id, device_id, respondent_name, respondent_email, status, started_at, deadline_at, form_snapshot_id)
+     VALUES (?, ?, ?, ?, ?, ?, 'in_progress', ?, ?, ?)`
+  ).run(id, formId, sessionId, deviceId || null, respondentName || "", respondentEmail || "", startedAt, deadlineAt, formSnapshotId);
   return rowToResponseSummary(selectResponseStmt.get(id));
 }
 
@@ -183,6 +184,14 @@ export function reopenResponseForEditing(id, deviceId) {
          refocus_locked_until = NULL
      WHERE id = ?`
   ).run(finalDeviceId, id);
+  return getResponse(id);
+}
+
+const setSnapshotStmt = db.prepare("UPDATE responses SET form_snapshot_id = ? WHERE id = ? AND status = 'in_progress'");
+
+/** Moves an unsubmitted response onto another pinned form definition (see forms/snapshots.js). */
+export function setResponseSnapshot(id, snapshotId) {
+  setSnapshotStmt.run(snapshotId, id);
   return getResponse(id);
 }
 
