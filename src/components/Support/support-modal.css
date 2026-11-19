@@ -7,7 +7,7 @@
   align-items: center;
   justify-content: center;
   padding: var(--space-5);
-  overflow-y: auto;
+  overflow: hidden;
   opacity: 0;
   transition: opacity var(--duration-base) var(--ease-out);
 }
@@ -18,14 +18,17 @@
 
 .support-modal {
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  max-width: 440px;
-  margin-block: auto;
+  max-width: 860px;
+  max-height: min(calc(100vh - 48px), 740px);
+  max-height: min(calc(100dvh - 48px), 740px);
+  overflow: hidden;
   background: var(--color-bg-raised);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
-  padding: var(--space-6);
   opacity: 0;
   transform: translateY(10px) scale(0.98);
   transition: opacity var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out);
@@ -37,9 +40,8 @@
 }
 
 .support-modal-close {
-  position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
+  position: static;
+  flex: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -63,8 +65,7 @@
   font: var(--text-h3);
   color: var(--color-text);
   letter-spacing: -0.01em;
-  padding-right: var(--space-6);
-  margin-bottom: var(--space-3);
+  margin: 0;
 }
 
 .support-modal h3 {
@@ -143,10 +144,13 @@
   border-radius: var(--radius-sm);
 }
 
+.support-modal-qr-btn {
+  width: min(100%, 240px);
+}
+
 .support-modal-qr-btn img {
   display: block;
   width: 100%;
-  max-width: 260px;
   height: auto;
   border-radius: var(--radius-sm);
   transition: opacity var(--duration-fast) var(--ease-out);
@@ -230,8 +234,129 @@
   height: 20px;
 }
 
-@media (max-width: 480px) {
+/* header stays put, body scrolls; two columns on wide screens, bottom sheet on phones */
+.sm-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: 18px var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sm-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.sm-col {
+  padding: var(--space-5);
+}
+
+.sm-pay {
+  border-left: 1px solid var(--color-border);
+  background: var(--color-bg-inset);
+}
+
+.sm-pay .support-modal-qr {
+  background: var(--color-bg-raised);
+}
+
+.sm-plan { counter-reset: plan; }
+
+.sm-h {
+  margin-top: var(--space-5);
+  margin-bottom: var(--space-3);
+}
+
+.sm-phase {
+  margin-top: var(--space-4);
+}
+
+.sm-phase-tag {
+  display: inline-block;
+  margin-bottom: var(--space-2);
+  padding: 3px 8px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 4px;
+  font: 500 0.6875rem / 1.2 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.sm-roadmap {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.sm-roadmap li {
+  position: relative;
+  padding-left: 34px;
+  font: var(--text-small);
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  counter-increment: plan;
+}
+
+.sm-roadmap li::before {
+  content: counter(plan, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 0.1em;
+  font: 500 0.6875rem / 1.6 var(--font-mono);
+  color: var(--color-text-faint);
+}
+
+.sm-roadmap strong {
+  color: var(--color-text);
+}
+
+.sm-fine {
+  margin-top: var(--space-5);
+}
+
+.sm-col > .support-modal-intro:first-child {
+  margin-top: 0;
+}
+
+@media (max-width: 720px) {
+  .support-modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
   .support-modal {
-    padding: var(--space-5);
+    max-width: none;
+    max-height: 92vh;
+    max-height: 92dvh;
+    border-radius: 16px 16px 0 0;
+    border-bottom: 0;
+    transform: translateY(24px);
+  }
+
+  .sm-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sm-pay {
+    border-left: 0;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .sm-col {
+    padding: var(--space-4) var(--space-4) var(--space-5);
+  }
+
+  .sm-head {
+    padding: 14px var(--space-4);
+  }
+
+  .support-modal-close {
+    width: 40px;
+    height: 40px;
   }
 }

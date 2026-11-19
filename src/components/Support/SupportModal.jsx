@@ -45,6 +45,8 @@ export default function SupportModal({ open, onClose }) {
         ref={dialogRef}
         onMouseDown={(e) => e.stopPropagation()}
       >
+        <header className="sm-head">
+          <h2 id="support-modal-title">Support Self-Host Form</h2>
         <button
           type="button"
           className="support-modal-close"
@@ -54,36 +56,75 @@ export default function SupportModal({ open, onClose }) {
         >
           <Icons.close />
         </button>
+        </header>
 
-        <h2 id="support-modal-title">Support Self-Host Form</h2>
-        <p className="support-modal-intro">
-          Self-Host Form is free and independently developed. If you find it useful, your
-          support helps fund continued development, infrastructure, and maintenance.
-        </p>
+        <div className="sm-body">
+          <div className="sm-col sm-plan">
+            <p className="support-modal-intro">
+              Self-Host Form is free and independently developed. Funding pays for the work below, in this order.
+            </p>
 
-        <div className="support-modal-divider" />
+            <h3 className="sm-h">If this project gets funded</h3>
 
-        <h3>What your support unlocks</h3>
-        <ul className="support-modal-roadmap">
-          <li>
-            <strong>Signed installers.</strong> Both the Windows and macOS builds are unsigned
-            right now, so Windows SmartScreen and macOS Gatekeeper warn on first launch. Code
-            signing certificates are a real yearly cost — this is first in line.
-          </li>
-          <li>
-            <strong>Multi-user accounts &amp; roles.</strong> Every deployment currently shares
-            one host password. Separate per-person accounts and permissions are planned, not
-            built yet.
-          </li>
-          <li>
-            <strong>Cloud sync out of beta.</strong> The optional Google-account sync is in beta
-            with limited access. Opening it up to everyone means paying for more server
-            capacity to run it on.
-          </li>
-        </ul>
+            <div className="sm-phase">
+              <p className="sm-phase-tag">First · Trust</p>
+              <ol className="sm-roadmap">
+                <li>
+                  <strong>Signed installers.</strong> The Windows and macOS builds are unsigned, so SmartScreen and Gatekeeper warn on first launch. Code-signing and Apple notarization are a yearly cost.
+                </li>
+                <li>
+                  <strong>No lost answers.</strong> A respondent should only see &ldquo;submitted&rdquo; once the host has confirmed it, even on weak Wi-Fi or when the timer runs out.
+                </li>
+                <li>
+                  <strong>Encrypted local network option.</strong> HTTPS between the host and respondents on the same network, with clear guidance for hosts.
+                </li>
+              </ol>
+            </div>
 
-        <div className="support-modal-divider" />
+            <div className="sm-phase">
+              <p className="sm-phase-tag">Next · Reliability</p>
+              <ol className="sm-roadmap">
+                <li>
+                  <strong>Testing on real devices.</strong> Phones, tablets and laptops on real networks, plus keyboard and screen-reader checks, and a tested upgrade path for existing data, before each release. macOS, Linux and Android have had the least testing.
+                </li>
+                <li>
+                  <strong>Backup and restore in the app.</strong> Today a host backs up the data folder by hand.
+                </li>
+                <li>
+                  <strong>Independent security review</strong> of the host, the local server and the public link.
+                </li>
+              </ol>
+            </div>
 
+            <div className="sm-phase">
+              <p className="sm-phase-tag">Later · Reach</p>
+              <ol className="sm-roadmap">
+                <li>
+                  <strong>Accounts and roles.</strong> Every installation shares one host password today. Separate people and permissions are planned, not built.
+                </li>
+                <li>
+                  <strong>Google sync out of beta.</strong> Publishing the Google app so sign-in lasts and anyone can use it, not only test users.
+                </li>
+                <li>
+                  <strong>A tested Android host,</strong> then iOS. Phone hosting is experimental today.
+                </li>
+              </ol>
+            </div>
+
+            <h3 className="sm-h">Where the money goes</h3>
+            <ul className="support-modal-roadmap">
+              <li>Code-signing and notarization certificates</li>
+              <li>Test devices and test networks</li>
+              <li>Security and accessibility reviews</li>
+              <li>Developer time to build and maintain all of the above</li>
+            </ul>
+
+            <p className="support-modal-note support-modal-note-muted sm-fine">
+              These are plans, not promises, and the order may change based on what hosts report. Self-Host Form stays free for personal and educational use.
+            </p>
+          </div>
+
+          <div className="sm-col sm-pay">
         <h3>Support via GCash</h3>
         <p className="support-modal-note">
           For supporters in the Philippines, scan the QR code using GCash or a participating
@@ -105,6 +146,8 @@ export default function SupportModal({ open, onClose }) {
           payment/remittance provider. If your provider supports transfers to GCash in the
           Philippines, you may be able to use this option.
         </p>
+          </div>
+        </div>
       </div>
 
       {renderZoom && (

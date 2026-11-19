@@ -25,4 +25,4 @@ export const LINUX_DOWNLOAD_URL =
 export const MAC_DOWNLOAD_URL =
   "https://github.com/Dev-Xrab/Local-Host-Form/releases/latest/download/Self-Host-Form-mac.dmg";
 
-export const RELEASE_VERSION = "v1.2.2";
+export const RELEASE_VERSION = "v1.3.0";

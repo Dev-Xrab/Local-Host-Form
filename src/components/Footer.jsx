@@ -1,31 +1,18 @@
 import { useState } from "react";
-import { Icons } from "./icons";
 import { NAV_LINKS } from "../content";
 import { ANDROID_DOWNLOAD_URL, LINUX_DOWNLOAD_URL, MAC_DOWNLOAD_URL, WINDOWS_DOWNLOAD_URL } from "../constants";
 import SupportModal from "./Support/SupportModal";
 
+// Plain link columns, like a docs-site footer: no brand block, no decoration.
 export default function Footer({ base = "" }) {
   const [supportOpen, setSupportOpen] = useState(false);
 
   return (
     <footer className="footer">
-      <div className="container footer-inner">
-        <div className="footer-brand">
-          <a href={`${base}#top`} className="brand">
-            <span className="brand-logo">
-              <img src="/logo.png" alt="" width="18" height="18" />
-            </span>
-            Self Host Form
-          </a>
-          <p>Build forms, quizzes and surveys. Host them on your own computer.</p>
-          <button type="button" className="btn btn-secondary" onClick={() => setSupportOpen(true)}>
-            <Icons.qrCode className="btn-icon" /> Support the project
-          </button>
-        </div>
-
+      <div className="container">
         <div className="footer-cols">
           <div>
-            <p className="footer-h">Explore</p>
+            <p className="footer-h">Product</p>
             <ul>
               {NAV_LINKS.map((l) => (
                 <li key={l.id}>
@@ -35,26 +22,26 @@ export default function Footer({ base = "" }) {
             </ul>
           </div>
           <div>
-            <p className="footer-h">Resources</p>
+            <p className="footer-h">Download</p>
             <ul>
               <li>
                 <a href={WINDOWS_DOWNLOAD_URL} download>
-                  Download for Windows
+                  Windows
                 </a>
               </li>
               <li>
                 <a href={MAC_DOWNLOAD_URL} download>
-                  Download for macOS
+                  macOS
                 </a>
               </li>
               <li>
                 <a href={LINUX_DOWNLOAD_URL} download>
-                  Download for Linux
+                  Linux
                 </a>
               </li>
               <li>
                 <a href={ANDROID_DOWNLOAD_URL} download>
-                  Download for Android
+                  Android
                 </a>
               </li>
             </ul>
@@ -71,20 +58,21 @@ export default function Footer({ base = "" }) {
             </ul>
           </div>
           <div>
-            <p className="footer-h">Contact</p>
+            <p className="footer-h">Project</p>
             <ul>
               <li>
-                <a href="mailto:b.d.senin@gmail.com">b.d.senin@gmail.com</a>
+                <button type="button" className="footer-link" onClick={() => setSupportOpen(true)}>
+                  Support the project
+                </button>
+              </li>
+              <li>
+                <a href="mailto:b.d.senin@gmail.com">Contact</a>
               </li>
             </ul>
           </div>
         </div>
+        <p className="footer-fine">© {new Date().getFullYear()} Self Host Form. Source-available, free for personal and educational use.</p>
       </div>
-
-      <div className="container footer-bottom">
-        <p>© {new Date().getFullYear()} Self Host Form. Source-available and free for personal and educational use. Feedback welcome.</p>
-      </div>
-
       <SupportModal open={supportOpen} onClose={() => setSupportOpen(false)} />
     </footer>
   );

@@ -2,6 +2,16 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("selfhostform_theme");
+          if (t !== "light" && t !== "dark") t = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+          document.documentElement.dataset.theme = t;
+          document.documentElement.style.colorScheme = t;
+        } catch (e) {}
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="index, follow" />
@@ -10,31 +20,31 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
 
-    <title>Self Host Form — Forms, Quizzes and Surveys From Your Own Computer</title>
+    <title>Self Host Form — Forms, sessions and results. Yours.</title>
     <meta
       name="description"
-      content="Build forms, quizzes and surveys, share them with a join code, and watch responses and scores live. Runs on your own computer, works over local Wi-Fi, and stores responses on your machine."
+      content="Build forms and quizzes, run live sessions with a join code, and review results. Local first: it runs on your own device, works over local Wi-Fi, and your data stays with you."
     />
 
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Self Host Form — Forms, Quizzes and Surveys From Your Own Computer" />
+    <meta property="og:title" content="Self Host Form — Forms, sessions and results. Yours." />
     <meta
       property="og:description"
-      content="Build forms, quizzes and surveys, share them with a join code, and watch responses live, all on your own computer."
+      content="Build forms and quizzes, run live sessions with a join code, and review results. Local first: it runs on your own device, works over local Wi-Fi, and your data stays with you."
     />
     <meta property="og:site_name" content="Self Host Form" />
-    <meta property="og:image" content="/screenshots/dashboard-home.jpg" />
+    <meta property="og:image" content="/og.png" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Self Host Form — Forms, Quizzes and Surveys From Your Own Computer" />
-    <meta name="twitter:image" content="/screenshots/dashboard-home.jpg" />
+    <meta name="twitter:title" content="Self Host Form — Forms, sessions and results. Yours." />
+    <meta name="twitter:image" content="/og.png" />
     <meta
       name="twitter:description"
-      content="Build forms, quizzes and surveys, share them with a join code, and watch responses live, all on your own computer."
+      content="Build forms and quizzes, run live sessions with a join code, and review results. Local first: it runs on your own device, works over local Wi-Fi, and your data stays with you."
     />
   </head>
   <body>

@@ -1,19 +1,16 @@
 import { MotionConfig } from "motion/react";
 import Nav from "./components/Nav";
-import Hero from "./components/Hero";
-import FactStrip from "./components/FactStrip";
-import Why from "./components/Why";
-import Story from "./components/Story";
-import Features from "./components/Features";
-import LiveDemo from "./components/LiveDemo";
-import SelfHost from "./components/SelfHost";
-import Compare from "./components/Compare";
-import Audience from "./components/Audience";
-import Download from "./components/Download";
-import Faq from "./components/Faq";
-import FinalCta from "./components/FinalCta";
+import Hero from "./components/home/Hero";
+import Panels from "./components/home/Panels";
+import Capabilities from "./components/home/Capabilities";
+import LocalFirst from "./components/home/LocalFirst";
+import Download from "./components/home/Download";
+import Tutorial from "./components/home/Tutorial";
+import Faq from "./components/home/Faq";
+import FinalCta from "./components/home/FinalCta";
 import Footer from "./components/Footer";
-import "./styles/site.css";
+import "./styles/shell.css";
+import "./styles/home.css";
 
 export default function App() {
   return (
@@ -24,15 +21,11 @@ export default function App() {
       <Nav />
       <main id="main-content">
         <Hero />
-        <FactStrip />
-        <Why />
-        <Story />
-        <Features />
-        <LiveDemo />
-        <SelfHost />
-        <Compare />
-        <Audience />
+        <Panels />
+        <Capabilities />
+        <LocalFirst />
         <Download />
+        <Tutorial />
         <Faq />
         <FinalCta />
       </main>

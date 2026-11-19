@@ -213,4 +213,58 @@ export const Icons = {
       <circle cx="12" cy="18" r="0.15" fill="currentColor" />
     </>
   ),
+  home: makeIcon(<path d="M4 11.5 12 4l8 7.5V20H4v-8.5ZM9.5 20v-5.5h5V20" />),
+  fileText: makeIcon(
+    <>
+      <path d="M6 3h8l4 4v14H6V3Z" />
+      <path d="M14 3v4h4M9 12h6M9 16h6" />
+    </>
+  ),
+  clipboard: makeIcon(
+    <>
+      <rect x="5" y="4.5" width="14" height="16.5" rx="2" />
+      <path d="M9 4.5h6v3H9zM9 12h6M9 16h4" />
+    </>
+  ),
+  table: makeIcon(
+    <>
+      <rect x="3.5" y="5" width="17" height="14" rx="1.5" />
+      <path d="M3.5 10h17M9.5 5v14M15.5 5v14" />
+    </>
+  ),
+  folder: makeIcon(<path d="M3.5 7a1.5 1.5 0 0 1 1.5-1.5h4l2 2.5h8A1.5 1.5 0 0 1 20.5 9.5V18A1.5 1.5 0 0 1 19 19.5H5A1.5 1.5 0 0 1 3.5 18V7Z" />),
+  settings: makeIcon(
+    <>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8" />
+    </>
+  ),
+  wifi: makeIcon(
+    <>
+      <path d="M3 9.5a13 13 0 0 1 18 0M6 13a8.5 8.5 0 0 1 12 0M9 16.5a4 4 0 0 1 6 0" />
+      <circle cx="12" cy="19.5" r="0.8" fill="currentColor" />
+    </>
+  ),
+  lock: makeIcon(
+    <>
+      <rect x="5" y="10.5" width="14" height="10" rx="2" />
+      <path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" />
+    </>
+  ),
+  expand: makeIcon(<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />),
+  globe: makeIcon(
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
+    </>
+  ),
+  check: makeIcon(<path d="m5 12.5 4.5 4.5L19 7.5" />),
+  sun: makeIcon(
+    <>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4" />
+    </>
+  ),
+  moon: makeIcon(<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />),
+  plus: makeIcon(<path d="M12 5v14M5 12h14" />),
 };

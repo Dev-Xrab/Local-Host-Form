@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles/tokens.css";
 import "./styles/global.css";
-import "./styles/site.css";
+import "./styles/shell.css";
 import LegalPage from "./components/LegalPage";
 
 // privacy/index.html and terms/index.html both load this entry; data-page picks the document.

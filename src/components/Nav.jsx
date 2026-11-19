@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion, useScroll, useSpring } from "motion/react";
+import { AnimatePresence, motion, useMotionValueEvent, useScroll, useSpring } from "motion/react";
 import { Icons } from "./icons";
 import { NAV_LINKS } from "../content";
 import SupportModal from "./Support/SupportModal";
-import { ease } from "./ui/Section";
+import { ease } from "./home/primitives";
+import ThemeToggle from "./ThemeToggle";
 
 const IDS = NAV_LINKS.map((l) => l.id);
 
@@ -33,7 +34,9 @@ export default function Nav({ base = "" }) {
   const [supportOpen, setSupportOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const active = useScrollSpy(IDS);
-  const { scrollYProgress } = useScroll();
+  const { scrollY, scrollYProgress } = useScroll();
+  const [hidden, setHidden] = useState(false);
+  useMotionValueEvent(scrollY, "change", (y) => setHidden(y > (scrollY.getPrevious() ?? 0) && y > 260));
   const progress = useSpring(scrollYProgress, { stiffness: 140, damping: 28, mass: 0.3 });
 
   useEffect(() => {
@@ -65,13 +68,11 @@ export default function Nav({ base = "" }) {
 
   return (
     <>
-      <header className={`nav ${scrolled ? "is-scrolled" : ""}`}>
+      <header className={`nav ${scrolled ? "is-scrolled" : ""} ${hidden && !open ? "is-hidden" : ""}`}>
         <motion.div className="nav-progress" style={{ scaleX: progress }} aria-hidden="true" />
         <div className="container nav-inner">
           <a href={`${base}#top`} className="brand" onClick={close}>
-            <span className="brand-logo">
-              <img src="/logo.png" alt="" width="18" height="18" />
-            </span>
+            <i className="logo-mask" aria-hidden="true" />
             Self Host Form
           </a>
 
@@ -99,6 +100,7 @@ export default function Nav({ base = "" }) {
             <button type="button" className="btn btn-ghost" onClick={openSupport}>
               Support
             </button>
+            <ThemeToggle />
             <a href={`${base}#download`} className="btn btn-primary">
               <Icons.download className="btn-icon" /> Download
             </a>
@@ -152,6 +154,7 @@ export default function Nav({ base = "" }) {
                 <Icons.arrowRight />
               </motion.button>
             </nav>
+            <ThemeToggle labelled />
             <a href={`${base}#download`} className="btn btn-primary btn-lg btn-block" onClick={close}>
               <Icons.download className="btn-icon" /> Download
             </a>

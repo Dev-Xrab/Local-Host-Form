@@ -1,51 +1,54 @@
+/* Palette mirrors the app's ui/tokens.ts: neutral stone surfaces, near-white / near-black actions,
+   semantic green only for status. Dark is the default; light follows the system or the toggle. */
 :root {
-  /* Color — charcoal canvas, hairline borders, one green accent (Supabase-dashboard direction) */
   color-scheme: dark;
-  --color-bg: #121212;
-  --color-bg-raised: #1c1c1c;
-  --color-bg-inset: #232323;
+  --color-bg: #000000;
+  --color-bg-raised: #0a0a0a;
+  --color-bg-inset: #111111;
   --color-bg-dark: #0e0e0e;
-  --color-text: #ededed;
-  --color-text-secondary: #b4b4b4;
-  --color-text-muted: #898989;
-  --color-text-faint: #707070;
-  --color-text-on-dark: #ededed;
-  --color-text-on-dark-muted: #a0a0a0;
-  --color-border: #2a2a2a;
-  --color-border-strong: #363636;
+  --color-text: #f5f5f4;
+  --color-text-body: #d6d3d1;
+  --color-text-secondary: #a8a29e;
+  --color-text-muted: #a8a29e;
+  --color-text-faint: #8f8984;
+  --color-text-on-dark: #f5f5f4;
+  --color-text-on-dark-muted: #a8a29e;
+  --color-border: #1f1f1f;
+  --color-border-strong: #4a4a4a;
+  --color-border-soft: #2a2a2a;
   --color-border-on-dark: #2a2a2a;
-  --color-accent: #3ecf8e;
-  --color-accent-hover: #5fe0a5;
-  --color-accent-active: #3ecf8e;
-  --color-accent-soft: rgba(62, 207, 142, 0.08);
-  --color-accent-soft-border: rgba(62, 207, 142, 0.25);
-  --color-primary: #006239;
-  --color-primary-hover: #00774a;
-  --color-primary-border: rgba(62, 207, 142, 0.4);
-  --color-success: #3ecf8e;
-  --color-success-soft: rgba(62, 207, 142, 0.1);
-  --color-danger: #ef5e5e;
-  --color-danger-soft: rgba(239, 94, 94, 0.1);
-  --color-focus-ring: #3ecf8e;
+  --color-accent: #f5f5f4;
+  --color-accent-hover: #e5e5e4;
+  --color-accent-soft: #2a2a2a;
+  --color-accent-soft-border: #3a3a3a;
+  --color-primary: #f5f5f4;
+  --color-primary-hover: #e5e5e4;
+  --color-primary-border: #f5f5f4;
+  --color-primary-text: #171717;
+  --color-success: #9ec7a9;
+  --color-success-soft: #202923;
+  --color-danger: #e9a3a0;
+  --color-danger-soft: #282222;
+  --color-warning: #e5bd83;
+  --color-focus-ring: #f5f5f4;
+  --color-ring: rgba(255, 255, 255, 0.14);
+  --color-ring-strong: rgba(255, 255, 255, 0.24);
+  --color-nav-bg: rgba(0, 0, 0, 0.8);
 
-  /* Selected-answer blue used inside product mockups */
-  --color-select: #2383e2;
-  --color-select-soft: #e7f1fc;
+  /* Typography (Inter, system fallbacks) */
+  --font-sans: Geist, Inter, -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", Roboto, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 
-  /* Typography */
-  --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-
-  --text-display: 500 clamp(2.5rem, 1.9rem + 2.6vw, 3.75rem)/1.08 var(--font-sans);
-  --text-h1: 500 clamp(2rem, 1.6rem + 1.8vw, 2.75rem)/1.15 var(--font-sans);
-  --text-h2: 500 clamp(1.5rem, 1.3rem + 0.9vw, 2rem)/1.2 var(--font-sans);
-  --text-h3: 500 clamp(1.15rem, 1.05rem + 0.4vw, 1.375rem)/1.3 var(--font-sans);
+  --text-display: 450 clamp(2.75rem, 5vw, 4rem)/1 var(--font-sans);
+  --text-h1: 600 clamp(1.9rem, 1.3rem + 2.2vw, 3rem)/1.1 var(--font-sans);
+  --text-h2: 700 clamp(1.9rem, 1.3rem + 2.4vw, 3.25rem)/1.05 var(--font-sans);
+  --text-h3: 600 clamp(1.1rem, 1.02rem + 0.4vw, 1.3rem)/1.3 var(--font-sans);
   --text-body-lg: 400 1.125rem/1.6 var(--font-sans);
   --text-body: 400 1rem/1.6 var(--font-sans);
   --text-small: 400 0.875rem/1.5 var(--font-sans);
   --text-caption: 500 0.75rem/1.4 var(--font-sans);
 
-  /* Spacing scale */
+  /* Spacing scale (app: 4/8/12/16/24/32/48) */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -57,20 +60,54 @@
   --space-9: 96px;
   --space-10: 128px;
 
-  /* Layout */
-  --container-width: 1180px;
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 10px;
+  --container-width: 1448px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
   --radius-full: 999px;
 
-  /* Elevation */
   --shadow-sm: 0 0 0 1px rgba(255, 255, 255, 0.03);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.55);
+  --shadow-md: 0 18px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.04);
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --duration-fast: 120ms;
-  --duration-base: 200ms;
+  --duration-base: 180ms;
   --duration-slow: 500ms;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-bg: #fafafa;
+  --color-bg-raised: #ffffff;
+  --color-bg-inset: #f0efed;
+  --color-bg-dark: #171717;
+  --color-text: #171717;
+  --color-text-body: #44403c;
+  --color-text-secondary: #6b6560;
+  --color-text-muted: #6b6560;
+  --color-text-faint: #6f6a66;
+  --color-border: #ebebeb;
+  --color-border-strong: #a8a8a8;
+  --color-border-soft: #dcdcdc;
+  --color-accent: #171717;
+  --color-accent-hover: #303030;
+  --color-accent-soft: #f0efed;
+  --color-accent-soft-border: #d6d3d1;
+  --color-primary: #171717;
+  --color-primary-hover: #303030;
+  --color-primary-border: #171717;
+  --color-primary-text: #ffffff;
+  --color-success: #276b47;
+  --color-success-soft: #eef5ef;
+  --color-danger: #a73532;
+  --color-danger-soft: #f8eeed;
+  --color-warning: #82570d;
+  --color-focus-ring: #171717;
+  --color-ring: rgba(23, 23, 23, 0.12);
+  --color-ring-strong: rgba(23, 23, 23, 0.22);
+  --color-nav-bg: rgba(250, 250, 249, 0.78);
+  --shadow-md: 0 18px 48px rgba(23, 23, 23, 0.12), 0 0 0 1px rgba(23, 23, 23, 0.05);
+  --shadow-lg: 0 24px 60px rgba(23, 23, 23, 0.12), 0 0 0 1px rgba(23, 23, 23, 0.06);
 }

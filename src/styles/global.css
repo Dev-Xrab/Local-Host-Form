@@ -109,7 +109,7 @@ h4 {
   font: var(--text-caption);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--color-accent);
+  color: var(--color-text-secondary);
   margin-bottom: var(--space-3);
 }
 
@@ -152,7 +152,7 @@ h4 {
 .btn-primary {
   background: var(--color-primary);
   border-color: var(--color-primary-border);
-  color: #fff;
+  color: var(--color-primary-text);
 }
 
 .btn-primary:hover {
@@ -216,7 +216,7 @@ h4 {
   left: var(--space-4);
   top: -60px;
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-primary-text);
   padding: 10px 16px;
   border-radius: var(--radius-sm);
   z-index: 1000;
